@@ -1,0 +1,179 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { BarChart3, CalendarDays, Download, ListChecks } from "lucide-react";
+import { useChanting } from "../ChantingContext";
+import {
+  addDays,
+  bestStreak,
+  currentStreak,
+  formatDate,
+  recentChantingHistory,
+  roundsForDate
+} from "../domain";
+import { EmptyState, Panel } from "../ui";
+
+const rangeOptions = [
+  { label: "7 days", value: 7 },
+  { label: "30 days", value: 30 },
+  { label: "90 days", value: 90 }
+];
+
+export function ActivityPage() {
+  const { state, currentUser, todayKey, setSelectedDate, showMessage } = useChanting();
+  const [days, setDays] = useState(30);
+
+  const history = useMemo(
+    () => recentChantingHistory(state.chantTotals, currentUser?.id || "", todayKey, days),
+    [currentUser?.id, days, state.chantTotals, todayKey]
+  );
+
+  if (!currentUser) return null;
+
+  const activeDays = history.filter((item) => item.rounds > 0).length;
+  const totalRounds = history.reduce((sum, item) => sum + item.rounds, 0);
+  const highestRounds = Math.max(1, ...history.map((item) => item.rounds));
+  const averageOnActiveDays = activeDays ? Math.round((totalRounds / activeDays) * 10) / 10 : 0;
+  const allEntries = state.chantTotals
+    .filter((total) => total.userId === currentUser.id && total.rounds > 0)
+    .sort((a, b) => b.localDate.localeCompare(a.localDate));
+  const exportHistory = () => {
+    const rows = [
+      ["date", "rounds", "updated_at"],
+      ...state.chantTotals
+        .filter((total) => total.userId === currentUser.id)
+        .sort((a, b) => a.localDate.localeCompare(b.localDate))
+        .map((total) => [total.localDate, String(total.rounds), total.updatedAt])
+    ];
+    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `chanting-history-${currentUser.username}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showMessage("History exported as CSV.");
+  };
+
+  return (
+    <div className="space-y-6">
+      <Panel title="Activity summary" icon={<BarChart3 size={18} />}>
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          {rangeOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`rounded-md px-3 py-2 text-sm font-black ${
+                days === option.value ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700"
+              }`}
+              onClick={() => setDays(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white"
+            onClick={exportHistory}
+          >
+            <Download size={16} /> Export CSV
+          </button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-4">
+          <SummaryTile label="Rounds" value={totalRounds} note={`last ${days} days`} />
+          <SummaryTile label="Active days" value={activeDays} note={`${days - activeDays} blank day${days - activeDays === 1 ? "" : "s"}`} />
+          <SummaryTile label="Average" value={averageOnActiveDays} note="on active days" />
+          <SummaryTile label="Current streak" value={currentStreak(state.chantTotals, currentUser.id, todayKey)} note={`best ${bestStreak(state.chantTotals, currentUser.id)}`} />
+        </div>
+      </Panel>
+
+      <Panel title={`${days}-day history`} icon={<CalendarDays size={18} />}>
+        <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(74px,1fr))]">
+          {history.map((item) => {
+            const isToday = item.dateKey === todayKey;
+            const barHeight = Math.max(8, Math.round((item.rounds / highestRounds) * 76));
+            return (
+              <button
+                key={item.dateKey}
+                type="button"
+                className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-3 text-center ${
+                  isToday ? "border-saffron-400 bg-saffron-50" : "border-stone-200 bg-white"
+                }`}
+                onClick={() => {
+                  setSelectedDate(item.dateKey);
+                  showMessage(`Selected ${formatDate(item.dateKey)} in the rounds editor.`);
+                }}
+                title={`${formatDate(item.dateKey)}: ${item.rounds} rounds`}
+              >
+                <div className="flex h-20 w-full items-end rounded bg-stone-50 px-1 py-1">
+                  <div
+                    className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
+                    style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
+                  />
+                </div>
+                <span className="text-sm font-black text-stone-900">{item.rounds}</span>
+                <span className={`truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
+                  {isToday ? "Today" : shortDate(item.dateKey)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Panel>
+
+      <Panel title="Logged days" icon={<ListChecks size={18} />}>
+        {allEntries.length === 0 ? (
+          <EmptyState text="No chanting history yet. Add rounds on Home and your logged days will appear here." />
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-stone-200">
+            {allEntries.slice(0, 60).map((entry) => {
+              const previousDate = addDays(entry.localDate, -1);
+              const previousRounds = roundsForDate(state.chantTotals, currentUser.id, previousDate);
+              const delta = entry.rounds - previousRounds;
+              return (
+                <div key={entry.localDate} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-stone-100 bg-white px-3 py-3 last:border-b-0 sm:grid-cols-[1fr_90px_90px] sm:px-4">
+                  <div>
+                    <p className="font-black text-stone-900">{formatDate(entry.localDate)}</p>
+                    <p className="text-sm text-stone-500">Updated {new Date(entry.updatedAt).toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black text-peacock-900">{entry.rounds}</p>
+                    <p className="text-xs text-stone-500">rounds</p>
+                  </div>
+                  <div className="col-span-2 text-right text-sm font-bold sm:col-span-1">
+                    <span className={delta >= 0 ? "text-emerald-700" : "text-red-700"}>
+                      {delta === 0 ? "same" : delta > 0 ? `+${delta}` : delta}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+function SummaryTile({ label, value, note }: { label: string; value: number; note: string }) {
+  return (
+    <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
+      <p className="text-sm font-bold text-stone-600">{label}</p>
+      <p className="mt-1 text-3xl font-black text-stone-900">{value}</p>
+      <p className="text-sm text-stone-600">{note}</p>
+    </div>
+  );
+}
+
+function shortDate(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00Z`).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short"
+  });
+}
+
+function csvCell(value: string) {
+  return `"${value.replace(/"/g, '""')}"`;
+}

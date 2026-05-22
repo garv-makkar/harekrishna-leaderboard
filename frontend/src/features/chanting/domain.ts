@@ -1,0 +1,663 @@
+import type {
+  AppState,
+  ChantTotal,
+  FriendRequest,
+  Group,
+  GroupRole,
+  LeaderboardPeriod,
+  ModerationReport,
+  UserProfile
+} from "@/lib/types";
+
+export const STORAGE_KEY = "hare-krishna-leaderboard-state-v1";
+export const MAX_DAILY_ROUNDS = 999;
+export const usernamePattern = /^[a-z][a-z0-9_]{2,23}$/;
+
+export const countries = [
+  { name: "India", dialCode: "+91", example: "9876543210", timezones: ["Asia/Kolkata"] },
+  {
+    name: "United States",
+    dialCode: "+1",
+    example: "4155550101",
+    timezones: ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles", "America/Phoenix", "Pacific/Honolulu"]
+  },
+  { name: "United Kingdom", dialCode: "+44", example: "7700900123", timezones: ["Europe/London"] },
+  {
+    name: "Canada",
+    dialCode: "+1",
+    example: "4165550101",
+    timezones: ["America/Toronto", "America/Winnipeg", "America/Edmonton", "America/Vancouver", "America/Halifax"]
+  },
+  { name: "Australia", dialCode: "+61", example: "412345678", timezones: ["Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane", "Australia/Perth", "Australia/Adelaide"] },
+  { name: "Nepal", dialCode: "+977", example: "9841234567", timezones: ["Asia/Kathmandu"] },
+  { name: "Bangladesh", dialCode: "+880", example: "1712345678", timezones: ["Asia/Dhaka"] },
+  {
+    name: "Other",
+    dialCode: "+",
+    example: "country code and number",
+    timezones: ["Asia/Kolkata", "Europe/London", "America/New_York", "America/Los_Angeles", "Australia/Sydney"]
+  }
+];
+
+export type RankedUser = {
+  user: UserProfile;
+  rounds: number;
+  rank: number;
+  hasEntry: boolean;
+  entryCount: number;
+  lastEntryDate: string;
+  lastUpdatedAt: string;
+};
+
+export type Milestone = {
+  id: string;
+  title: string;
+  description: string;
+  earned: boolean;
+  progress: number;
+  target: number;
+};
+
+export type AuthMode = "signin" | "signup" | "forgot" | "otp" | "newPassword" | "checkEmail";
+export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "profile" | "admin" | "about";
+
+export type ProfileRow = {
+  id: string;
+  username: string;
+  email: string;
+  phone: string;
+  display_name: string;
+  country: string;
+  timezone: string;
+  avatar_url: string;
+  joined_at: string;
+};
+
+export type ChantTotalRow = {
+  user_id: string;
+  local_date: string;
+  rounds: number;
+  updated_at: string;
+};
+
+export type GroupRow = {
+  id: string;
+  owner_id: string;
+  name: string;
+  code: string;
+  image_url: string;
+  created_at: string;
+};
+
+export type GroupMemberRow = {
+  group_id: string;
+  user_id: string;
+  role: GroupRole;
+  joined_at: string;
+};
+
+export type FriendRequestRow = {
+  id: string;
+  from_user_id: string;
+  to_user_id: string;
+  status: "pending" | "accepted" | "declined";
+  created_at: string;
+};
+
+export type ModerationReportRow = {
+  id: string;
+  reporter_id: string;
+  reported_user_id: string;
+  reason: string;
+  details: string;
+  status: "open" | "reviewed" | "dismissed";
+  created_at: string;
+};
+
+export function uid(prefix: string) {
+  return `${prefix}_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+}
+
+export function hashPassword(password: string) {
+  if (typeof btoa === "undefined") {
+    return Buffer.from(password, "utf8").toString("base64");
+  }
+  return btoa(unescape(encodeURIComponent(password)));
+}
+
+export function detectTimezone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata";
+}
+
+export function localDateKey(date: Date, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+export function addDays(dateKey: string, days: number) {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export function lastEditableDates(todayKey: string) {
+  return Array.from({ length: 7 }, (_, index) => addDays(todayKey, -index));
+}
+
+export function monthStart(dateKey: string) {
+  return `${dateKey.slice(0, 7)}-01`;
+}
+
+export function mondayStart(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  const day = date.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setUTCDate(date.getUTCDate() + diff);
+  return date.toISOString().slice(0, 10);
+}
+
+export function periodRange(period: LeaderboardPeriod, todayKey: string) {
+  if (period === "daily") return { start: todayKey, end: todayKey };
+  if (period === "weekly") return { start: mondayStart(todayKey), end: todayKey };
+  if (period === "monthly") return { start: monthStart(todayKey), end: todayKey };
+  return { start: "0000-01-01", end: todayKey };
+}
+
+export function leaderboardRange(period: LeaderboardPeriod, todayKey: string, offset: number) {
+  if (period === "allTime") {
+    return { start: "0000-01-01", end: todayKey, label: offset === 0 ? "All time" : "All time" };
+  }
+  if (period === "daily") {
+    const dateKey = addDays(todayKey, -offset);
+    return {
+      start: dateKey,
+      end: dateKey,
+      label: offset === 0 ? "Today" : offset === 1 ? "Yesterday" : formatDate(dateKey)
+    };
+  }
+  if (period === "weekly") {
+    const currentStart = mondayStart(todayKey);
+    const start = addDays(currentStart, -offset * 7);
+    const end = offset === 0 ? todayKey : addDays(start, 6);
+    return {
+      start,
+      end,
+      label: offset === 0 ? "This week" : offset === 1 ? "Previous week" : `${formatDate(start)} - ${formatDate(end)}`
+    };
+  }
+  const currentMonth = monthStart(todayKey);
+  const start = shiftMonthStart(currentMonth, -offset);
+  const end = offset === 0 ? todayKey : addDays(shiftMonthStart(start, 1), -1);
+  return {
+    start,
+    end,
+    label: offset === 0 ? "This month" : offset === 1 ? "Previous month" : formatMonth(start)
+  };
+}
+
+function shiftMonthStart(dateKey: string, monthDelta: number) {
+  const date = new Date(`${dateKey.slice(0, 7)}-01T00:00:00Z`);
+  date.setUTCMonth(date.getUTCMonth() + monthDelta);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatMonth(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00Z`).toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric"
+  });
+}
+
+export function formatDate(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00Z`).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+export function passwordProblem(password: string) {
+  if (password.length < 8) return "Use at least 8 characters.";
+  if (!/[a-z]/.test(password)) return "Add a lowercase letter.";
+  if (!/[A-Z]/.test(password)) return "Add an uppercase letter.";
+  if (!/[0-9]/.test(password)) return "Add a number.";
+  return "";
+}
+
+export function passwordRules(password: string) {
+  return [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    { label: "One lowercase letter", met: /[a-z]/.test(password) },
+    { label: "One uppercase letter", met: /[A-Z]/.test(password) },
+    { label: "One number", met: /[0-9]/.test(password) }
+  ];
+}
+
+export function isAccountNotFoundError(message: string) {
+  const text = message.toLowerCase();
+  return text.includes("no account found") || text.includes("invalid login credentials");
+}
+
+export function readableError(error: unknown, context?: "signin" | "signup" | "otp" | "reset" | "rounds" | "profile") {
+  const raw = error instanceof Error ? error.message : String(error || "Something went wrong.");
+  const text = raw.toLowerCase();
+
+  if (text.includes("profiles_username_key") || (text.includes("username") && text.includes("duplicate"))) {
+    return "That username is already taken. Try a different username.";
+  }
+  if (
+    text.includes("profiles_email_key") ||
+    text.includes("email address already registered") ||
+    text.includes("user already registered") ||
+    (text.includes("email") && text.includes("duplicate"))
+  ) {
+    return "That email is already registered. Try signing in or reset your password.";
+  }
+  if (text.includes("profiles_phone_key") || (text.includes("phone") && text.includes("duplicate"))) {
+    return "That phone number is already registered. Try signing in with it.";
+  }
+  if (text.includes("username, email, or phone is already registered")) {
+    return "That username, email, or phone is already registered. Try changing one field or sign in.";
+  }
+  if (text.includes("email not confirmed")) {
+    return "Your email is not confirmed yet. Open the confirmation email, then sign in.";
+  }
+  if (text.includes("rate limit") || text.includes("too many requests") || text.includes("429")) {
+    return "Too many attempts. Please wait a few minutes before trying again.";
+  }
+  if (context === "otp" && (text.includes("invalid") || text.includes("expired") || text.includes("token"))) {
+    return "That OTP is invalid or expired. Request a new code and keep this tab open.";
+  }
+  if (context === "reset" && (text.includes("expired") || text.includes("invalid") || text.includes("session missing"))) {
+    return "That reset link is invalid or expired. Send yourself a fresh reset email.";
+  }
+  if (
+    context === "rounds" &&
+    (text.includes("row-level security") || text.includes("violates row-level security") || text.includes("editable"))
+  ) {
+    return "The database blocked this edit because that date is outside your 7-day edit window.";
+  }
+  if (text.includes("network")) return "Network error. Check your internet connection and try again.";
+  if (text.includes("bucket not found")) return "Storage bucket is missing. Run the latest Supabase Storage migration, then try again.";
+  return raw;
+}
+
+export function usernameHelpText() {
+  return "3-24 characters. Start with a letter. Lowercase letters, numbers, and underscores only.";
+}
+
+export function periodLabel(period: LeaderboardPeriod) {
+  if (period === "daily") return "Today";
+  if (period === "weekly") return "This week";
+  if (period === "monthly") return "This month";
+  return "All time";
+}
+
+export function cleanPhoneInput(phone: string) {
+  return phone.replace(/[^\d+]/g, "");
+}
+
+export function countryDialCode(countryName: string) {
+  return countries.find((country) => country.name === countryName)?.dialCode || "+";
+}
+
+export function countryPhoneExample(countryName: string) {
+  return countries.find((country) => country.name === countryName)?.example || "country code and number";
+}
+
+export function countryTimezones(countryName: string) {
+  return countries.find((country) => country.name === countryName)?.timezones || [detectTimezone()];
+}
+
+export function timezoneOptions(countryName: string, currentTimezone?: string) {
+  const detected = detectTimezone();
+  return Array.from(new Set([...countryTimezones(countryName), detected, currentTimezone].filter(Boolean) as string[]));
+}
+
+export function timezoneForCountry(countryName: string, currentTimezone?: string) {
+  const detected = detectTimezone();
+  const options = countryTimezones(countryName);
+  if (currentTimezone && options.includes(currentTimezone)) return currentTimezone;
+  if (options.includes(detected)) return detected;
+  return options[0] || detected;
+}
+
+export function localDayBoundaryText(timezone: string) {
+  return `Today is ${formatDate(localDateKey(new Date(), timezone))}. Your chanting day runs from 12:00 AM to 11:59 PM in ${timezone}. Weeks start on Monday.`;
+}
+
+export function normalizePhone(phone: string, countryName: string) {
+  const cleaned = cleanPhoneInput(phone);
+  if (!cleaned) return "";
+  if (cleaned.startsWith("+")) return `+${cleaned.slice(1).replace(/\D/g, "")}`;
+  const digits = cleaned.replace(/\D/g, "").replace(/^0+/, "");
+  const dialCode = countryDialCode(countryName);
+  if (dialCode === "+") return `+${digits}`;
+  return `${dialCode}${digits}`;
+}
+
+export function normalizeGroupCode(code: string) {
+  return code.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
+}
+
+export function groupCodeProblem(code: string) {
+  if (code.length < 6) return "Use at least 6 characters for the group code.";
+  if (!/[A-Z]/.test(code) || !/[0-9]/.test(code)) return "Use at least one letter and one number in the code.";
+  if (/^(.)\1+$/.test(code)) return "Avoid repeated-character codes.";
+  return "";
+}
+
+export function urlLooksLikePasswordRecovery() {
+  if (typeof window === "undefined") return false;
+  const urlText = `${window.location.search}${window.location.hash}`.toLowerCase();
+  return urlText.includes("type=recovery");
+}
+
+export function urlAuthError() {
+  if (typeof window === "undefined") return "";
+  const search = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  return (
+    search.get("error_description") ||
+    hash.get("error_description") ||
+    search.get("error") ||
+    hash.get("error") ||
+    ""
+  ).replace(/\+/g, " ");
+}
+
+export function createSeedState(): AppState {
+  const joinedAt = new Date().toISOString();
+  const users: UserProfile[] = [
+    {
+      id: "user_demo",
+      username: "gauranga_das",
+      email: "demo@example.com",
+      phone: "9999999999",
+      passwordHash: hashPassword("HareKrishna108"),
+      country: "India",
+      timezone: detectTimezone(),
+      displayName: "Gauranga Das",
+      avatarUrl: "",
+      joinedAt
+    },
+    {
+      id: "user_radha",
+      username: "radha_priya",
+      email: "radha@example.com",
+      phone: "8888888888",
+      passwordHash: hashPassword("HareKrishna108"),
+      country: "India",
+      timezone: "Asia/Kolkata",
+      displayName: "Radha Priya",
+      avatarUrl: "",
+      joinedAt
+    },
+    {
+      id: "user_madhava",
+      username: "madhava108",
+      email: "madhava@example.com",
+      phone: "7777777777",
+      passwordHash: hashPassword("HareKrishna108"),
+      country: "United States",
+      timezone: "America/New_York",
+      displayName: "Madhava 108",
+      avatarUrl: "",
+      joinedAt
+    }
+  ];
+  const today = localDateKey(new Date(), detectTimezone());
+  const yesterday = addDays(today, -1);
+  return {
+    users,
+    currentUserId: null,
+    chantTotals: [
+      { userId: "user_demo", localDate: today, rounds: 16, updatedAt: joinedAt },
+      { userId: "user_radha", localDate: today, rounds: 24, updatedAt: joinedAt },
+      { userId: "user_madhava", localDate: today, rounds: 16, updatedAt: joinedAt },
+      { userId: "user_demo", localDate: yesterday, rounds: 12, updatedAt: joinedAt },
+      { userId: "user_radha", localDate: yesterday, rounds: 18, updatedAt: joinedAt }
+    ],
+    groups: [
+      {
+        id: "group_japa",
+        name: "Morning Japa Circle",
+        code: "JAPA108",
+        ownerId: "user_demo",
+        imageUrl: "",
+        createdAt: joinedAt
+      }
+    ],
+    groupMembers: [
+      { groupId: "group_japa", userId: "user_demo", role: "owner", joinedAt },
+      { groupId: "group_japa", userId: "user_radha", role: "member", joinedAt }
+    ],
+    friendRequests: [
+      {
+        id: "friend_seed",
+        fromUserId: "user_radha",
+        toUserId: "user_demo",
+        status: "accepted",
+        createdAt: joinedAt
+      }
+    ],
+    moderationReports: []
+  };
+}
+
+export function loadState(): AppState {
+  if (typeof window === "undefined") return createSeedState();
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  if (!stored) return createSeedState();
+  try {
+    const parsed = JSON.parse(stored) as AppState;
+    return { ...parsed, moderationReports: parsed.moderationReports || [] };
+  } catch {
+    return createSeedState();
+  }
+}
+
+export function inRange(dateKey: string, start: string, end: string) {
+  return dateKey >= start && dateKey <= end;
+}
+
+export function sumRounds(totals: ChantTotal[], userId: string, period: LeaderboardPeriod, todayKey: string) {
+  const range = periodRange(period, todayKey);
+  return sumRoundsInRange(totals, userId, range.start, range.end);
+}
+
+export function sumRoundsInRange(totals: ChantTotal[], userId: string, start: string, end: string) {
+  return totals
+    .filter((total) => total.userId === userId && inRange(total.localDate, start, end))
+    .reduce((sum, total) => sum + total.rounds, 0);
+}
+
+export function roundsForDate(totals: ChantTotal[], userId: string, dateKey: string) {
+  return totals.find((total) => total.userId === userId && total.localDate === dateKey)?.rounds || 0;
+}
+
+export function recentChantingHistory(totals: ChantTotal[], userId: string, todayKey: string, days = 7) {
+  return Array.from({ length: days }, (_, index) => {
+    const dateKey = addDays(todayKey, -(days - 1 - index));
+    return {
+      dateKey,
+      rounds: roundsForDate(totals, userId, dateKey)
+    };
+  });
+}
+
+export function currentStreak(totals: ChantTotal[], userId: string, todayKey: string) {
+  let cursor = roundsForDate(totals, userId, todayKey) > 0 ? todayKey : addDays(todayKey, -1);
+  let streak = 0;
+  while (roundsForDate(totals, userId, cursor) > 0) {
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
+}
+
+export function bestStreak(totals: ChantTotal[], userId: string) {
+  const dates = totals
+    .filter((total) => total.userId === userId && total.rounds > 0)
+    .map((total) => total.localDate)
+    .sort();
+  let best = 0;
+  let current = 0;
+  let previous = "";
+
+  dates.forEach((dateKey) => {
+    current = previous && addDays(previous, 1) === dateKey ? current + 1 : 1;
+    best = Math.max(best, current);
+    previous = dateKey;
+  });
+
+  return best;
+}
+
+export function daysChantedThisMonth(totals: ChantTotal[], userId: string, todayKey: string) {
+  const start = monthStart(todayKey);
+  return totals.filter(
+    (total) => total.userId === userId && total.rounds > 0 && inRange(total.localDate, start, todayKey)
+  ).length;
+}
+
+export function computeMilestones(state: AppState, user: UserProfile, todayKey: string): Milestone[] {
+  const userTotals = state.chantTotals.filter((total) => total.userId === user.id);
+  const positiveEntries = userTotals.filter((total) => total.rounds > 0);
+  const totalRounds = sumRounds(state.chantTotals, user.id, "allTime", todayKey);
+  const streakBest = bestStreak(state.chantTotals, user.id);
+  const joinedGroupCount = state.groupMembers.filter((member) => member.userId === user.id).length;
+  const createdGroupCount = state.groups.filter((group) => group.ownerId === user.id).length;
+  const friendCount = state.friendRequests.filter(
+    (request) =>
+      request.status === "accepted" &&
+      (request.fromUserId === user.id || request.toUserId === user.id)
+  ).length;
+
+  return [
+    makeMilestone("first-entry", "First entry", "Log your first chanting rounds.", positiveEntries.length, 1),
+    makeMilestone("seven-day-streak", "7-day streak", "Chant on seven consecutive days.", streakBest, 7),
+    makeMilestone("thirty-day-streak", "30-day streak", "Chant on thirty consecutive days.", streakBest, 30),
+    makeMilestone("rounds-108", "108 rounds", "Reach 108 total rounds.", totalRounds, 108),
+    makeMilestone("rounds-1008", "1008 rounds", "Reach 1008 total rounds.", totalRounds, 1008),
+    makeMilestone("joined-group", "Joined a group", "Join or create your first group.", joinedGroupCount, 1),
+    makeMilestone("first-friend", "First friend", "Add your first accepted friend.", friendCount, 1),
+    makeMilestone("created-group", "Group creator", "Create your first chanting group.", createdGroupCount, 1)
+  ];
+}
+
+function makeMilestone(id: string, title: string, description: string, progress: number, target: number): Milestone {
+  return {
+    id,
+    title,
+    description,
+    earned: progress >= target,
+    progress: Math.min(progress, target),
+    target
+  };
+}
+
+export function rankUsers(
+  users: UserProfile[],
+  totals: ChantTotal[],
+  period: LeaderboardPeriod,
+  todayKey: string
+): RankedUser[] {
+  const range = periodRange(period, todayKey);
+  return rankUsersInRange(users, totals, range.start, range.end);
+}
+
+export function rankUsersInRange(
+  users: UserProfile[],
+  totals: ChantTotal[],
+  start: string,
+  end: string
+): RankedUser[] {
+  let previousScore: number | null = null;
+  let previousRank = 0;
+  return users
+    .map((user) => {
+      const entries = totals
+        .filter((total) => total.userId === user.id && inRange(total.localDate, start, end))
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      return {
+        user,
+        rounds: entries.reduce((sum, total) => sum + total.rounds, 0),
+        rank: 0,
+        hasEntry: entries.length > 0,
+        entryCount: entries.length,
+        lastEntryDate: entries.map((entry) => entry.localDate).sort().at(-1) || "",
+        lastUpdatedAt: entries[0]?.updatedAt || ""
+      };
+    })
+    .sort((a, b) => b.rounds - a.rounds || a.user.username.localeCompare(b.user.username))
+    .map((row, index) => {
+      const rank = previousScore === row.rounds ? previousRank : index + 1;
+      previousScore = row.rounds;
+      previousRank = rank;
+      return { ...row, rank };
+    });
+}
+
+export function fromProfileRow(row: ProfileRow): UserProfile {
+  return {
+    id: row.id,
+    username: row.username,
+    email: row.email,
+    phone: row.phone,
+    passwordHash: "",
+    country: row.country,
+    timezone: row.timezone,
+    displayName: row.display_name || row.username,
+    avatarUrl: row.avatar_url || "",
+    joinedAt: row.joined_at
+  };
+}
+
+export function fromChantTotalRow(row: ChantTotalRow): ChantTotal {
+  return {
+    userId: row.user_id,
+    localDate: row.local_date,
+    rounds: row.rounds,
+    updatedAt: row.updated_at
+  };
+}
+
+export function fromGroupRow(row: GroupRow): Group {
+  return {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    ownerId: row.owner_id,
+    imageUrl: row.image_url || "",
+    createdAt: row.created_at
+  };
+}
+
+export function fromFriendRequestRow(row: FriendRequestRow): FriendRequest {
+  return {
+    id: row.id,
+    fromUserId: row.from_user_id,
+    toUserId: row.to_user_id,
+    status: row.status,
+    createdAt: row.created_at
+  };
+}
+
+export function fromModerationReportRow(row: ModerationReportRow): ModerationReport {
+  return {
+    id: row.id,
+    reporterId: row.reporter_id,
+    reportedUserId: row.reported_user_id,
+    reason: row.reason,
+    details: row.details || "",
+    status: row.status,
+    createdAt: row.created_at
+  };
+}

@@ -1,0 +1,410 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  Bell,
+  CalendarDays,
+  Globe2,
+  HeartHandshake,
+  Home,
+  LineChart,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  X
+} from "lucide-react";
+import { publicSupabaseConfig, runtimeLabel } from "@/lib/config";
+import { supabase } from "@/lib/supabase";
+import { AboutPage } from "@/features/chanting/pages/AboutPage";
+import { AuthPanel } from "@/features/chanting/AuthPanel";
+import { useChanting } from "@/features/chanting/ChantingContext";
+import { FriendsPage } from "@/features/chanting/pages/FriendsPage";
+import { GlobalPage } from "@/features/chanting/pages/GlobalPage";
+import { GroupsPage } from "@/features/chanting/pages/GroupsPage";
+import { HomePage } from "@/features/chanting/pages/HomePage";
+import { ProfilePage } from "@/features/chanting/pages/ProfilePage";
+import { ActivityPage } from "@/features/chanting/pages/ActivityPage";
+import { AdminPage } from "@/features/chanting/pages/AdminPage";
+import {
+  bestStreak,
+  computeMilestones,
+  currentStreak,
+  formatDate,
+  sumRounds
+} from "@/features/chanting/domain";
+import { Avatar, MilestoneGrid } from "@/features/chanting/ui";
+import type { TabId } from "@/features/chanting/domain";
+
+const tabs = [
+  { id: "home", label: "Home", icon: Home },
+  { id: "groups", label: "Groups", icon: Users },
+  { id: "friends", label: "Friends", icon: HeartHandshake },
+  { id: "global", label: "Global", icon: Globe2 },
+  { id: "activity", label: "Activity", icon: LineChart },
+  { id: "profile", label: "Profile", icon: Settings },
+  { id: "admin", label: "Admin", icon: ShieldCheck, adminOnly: true },
+  { id: "about", label: "About", icon: Sparkles }
+] as const;
+
+export default function ChantingApp() {
+  const [activeTab, setActiveTab] = useState<TabId>("home");
+  const { authMode, currentUser, isLoaded } = useChanting();
+
+  if (!isLoaded) {
+    return <main className="grid min-h-screen place-items-center p-6">Loading...</main>;
+  }
+
+  if (authMode === "newPassword" || authMode === "checkEmail" || !currentUser) {
+    return <AuthPanel />;
+  }
+
+  return <AppShell activeTab={activeTab} onTabChange={setActiveTab} />;
+}
+
+function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (tab: TabId) => void }) {
+  const {
+    acceptFriendRequest,
+    currentUser,
+    emailVerified,
+    ensureFriendsData,
+    friends,
+    isAdmin,
+    message,
+    saveState,
+    selectedPublicUserId,
+    setSelectedPublicUserId,
+    state
+  } = useChanting();
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    ensureFriendsData();
+  }, [ensureFriendsData]);
+
+  const incomingRequestCount = currentUser
+    ? state.friendRequests.filter((request) => request.toUserId === currentUser.id && request.status === "pending").length
+    : 0;
+  const notifications = buildNotifications(state, currentUser?.id || "", emailVerified, message);
+  const urgentNotificationCount = notifications.filter((item) => item.tone !== "success").length;
+
+  return (
+    <main className="min-h-screen pb-24 lg:pb-0">
+      <header className="border-b border-saffron-200/70 bg-white/70 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            {currentUser?.avatarUrl ? (
+              <img
+                src={currentUser.avatarUrl}
+                alt=""
+                className="h-12 w-12 rounded-lg border border-saffron-200 object-cover shadow-soft"
+              />
+            ) : (
+              <div className="lotus-mark grid h-12 w-12 place-items-center rounded-lg text-lg font-black text-white shadow-soft">
+                HK
+              </div>
+            )}
+            <div>
+              <h1 className="text-lg font-bold tracking-normal text-saffron-900 sm:text-xl">Hare Krishna Leaderboard</h1>
+              <p className="truncate text-sm text-stone-600">Hare Krishna, {currentUser?.displayName || currentUser?.username}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-md px-2 py-2 text-xs font-black sm:px-3 sm:text-sm ${
+                publicSupabaseConfig.mode === "supabase"
+                  ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
+                  : publicSupabaseConfig.mode === "misconfigured"
+                    ? "bg-red-50 text-red-800 ring-1 ring-red-200"
+                    : "bg-stone-100 text-stone-700 ring-1 ring-stone-200"
+              }`}
+              title={[...publicSupabaseConfig.issues, ...publicSupabaseConfig.warnings].join(" ") || runtimeLabel(publicSupabaseConfig.mode)}
+            >
+              {runtimeLabel(publicSupabaseConfig.mode)}
+            </span>
+            <span className="max-w-full truncate rounded-md border border-peacock-200 bg-peacock-50 px-2 py-2 text-xs text-peacock-900 sm:px-3 sm:text-sm">
+              {currentUser?.country} | {currentUser?.timezone}
+            </span>
+            <div className="relative">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-stone-800 ring-1 ring-stone-200"
+                onClick={() => setShowNotifications((value) => !value)}
+              >
+                <Bell size={16} /> <span className="hidden sm:inline">Notifications</span>
+                {urgentNotificationCount > 0 && (
+                  <span className="rounded-md bg-saffron-500 px-2 py-0.5 text-xs font-black text-white">
+                    {urgentNotificationCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 z-20 mt-2 w-[min(360px,calc(100vw-2rem))] rounded-lg border border-saffron-200 bg-white p-3 shadow-soft">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="font-black text-stone-900">Notifications</p>
+                    <button
+                      type="button"
+                      className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700"
+                      onClick={() => setShowNotifications(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {notifications.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`rounded-md border px-3 py-2 text-sm ${
+                          item.tone === "success"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                            : item.tone === "warning"
+                              ? "border-saffron-200 bg-saffron-50 text-saffron-900"
+                              : "border-peacock-100 bg-peacock-50 text-peacock-900"
+                        }`}
+                      >
+                        <p className="font-black">{item.title}</p>
+                        <p>{item.body}</p>
+                        {item.action && (
+                          <button
+                            type="button"
+                            className="mt-2 rounded-md bg-white px-3 py-2 text-xs font-black text-stone-800 ring-1 ring-stone-200"
+                            onClick={async () => {
+                              if (item.action?.type === "accept-friend") {
+                                await acceptFriendRequest(item.action.requestId);
+                                setShowNotifications(false);
+                              }
+                              if (item.action?.type === "open-tab") {
+                                onTabChange(item.action.tab);
+                                setShowNotifications(false);
+                              }
+                            }}
+                          >
+                            {item.action.label}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              className="inline-flex items-center gap-2 rounded-md bg-stone-900 px-3 py-2 text-sm font-semibold text-white"
+              onClick={async () => {
+                if (supabase) await supabase.auth.signOut();
+                saveState({ ...state, currentUserId: null });
+              }}
+            >
+              <LogOut size={16} /> <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 gap-1 border-t border-saffron-200 bg-white/95 px-2 py-2 shadow-soft backdrop-blur sm:grid-cols-8 lg:sticky lg:top-6 lg:block lg:h-fit lg:rounded-lg lg:border lg:bg-white/80 lg:p-2">
+          {tabs.filter((tab) => !("adminOnly" in tab) || isAdmin).map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-center text-[11px] font-semibold transition sm:text-xs lg:mb-1 lg:flex-row lg:gap-3 lg:px-3 lg:py-3 lg:text-left lg:text-sm ${
+                  activeTab === tab.id
+                    ? "bg-saffron-500 text-white"
+                    : "text-stone-700 hover:bg-saffron-50 hover:text-saffron-900"
+                }`}
+                onClick={() => onTabChange(tab.id)}
+                title={tab.label}
+              >
+                {tab.id === "profile" && currentUser?.avatarUrl ? (
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt=""
+                    className={`h-[18px] w-[18px] rounded-sm object-cover ${
+                      activeTab === tab.id ? "ring-1 ring-white/70" : "ring-1 ring-saffron-200"
+                    }`}
+                  />
+                ) : (
+                  <Icon size={18} />
+                )}
+                <span className="max-w-full truncate lg:flex-1">{tab.label}</span>
+                {tab.id === "friends" && (incomingRequestCount > 0 || friends.length > 0) && (
+                  <span
+                    className={`absolute -mt-8 ml-8 rounded-md px-2 py-0.5 text-xs font-black lg:static lg:mt-0 lg:ml-0 lg:py-1 ${
+                      activeTab === tab.id ? "bg-white/20 text-white" : "bg-peacock-50 text-peacock-900"
+                    }`}
+                    title={incomingRequestCount > 0 ? "Pending friend requests" : "Accepted friends"}
+                  >
+                    {incomingRequestCount > 0 ? incomingRequestCount : friends.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <section className="min-w-0">
+          {message && (
+            <div className="mb-4 rounded-md border border-peacock-200 bg-peacock-50 px-4 py-3 text-sm font-semibold text-peacock-900">
+              {message}
+            </div>
+          )}
+          {activeTab === "home" && <HomePage />}
+          {activeTab === "groups" && <GroupsPage />}
+          {activeTab === "friends" && <FriendsPage />}
+          {activeTab === "global" && <GlobalPage />}
+          {activeTab === "activity" && <ActivityPage />}
+          {activeTab === "profile" && <ProfilePage />}
+          {activeTab === "admin" && <AdminPage />}
+          {activeTab === "about" && <AboutPage />}
+        </section>
+      </div>
+      {selectedPublicUserId && (
+        <PublicUserDialog userId={selectedPublicUserId} onClose={() => setSelectedPublicUserId("")} />
+      )}
+    </main>
+  );
+}
+
+function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const { currentUser, todayKey, state } = useChanting();
+  const user = state.users.find((item) => item.id === userId);
+  if (!user || !currentUser) return null;
+  const groupCount = state.groupMembers.filter((member) => member.userId === user.id).length;
+  const friendCount = state.friendRequests.filter(
+    (request) =>
+      request.status === "accepted" &&
+      (request.fromUserId === user.id || request.toUserId === user.id)
+  ).length;
+  const milestones = computeMilestones(state, user, todayKey);
+
+  return (
+    <div className="fixed inset-0 z-40 bg-stone-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className="mx-auto mt-6 max-h-[calc(100vh-3rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-saffron-200 bg-white p-5 shadow-soft">
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar src={user.avatarUrl} label={user.displayName || user.username} />
+            <div className="min-w-0">
+              <p className="truncate text-xl font-black text-stone-900">{user.displayName || user.username}</p>
+              <p className="truncate text-sm text-stone-600">@{user.username}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-stone-100 text-stone-700"
+            onClick={onClose}
+            aria-label="Close profile"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="mb-5 grid gap-3 sm:grid-cols-4">
+          <ProfileStat label="Today" value={sumRounds(state.chantTotals, user.id, "daily", todayKey)} />
+          <ProfileStat label="This week" value={sumRounds(state.chantTotals, user.id, "weekly", todayKey)} />
+          <ProfileStat label="Best streak" value={bestStreak(state.chantTotals, user.id)} />
+          <ProfileStat label="Groups" value={groupCount} />
+        </div>
+        <div className="mb-5 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm text-peacock-900">
+          <div className="flex items-center gap-2 font-black">
+            <CalendarDays size={16} />
+            Public profile
+          </div>
+          <p className="mt-1">
+            Joined {formatDate(user.joinedAt.slice(0, 10))}. {friendCount} accepted friend{friendCount === 1 ? "" : "s"}.
+            Current streak is {currentStreak(state.chantTotals, user.id, todayKey)} day{currentStreak(state.chantTotals, user.id, todayKey) === 1 ? "" : "s"}.
+          </p>
+        </div>
+        <MilestoneGrid milestones={milestones} limit={4} />
+      </div>
+    </div>
+  );
+}
+
+function ProfileStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
+      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
+      <p className="mt-1 text-2xl font-black text-stone-900">{value}</p>
+    </div>
+  );
+}
+
+function buildNotifications(
+  state: ReturnType<typeof useChanting>["state"],
+  currentUserId: string,
+  emailVerified: boolean | null,
+  message: string
+) {
+  const currentUser = state.users.find((user) => user.id === currentUserId);
+  const incoming = state.friendRequests.filter((request) => request.toUserId === currentUserId && request.status === "pending");
+  const outgoing = state.friendRequests.filter((request) => request.fromUserId === currentUserId && request.status === "pending");
+  const groups = state.groupMembers
+    .filter((member) => member.userId === currentUserId)
+    .map((member) => state.groups.find((group) => group.id === member.groupId))
+    .filter(Boolean);
+  const openReports = (state.moderationReports || []).filter((report) => report.reporterId === currentUserId && report.status === "open");
+  const items = [
+    ...incoming.map((request) => {
+      const sender = state.users.find((user) => user.id === request.fromUserId);
+      return {
+        id: `friend-${request.id}`,
+        tone: "warning" as const,
+        title: "Friend request",
+        body: `@${sender?.username || "Someone"} sent you a friend request.`,
+        action: { type: "accept-friend" as const, requestId: request.id, label: "Accept request" }
+      };
+    }),
+    ...outgoing.slice(0, 2).map((request) => {
+      const receiver = state.users.find((user) => user.id === request.toUserId);
+      return {
+        id: `outgoing-${request.id}`,
+        tone: "info" as const,
+        title: "Request pending",
+        body: `Waiting for @${receiver?.username || "that user"} to accept your friend request.`,
+        action: { type: "open-tab" as const, tab: "friends" as TabId, label: "View requests" }
+      };
+    }),
+    ...(emailVerified === false
+      ? [{
+          id: "email-unverified",
+          tone: "warning" as const,
+          title: "Email not verified",
+          body: "Confirm your email to keep account recovery reliable.",
+          action: { type: "open-tab" as const, tab: "profile" as TabId, label: "Open profile" }
+        }]
+      : []),
+    ...(openReports.length > 0
+      ? [{
+          id: "reports-open",
+          tone: "info" as const,
+          title: "Reports submitted",
+          body: `${openReports.length} report${openReports.length === 1 ? "" : "s"} waiting for future moderator review.`
+        }]
+      : []),
+    {
+      id: "groups-summary",
+      tone: "success" as const,
+      title: "Groups",
+      body: groups.length > 0 ? `You are in ${groups.length} group${groups.length === 1 ? "" : "s"}.` : "Create or join a group to start a group leaderboard.",
+      action: { type: "open-tab" as const, tab: "groups" as TabId, label: groups.length > 0 ? "View groups" : "Create group" }
+    },
+    {
+      id: "profile-summary",
+      tone: "success" as const,
+      title: "Profile",
+      body: currentUser?.avatarUrl ? "Your profile picture is set." : "Add a profile picture from Profile settings.",
+      action: { type: "open-tab" as const, tab: "profile" as TabId, label: "Open profile" }
+    },
+    ...(message
+      ? [{
+          id: "latest-message",
+          tone: "success" as const,
+          title: "Latest update",
+          body: message
+        }]
+      : [])
+  ];
+  return items;
+}

@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #fffaf0;
+  --foreground: #2e2114;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at top left, rgba(255, 201, 71, 0.24), transparent 28rem),
+    linear-gradient(135deg, #fffaf0 0%, #fff8e6 42%, #edf8f5 100%);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.lotus-mark {
+  background:
+    linear-gradient(135deg, rgba(245, 173, 24, 0.95), rgba(32, 142, 142, 0.95)),
+    url("data:image/svg+xml,%3Csvg width='140' height='140' viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(255,255,255,0.32)' stroke-width='3'%3E%3Cpath d='M70 26c12 17 12 36 0 58-12-22-12-41 0-58Z'/%3E%3Cpath d='M43 42c22 8 35 21 38 46-24-6-37-21-38-46Z'/%3E%3Cpath d='M97 42c-22 8-35 21-38 46 24-6 37-21 38-46Z'/%3E%3Cpath d='M24 77c29-2 48 7 58 28-29 4-49-5-58-28Z'/%3E%3Cpath d='M116 77c-29-2-48 7-58 28 29 4 49-5 58-28Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: cover;
+}
