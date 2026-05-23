@@ -48,7 +48,7 @@ export function HomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {(["daily", "weekly", "monthly", "allTime"] as LeaderboardPeriod[]).map((item) => (
           <MetricCard
             key={item}
@@ -62,26 +62,26 @@ export function HomePage() {
         <MilestoneGrid milestones={milestones} limit={4} />
       </Panel>
       <Panel title="Chanting consistency" icon={<Flame size={18} />}>
-        <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3">
+        <div className="grid gap-4 xl:grid-cols-[280px_1fr]">
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <div className="rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3 shadow-sm">
               <p className="text-sm font-bold text-stone-600">Current streak</p>
               <p className="mt-1 text-3xl font-black text-saffron-900">{streakNow}</p>
               <p className="text-sm text-stone-600">day{streakNow === 1 ? "" : "s"}</p>
             </div>
-            <div className="rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3">
+            <div className="rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 shadow-sm">
               <p className="text-sm font-bold text-stone-600">Best streak</p>
               <p className="mt-1 text-3xl font-black text-peacock-900">{streakBest}</p>
               <p className="text-sm text-stone-600">day{streakBest === 1 ? "" : "s"}</p>
             </div>
-            <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
+            <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 shadow-sm">
               <p className="text-sm font-bold text-stone-600">Days this month</p>
               <p className="mt-1 text-3xl font-black text-stone-900">{monthDays}</p>
               <p className="text-sm text-stone-600">with rounds logged</p>
             </div>
           </div>
-          <div className="rounded-md border border-stone-200 bg-white p-4">
-            <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-black text-stone-900">Last 7 days</p>
                 <p className="text-sm text-stone-600">Tap an editable date below in the rounds form to update it.</p>
@@ -114,8 +114,8 @@ export function HomePage() {
         </div>
       </Panel>
       <Panel title="Add or edit rounds" icon={<CalendarDays size={18} />}>
-        <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
-          <div className="rounded-lg border border-saffron-200 bg-saffron-50 p-4">
+        <div className="grid gap-5 xl:grid-cols-[240px_1fr]">
+          <div className="rounded-lg border border-saffron-200 bg-saffron-50 p-5 shadow-sm">
             <p className="text-sm font-bold text-stone-600">Saved for selected date</p>
             <p className="mt-2 text-5xl font-black text-saffron-900">{currentRounds}</p>
             <p className="mt-2 text-sm text-stone-600">{formatDate(selectedDate || todayKey)}</p>
@@ -125,7 +125,7 @@ export function HomePage() {
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
                 <select
-                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-3"
+                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
                   value={selectedDate}
                   onChange={(event) => {
                     const nextDate = event.target.value;
@@ -164,8 +164,8 @@ export function HomePage() {
                   <button
                     key={amount}
                     type="button"
-                    className={`rounded-md px-3 py-3 font-black ${
-                      amount < 0 ? "bg-stone-100 text-stone-800" : "bg-peacock-50 text-peacock-900"
+                    className={`rounded-md px-3 py-3 font-black ring-1 transition ${
+                      amount < 0 ? "bg-stone-100 text-stone-800 ring-stone-200 hover:bg-stone-200" : "bg-peacock-50 text-peacock-900 ring-peacock-100 hover:bg-peacock-100"
                     }`}
                     onClick={() => {
                       setPreviousDraft(draftRounds);
@@ -178,7 +178,7 @@ export function HomePage() {
                 ))}
                 <button
                   type="button"
-                  className="rounded-md bg-stone-100 px-3 py-3 font-black text-stone-800"
+                  className="rounded-md bg-stone-100 px-3 py-3 font-black text-stone-800 ring-1 ring-stone-200 transition hover:bg-stone-200"
                   onClick={() => {
                     if (previousDraft === null) return;
                     setRoundInput(String(previousDraft));
@@ -191,7 +191,7 @@ export function HomePage() {
               </div>
               <button
                 type="button"
-                className="rounded-md bg-saffron-500 px-5 py-3 font-bold text-white"
+                className="rounded-md bg-saffron-500 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-saffron-600"
                 onClick={() => {
                   setPreviousDraft(null);
                   setDailyRounds(selectedDate, draftRounds);
@@ -201,7 +201,7 @@ export function HomePage() {
                 Save exact total
               </button>
             </div>
-            <div className="rounded-md bg-stone-50 px-4 py-3 text-sm text-stone-600">
+            <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
               Draft total: <b className="text-stone-900">{draftRounds}</b>
               {draftDelta !== 0 && <span> ({draftDelta > 0 ? `+${draftDelta}` : draftDelta} from saved)</span>}
               <span> Daily maximum is {MAX_DAILY_ROUNDS}.</span>

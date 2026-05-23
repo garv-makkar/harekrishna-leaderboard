@@ -9,6 +9,7 @@ import {
   Home,
   LineChart,
   LogOut,
+  Menu,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -78,174 +79,212 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
     state
   } = useChanting();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
 
   useEffect(() => {
     ensureFriendsData();
   }, [ensureFriendsData]);
+
+  useEffect(() => {
+    setShowMobileNav(false);
+    setShowNotifications(false);
+  }, [activeTab]);
 
   const incomingRequestCount = currentUser
     ? state.friendRequests.filter((request) => request.toUserId === currentUser.id && request.status === "pending").length
     : 0;
   const notifications = buildNotifications(state, currentUser?.id || "", emailVerified, message);
   const urgentNotificationCount = notifications.filter((item) => item.tone !== "success").length;
+  const activeTabLabel = tabs.find((tab) => tab.id === activeTab)?.label || "Dashboard";
+
+  const handleTabChange = (tab: TabId) => {
+    onTabChange(tab);
+    setShowMobileNav(false);
+  };
+
+  const signOut = async () => {
+    if (supabase) await supabase.auth.signOut();
+    saveState({ ...state, currentUserId: null });
+  };
 
   return (
-    <main className="min-h-screen pb-24 lg:pb-0">
-      <header className="border-b border-saffron-200/70 bg-white/70 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            {currentUser?.avatarUrl ? (
-              <img
-                src={currentUser.avatarUrl}
-                alt=""
-                className="h-12 w-12 rounded-lg border border-saffron-200 object-cover shadow-soft"
-              />
-            ) : (
-              <div className="lotus-mark grid h-12 w-12 place-items-center rounded-lg text-lg font-black text-white shadow-soft">
-                HK
-              </div>
-            )}
-            <div>
-              <h1 className="text-lg font-bold tracking-normal text-saffron-900 sm:text-xl">Hare Krishna Leaderboard</h1>
-              <p className="truncate text-sm text-stone-600">Hare Krishna, {currentUser?.displayName || currentUser?.username}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`rounded-md px-2 py-2 text-xs font-black sm:px-3 sm:text-sm ${
-                publicSupabaseConfig.mode === "supabase"
-                  ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
-                  : publicSupabaseConfig.mode === "misconfigured"
-                    ? "bg-red-50 text-red-800 ring-1 ring-red-200"
-                    : "bg-stone-100 text-stone-700 ring-1 ring-stone-200"
-              }`}
-              title={[...publicSupabaseConfig.issues, ...publicSupabaseConfig.warnings].join(" ") || runtimeLabel(publicSupabaseConfig.mode)}
-            >
-              {runtimeLabel(publicSupabaseConfig.mode)}
-            </span>
-            <span className="max-w-full truncate rounded-md border border-peacock-200 bg-peacock-50 px-2 py-2 text-xs text-peacock-900 sm:px-3 sm:text-sm">
-              {currentUser?.country} | {currentUser?.timezone}
-            </span>
-            <div className="relative">
+    <main className="min-h-screen">
+      {showMobileNav && (
+        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            className="absolute inset-0 bg-stone-950/45 backdrop-blur-sm"
+            aria-label="Close menu"
+            onClick={() => setShowMobileNav(false)}
+          />
+          <aside className="relative flex h-full w-[min(340px,88vw)] flex-col border-r border-saffron-200 bg-white shadow-soft">
+            <div className="flex items-center justify-between border-b border-saffron-100 px-4 py-4">
+              <BrandLockup compact />
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-semibold text-stone-800 ring-1 ring-stone-200"
-                onClick={() => setShowNotifications((value) => !value)}
+                className="grid h-10 w-10 place-items-center rounded-md bg-stone-100 text-stone-700"
+                onClick={() => setShowMobileNav(false)}
+                aria-label="Close menu"
               >
-                <Bell size={16} /> <span className="hidden sm:inline">Notifications</span>
-                {urgentNotificationCount > 0 && (
-                  <span className="rounded-md bg-saffron-500 px-2 py-0.5 text-xs font-black text-white">
-                    {urgentNotificationCount}
-                  </span>
-                )}
+                <X size={18} />
               </button>
-              {showNotifications && (
-                <div className="absolute right-0 z-20 mt-2 w-[min(360px,calc(100vw-2rem))] rounded-lg border border-saffron-200 bg-white p-3 shadow-soft">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="font-black text-stone-900">Notifications</p>
-                    <button
-                      type="button"
-                      className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700"
-                      onClick={() => setShowNotifications(false)}
-                    >
-                      Close
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {notifications.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`rounded-md border px-3 py-2 text-sm ${
-                          item.tone === "success"
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                            : item.tone === "warning"
-                              ? "border-saffron-200 bg-saffron-50 text-saffron-900"
-                              : "border-peacock-100 bg-peacock-50 text-peacock-900"
-                        }`}
-                      >
-                        <p className="font-black">{item.title}</p>
-                        <p>{item.body}</p>
-                        {item.action && (
-                          <button
-                            type="button"
-                            className="mt-2 rounded-md bg-white px-3 py-2 text-xs font-black text-stone-800 ring-1 ring-stone-200"
-                            onClick={async () => {
-                              if (item.action?.type === "accept-friend") {
-                                await acceptFriendRequest(item.action.requestId);
-                                setShowNotifications(false);
-                              }
-                              if (item.action?.type === "open-tab") {
-                                onTabChange(item.action.tab);
-                                setShowNotifications(false);
-                              }
-                            }}
-                          >
-                            {item.action.label}
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-            <button
-              className="inline-flex items-center gap-2 rounded-md bg-stone-900 px-3 py-2 text-sm font-semibold text-white"
-              onClick={async () => {
-                if (supabase) await supabase.auth.signOut();
-                saveState({ ...state, currentUserId: null });
-              }}
-            >
-              <LogOut size={16} /> <span className="hidden sm:inline">Sign out</span>
-            </button>
-          </div>
+            <NavigationList
+              activeTab={activeTab}
+              currentUserAvatar={currentUser?.avatarUrl || ""}
+              friendsCount={friends.length}
+              incomingRequestCount={incomingRequestCount}
+              isAdmin={isAdmin}
+              onTabChange={handleTabChange}
+            />
+            <div className="mt-auto border-t border-saffron-100 p-4">
+              <UserCard />
+              <button
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-stone-900 px-3 py-3 text-sm font-semibold text-white"
+                onClick={signOut}
+              >
+                <LogOut size={16} /> Sign out
+              </button>
+            </div>
+          </aside>
         </div>
-      </header>
+      )}
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-5 sm:px-6 lg:grid-cols-[240px_1fr] lg:px-8">
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 gap-1 border-t border-saffron-200 bg-white/95 px-2 py-2 shadow-soft backdrop-blur sm:grid-cols-8 lg:sticky lg:top-6 lg:block lg:h-fit lg:rounded-lg lg:border lg:bg-white/80 lg:p-2">
-          {tabs.filter((tab) => !("adminOnly" in tab) || isAdmin).map((tab) => {
-            const Icon = tab.icon;
-            return (
+      <div className="mx-auto grid min-h-screen max-w-[1500px] lg:grid-cols-[284px_minmax(0,1fr)]">
+        <aside className="hidden border-r border-saffron-200/80 bg-white/65 px-4 py-5 backdrop-blur lg:block">
+          <div className="sticky top-5 flex h-[calc(100vh-2.5rem)] flex-col rounded-lg border border-saffron-200 bg-white/90 p-4 shadow-soft">
+            <BrandLockup />
+            <NavigationList
+              activeTab={activeTab}
+              currentUserAvatar={currentUser?.avatarUrl || ""}
+              friendsCount={friends.length}
+              incomingRequestCount={incomingRequestCount}
+              isAdmin={isAdmin}
+              onTabChange={handleTabChange}
+            />
+            <div className="mt-auto space-y-3">
+              <UserCard />
               <button
-                key={tab.id}
-                type="button"
-                className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-center text-[11px] font-semibold transition sm:text-xs lg:mb-1 lg:flex-row lg:gap-3 lg:px-3 lg:py-3 lg:text-left lg:text-sm ${
-                  activeTab === tab.id
-                    ? "bg-saffron-500 text-white"
-                    : "text-stone-700 hover:bg-saffron-50 hover:text-saffron-900"
-                }`}
-                onClick={() => onTabChange(tab.id)}
-                title={tab.label}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-stone-900 px-3 py-3 text-sm font-semibold text-white"
+                onClick={signOut}
               >
-                {tab.id === "profile" && currentUser?.avatarUrl ? (
-                  <img
-                    src={currentUser.avatarUrl}
-                    alt=""
-                    className={`h-[18px] w-[18px] rounded-sm object-cover ${
-                      activeTab === tab.id ? "ring-1 ring-white/70" : "ring-1 ring-saffron-200"
-                    }`}
-                  />
-                ) : (
-                  <Icon size={18} />
-                )}
-                <span className="max-w-full truncate lg:flex-1">{tab.label}</span>
-                {tab.id === "friends" && (incomingRequestCount > 0 || friends.length > 0) && (
-                  <span
-                    className={`absolute -mt-8 ml-8 rounded-md px-2 py-0.5 text-xs font-black lg:static lg:mt-0 lg:ml-0 lg:py-1 ${
-                      activeTab === tab.id ? "bg-white/20 text-white" : "bg-peacock-50 text-peacock-900"
-                    }`}
-                    title={incomingRequestCount > 0 ? "Pending friend requests" : "Accepted friends"}
-                  >
-                    {incomingRequestCount > 0 ? incomingRequestCount : friends.length}
-                  </span>
-                )}
+                <LogOut size={16} /> Sign out
               </button>
-            );
-          })}
-        </nav>
+            </div>
+          </div>
+        </aside>
 
-        <section className="min-w-0">
+        <div className="min-w-0">
+          <header className="sticky top-0 z-30 border-b border-saffron-200/80 bg-white/82 backdrop-blur">
+            <div className="flex min-h-[72px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-saffron-200 bg-white text-stone-800 shadow-sm lg:hidden"
+                  onClick={() => setShowMobileNav(true)}
+                  aria-label="Open menu"
+                >
+                  <Menu size={22} />
+                </button>
+                <div className="lg:hidden">
+                  <BrandLockup compact />
+                </div>
+                <div className="hidden min-w-0 lg:block">
+                  <p className="text-sm font-bold text-stone-500">Dashboard</p>
+                  <h1 className="truncate text-2xl font-black tracking-normal text-stone-950">{activeTabLabel}</h1>
+                </div>
+              </div>
+              <div className="flex min-w-0 items-center justify-end gap-2">
+                <span
+                  className={`hidden rounded-md px-3 py-2 text-xs font-black sm:inline-flex ${
+                    publicSupabaseConfig.mode === "supabase"
+                      ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
+                      : publicSupabaseConfig.mode === "misconfigured"
+                        ? "bg-red-50 text-red-800 ring-1 ring-red-200"
+                        : "bg-stone-100 text-stone-700 ring-1 ring-stone-200"
+                  }`}
+                  title={[...publicSupabaseConfig.issues, ...publicSupabaseConfig.warnings].join(" ") || runtimeLabel(publicSupabaseConfig.mode)}
+                >
+                  {runtimeLabel(publicSupabaseConfig.mode)}
+                </span>
+                <span className="hidden max-w-[260px] truncate rounded-md border border-peacock-200 bg-peacock-50 px-3 py-2 text-xs font-bold text-peacock-900 md:inline-flex">
+                  {currentUser?.country} | {currentUser?.timezone}
+                </span>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm"
+                    onClick={() => setShowNotifications((value) => !value)}
+                  >
+                    <Bell size={17} />
+                    <span className="hidden sm:inline">Notifications</span>
+                    {urgentNotificationCount > 0 && (
+                      <span className="rounded-md bg-saffron-500 px-2 py-0.5 text-xs font-black text-white">
+                        {urgentNotificationCount}
+                      </span>
+                    )}
+                  </button>
+                  {showNotifications && (
+                    <div className="absolute right-0 z-30 mt-3 w-[min(380px,calc(100vw-2rem))] rounded-lg border border-saffron-200 bg-white p-3 shadow-soft">
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <p className="font-black text-stone-900">Notifications</p>
+                        <button
+                          type="button"
+                          className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700"
+                          onClick={() => setShowNotifications(false)}
+                        >
+                          Close
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {notifications.map((item) => (
+                          <div
+                            key={item.id}
+                            className={`rounded-md border px-3 py-2 text-sm ${
+                              item.tone === "success"
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                                : item.tone === "warning"
+                                  ? "border-saffron-200 bg-saffron-50 text-saffron-900"
+                                  : "border-peacock-100 bg-peacock-50 text-peacock-900"
+                            }`}
+                          >
+                            <p className="font-black">{item.title}</p>
+                            <p>{item.body}</p>
+                            {item.action && (
+                              <button
+                                type="button"
+                                className="mt-2 rounded-md bg-white px-3 py-2 text-xs font-black text-stone-800 ring-1 ring-stone-200"
+                                onClick={async () => {
+                                  if (item.action?.type === "accept-friend") {
+                                    await acceptFriendRequest(item.action.requestId);
+                                    setShowNotifications(false);
+                                  }
+                                  if (item.action?.type === "open-tab") {
+                                    handleTabChange(item.action.tab);
+                                    setShowNotifications(false);
+                                  }
+                                }}
+                              >
+                                {item.action.label}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button
+                  className="hidden h-11 items-center gap-2 rounded-md bg-stone-900 px-3 text-sm font-semibold text-white sm:inline-flex lg:hidden"
+                  onClick={signOut}
+                >
+                  <LogOut size={16} /> Sign out
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <section className="min-w-0 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
           {message && (
             <div className="mb-4 rounded-md border border-peacock-200 bg-peacock-50 px-4 py-3 text-sm font-semibold text-peacock-900">
               {message}
@@ -261,10 +300,112 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
           {activeTab === "about" && <AboutPage />}
         </section>
       </div>
+      </div>
       {selectedPublicUserId && (
         <PublicUserDialog userId={selectedPublicUserId} onClose={() => setSelectedPublicUserId("")} />
       )}
     </main>
+  );
+}
+
+function BrandLockup({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className={`flex min-w-0 items-center gap-3 ${compact ? "" : "mb-5"}`}>
+      <div className={`${compact ? "h-10 w-10 text-sm" : "h-12 w-12 text-lg"} lotus-mark grid shrink-0 place-items-center rounded-lg font-black text-white shadow-soft`}>
+        HK
+      </div>
+      <div className="min-w-0">
+        <p className={`${compact ? "text-base" : "text-lg"} truncate font-black tracking-normal text-saffron-900`}>
+          Hare Krishna
+        </p>
+        <p className="truncate text-xs font-bold uppercase text-stone-500">Leaderboard</p>
+      </div>
+    </div>
+  );
+}
+
+function NavigationList({
+  activeTab,
+  currentUserAvatar,
+  friendsCount,
+  incomingRequestCount,
+  isAdmin,
+  onTabChange
+}: {
+  activeTab: TabId;
+  currentUserAvatar: string;
+  friendsCount: number;
+  incomingRequestCount: number;
+  isAdmin: boolean;
+  onTabChange: (tab: TabId) => void;
+}) {
+  return (
+    <nav className="mt-4 space-y-1 overflow-y-auto px-4 pb-4 lg:mt-0 lg:px-0">
+      {tabs.filter((tab) => !("adminOnly" in tab) || isAdmin).map((tab) => {
+        const Icon = tab.icon;
+        const badgeValue = tab.id === "friends" ? incomingRequestCount || friendsCount : 0;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            className={`group flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-bold transition ${
+              activeTab === tab.id
+                ? "bg-saffron-500 text-white shadow-sm"
+                : "text-stone-700 hover:bg-saffron-50 hover:text-saffron-900"
+            }`}
+            onClick={() => onTabChange(tab.id)}
+          >
+            <span
+              className={`grid h-9 w-9 shrink-0 place-items-center rounded-md ${
+                activeTab === tab.id ? "bg-white/18 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200 group-hover:text-saffron-800"
+              }`}
+            >
+              {tab.id === "profile" && currentUserAvatar ? (
+                <img
+                  src={currentUserAvatar}
+                  alt=""
+                  className={`h-6 w-6 rounded-sm object-cover ${
+                    activeTab === tab.id ? "ring-1 ring-white/70" : "ring-1 ring-saffron-200"
+                  }`}
+                />
+              ) : (
+                <Icon size={18} />
+              )}
+            </span>
+            <span className="min-w-0 flex-1 truncate">{tab.label}</span>
+            {badgeValue > 0 && (
+              <span
+                className={`rounded-md px-2 py-1 text-xs font-black ${
+                  activeTab === tab.id ? "bg-white/20 text-white" : "bg-peacock-50 text-peacock-900"
+                }`}
+                title={incomingRequestCount > 0 ? "Pending friend requests" : "Accepted friends"}
+              >
+                {badgeValue}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+function UserCard() {
+  const { currentUser } = useChanting();
+  if (!currentUser) return null;
+  return (
+    <div className="rounded-lg border border-peacock-100 bg-peacock-50/80 p-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <Avatar src={currentUser.avatarUrl} label={currentUser.displayName || currentUser.username} />
+        <div className="min-w-0">
+          <p className="truncate font-black text-stone-900">{currentUser.displayName || currentUser.username}</p>
+          <p className="truncate text-sm text-stone-600">@{currentUser.username}</p>
+        </div>
+      </div>
+      <p className="mt-3 truncate text-xs font-bold text-peacock-900">
+        {currentUser.country} | {currentUser.timezone}
+      </p>
+    </div>
   );
 }
 

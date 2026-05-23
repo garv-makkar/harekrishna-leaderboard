@@ -72,7 +72,7 @@ export function GroupsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
         <CreateGroupForm />
         <JoinGroupForm />
       </div>
@@ -80,18 +80,18 @@ export function GroupsPage() {
         {joinedGroups.length === 0 ? (
           <EmptyState text="Create or join a group to see its leaderboard." />
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 xl:grid-cols-2">
             {joinedGroups.map((group) => (
               <div
                 key={group.id}
-                className={`rounded-md border p-4 ${
+                className={`rounded-lg border p-4 shadow-sm ${
                   selectedGroup?.id === group.id ? "border-saffron-500 bg-saffron-50" : "border-stone-200 bg-white"
                 }`}
               >
                 <button
                   type="button"
                   onClick={() => setSelectedGroupId(group.id)}
-                  className="flex w-full items-center justify-between text-left"
+                  className="flex w-full items-center justify-between gap-3 text-left"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar src={group.imageUrl} label={group.name} />
@@ -134,7 +134,7 @@ export function GroupsPage() {
           ) : selectedRole === "moderator" ? (
             <GroupOwnerControls group={selectedGroup} role={selectedRole} />
           ) : (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
+            <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-black text-stone-900">Member controls</p>
                 <p className="text-sm text-stone-600">You can leave this group. Your chanting history stays on your profile.</p>
@@ -359,7 +359,7 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
     <div className="space-y-5">
       {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
       {canEditGroup ? (
-        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
           <form className="space-y-3" onSubmit={updateGroup}>
             <Field label="Group name" value={name} onChange={setName} required />
             <Field
@@ -374,7 +374,7 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
               Save group
             </button>
           </form>
-          <div className="space-y-3 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
             <div className="flex items-center gap-2">
               <Trash2 size={18} />
               <p className="font-black">Delete group</p>
@@ -402,7 +402,7 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
           Moderators can remove regular members and report profiles. Only owners can edit group details, change codes, promote moderators, or delete the group.
         </InlineNotice>
       )}
-      <div className="rounded-md border border-stone-200 bg-white p-4">
+      <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="font-black text-stone-900">Members</p>
@@ -418,8 +418,8 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
         </div>
         <div className="space-y-2">
           {members.map(({ membership, user }) => (
-            <div key={user.id} className="rounded-md border border-stone-100 bg-stone-50 p-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <div key={user.id} className="rounded-lg border border-stone-100 bg-stone-50 p-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar src={user.avatarUrl} label={user.displayName || user.username} />
                   <div className="min-w-0">
@@ -430,7 +430,7 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 md:justify-end">
                   <ModerationReportButton userId={user.id} username={user.username} />
                   {role === "owner" && membership.role === "member" && (
                     <button
@@ -532,7 +532,7 @@ function GroupImagePicker({
   };
 
   return (
-    <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+    <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           {imageUrl ? (

@@ -36,7 +36,7 @@ export function Field({
     <label className="block">
       <span className="mb-1 block text-sm font-bold text-stone-700">{label}</span>
       <input
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 outline-none focus:border-saffron-500"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
         name={name}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -67,7 +67,7 @@ export function TimezoneSelect({
     <label className="block">
       <span className="mb-1 block text-sm font-bold text-stone-700">Timezone</span>
       <select
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 outline-none focus:border-saffron-500"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
@@ -93,7 +93,7 @@ export function InlineNotice({ children, tone }: { children: React.ReactNode; to
         ? "border-emerald-200 bg-emerald-50 text-emerald-800"
         : "border-peacock-200 bg-peacock-50 text-peacock-900";
   return (
-    <div className={`rounded-md border px-4 py-3 text-sm font-semibold leading-5 ${toneClass}`}>
+    <div className={`rounded-md border px-4 py-3 text-sm font-semibold leading-5 shadow-sm ${toneClass}`}>
       {children}
     </div>
   );
@@ -107,7 +107,7 @@ export function PasswordChecklist({
   touched: boolean;
 }) {
   return (
-    <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
+    <div className="rounded-md border border-stone-200 bg-stone-50/90 px-4 py-3">
       <p className="mb-2 text-xs font-black uppercase tracking-wide text-stone-500">Password requirements</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {rules.map((rule) => (
@@ -134,10 +134,12 @@ export function PasswordChecklist({
 
 export function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-saffron-200 bg-white/85 p-4 shadow-soft sm:p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="text-saffron-700">{icon}</span>
-        <h2 className="text-lg font-black tracking-normal text-stone-900">{title}</h2>
+    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-4 shadow-soft sm:p-5">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100">
+          {icon}
+        </span>
+        <h2 className="min-w-0 truncate text-lg font-black tracking-normal text-stone-900">{title}</h2>
       </div>
       {children}
     </section>
@@ -146,9 +148,14 @@ export function Panel({ title, icon, children }: { title: string; icon: React.Re
 
 export function MetricCard({ label, value, note }: { label: string; value: number; note: string }) {
   return (
-    <div className="rounded-lg border border-saffron-200 bg-white/85 p-4 shadow-soft sm:p-5">
-      <p className="text-sm font-bold capitalize text-stone-500">{label}</p>
-      <p className="mt-2 text-3xl font-black text-saffron-900 sm:text-4xl">{value}</p>
+    <div className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/90 p-4 shadow-soft sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold capitalize text-stone-500">{label}</p>
+          <p className="mt-2 text-3xl font-black text-saffron-900 sm:text-4xl">{value}</p>
+        </div>
+        <span className="mt-1 h-3 w-3 shrink-0 rounded-full bg-peacock-400" />
+      </div>
       <p className="mt-2 text-sm text-stone-600">{note}</p>
     </div>
   );
@@ -219,13 +226,13 @@ export function PeriodTabs({
   options: LeaderboardPeriod[];
 }) {
   return (
-    <div className="mb-4 flex flex-wrap gap-2">
+    <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
       {options.map((option) => (
         <button
           key={option}
           type="button"
-          className={`rounded-md px-3 py-2 text-sm font-bold capitalize ${
-            value === option ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700"
+          className={`rounded-md px-3 py-2 text-sm font-bold capitalize transition ${
+            value === option ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
           }`}
           onClick={() => onChange(option)}
         >
@@ -249,14 +256,14 @@ export function PeriodHistoryControls({
     <div className="mb-4 flex flex-wrap items-center gap-2">
       <button
         type="button"
-        className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
+        className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-stone-700 shadow-sm"
         onClick={() => onChange(offset + 1)}
       >
         Previous
       </button>
       <button
         type="button"
-        className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700 disabled:text-stone-400"
+        className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-stone-700 shadow-sm disabled:text-stone-400"
         disabled={offset === 0}
         onClick={() => onChange(Math.max(0, offset - 1))}
       >
@@ -264,7 +271,7 @@ export function PeriodHistoryControls({
       </button>
       <button
         type="button"
-        className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900"
+        className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100"
         onClick={() => onChange(0)}
       >
         Current
@@ -314,7 +321,7 @@ export function Leaderboard({
           </span>
         </div>
       )}
-      <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-900">
+      <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50/90 px-4 py-3 text-sm leading-6 text-peacock-900">
         Leaderboard totals are self-entered by users. Rows show whether a user logged an entry for this period and when their visible total was last updated.
       </div>
       {activeRows.length === 0 && (
@@ -364,7 +371,7 @@ export function Leaderboard({
           </div>
         </div>
       )}
-      <div className="overflow-hidden rounded-lg border border-stone-200">
+      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
         {visibleRows.map((row) => {
           const isCurrent = row.user.id === currentUserId;
           const isTied = row.rounds > 0 && activeRows.some((other) => other.user.id !== row.user.id && other.rank === row.rank && other.rounds === row.rounds);
@@ -372,11 +379,13 @@ export function Leaderboard({
             <div
               key={row.user.id}
               className={`grid grid-cols-[52px_1fr] items-center gap-3 border-b border-stone-100 px-3 py-3 last:border-b-0 sm:grid-cols-[70px_1fr_92px] sm:px-4 ${
-                isCurrent ? "bg-saffron-50" : "bg-white"
+                isCurrent ? "bg-saffron-50/90 shadow-[inset_4px_0_0_#d98f08]" : "bg-white"
               }`}
             >
               <div>
-                <p className="text-xl font-black text-stone-900">#{row.rank}</p>
+                <p className="inline-flex min-w-10 justify-center rounded-md bg-stone-100 px-2 py-1 text-lg font-black text-stone-900">
+                  #{row.rank}
+                </p>
                 {isTied && <p className="text-xs font-bold text-peacock-700">Tied</p>}
               </div>
               <div className="flex min-w-0 items-center gap-3">
@@ -410,8 +419,8 @@ export function Leaderboard({
                 </div>
               </div>
               <div className="col-span-2 text-right sm:col-span-1">
-                <div className={`rounded-md px-3 py-2 font-black ${
-                  row.rounds > 0 ? "bg-peacock-50 text-peacock-900" : row.hasEntry ? "bg-stone-100 text-stone-700" : "bg-stone-50 text-stone-500"
+                <div className={`rounded-md px-3 py-2 font-black ring-1 ${
+                  row.rounds > 0 ? "bg-peacock-50 text-peacock-900 ring-peacock-100" : row.hasEntry ? "bg-stone-100 text-stone-700 ring-stone-200" : "bg-stone-50 text-stone-500 ring-stone-100"
                 }`}>
                   {row.rounds}
                 </div>
@@ -454,7 +463,7 @@ function freshnessText(row: RankedUser) {
 
 export function Avatar({ src, label }: { src: string; label: string }) {
   if (src) {
-    return <img src={src} alt="" className="h-11 w-11 rounded-md object-cover" />;
+    return <img src={src} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover ring-1 ring-stone-200" />;
   }
   return (
     <div className="lotus-mark grid h-11 w-11 shrink-0 place-items-center rounded-md text-sm font-black text-white">
@@ -464,5 +473,5 @@ export function Avatar({ src, label }: { src: string; label: string }) {
 }
 
 export function EmptyState({ text }: { text: string }) {
-  return <p className="rounded-md bg-stone-50 px-4 py-5 text-sm text-stone-600">{text}</p>;
+  return <p className="rounded-md border border-dashed border-stone-200 bg-stone-50/80 px-4 py-5 text-sm text-stone-600">{text}</p>;
 }

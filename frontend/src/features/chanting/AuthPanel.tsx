@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Plus, ShieldCheck } from "lucide-react";
+import { Flame, Plus, ShieldCheck, Trophy, Users } from "lucide-react";
 import { publicSupabaseConfig, runtimeLabel } from "@/lib/config";
 import { supabase } from "@/lib/supabase";
 import type { UserProfile } from "@/lib/types";
@@ -38,19 +38,25 @@ export function AuthPanel() {
   const { authMode, message } = useChanting();
 
   return (
-    <main className="grid min-h-screen place-items-center px-4 py-8">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-lg border border-saffron-200 bg-white shadow-soft lg:grid-cols-[1fr_440px]">
-        <section className="bg-saffron-500 p-8 text-white">
-          <div className="lotus-mark mb-6 grid h-14 w-14 place-items-center rounded-lg text-lg font-black shadow-soft">
-            HK
+    <main className="grid min-h-screen place-items-center px-4 py-6 sm:px-6 lg:py-10">
+      <div className="grid w-full max-w-6xl overflow-hidden rounded-lg border border-saffron-200 bg-white/95 shadow-soft lg:grid-cols-[minmax(360px,0.95fr)_minmax(420px,1fr)]">
+        <section className="relative overflow-hidden bg-saffron-500 p-6 text-white sm:p-8 lg:p-10">
+          <div className="relative z-10">
+            <div className="lotus-mark mb-4 grid h-12 w-12 place-items-center rounded-lg text-base font-black shadow-soft sm:h-14 sm:w-14 sm:text-lg">
+              HK
+            </div>
+            <h1 className="max-w-md text-3xl font-black tracking-normal lg:text-4xl">Hare Krishna Leaderboard</h1>
+            <p className="mt-3 max-w-md leading-7 text-saffron-50 sm:mt-4">
+              Track chanting rounds with groups, friends, and global leaderboards.
+            </p>
+            <div className="mt-7 hidden gap-3 sm:grid sm:grid-cols-3 lg:grid-cols-1">
+              <AuthFeature icon={<Flame size={18} />} title="Daily rounds" body="Log today and recent days." />
+              <AuthFeature icon={<Users size={18} />} title="Groups" body="Create circles with invite codes." />
+              <AuthFeature icon={<Trophy size={18} />} title="Leaderboards" body="View daily, weekly, and monthly rankings." />
+            </div>
           </div>
-          <h1 className="text-4xl font-black tracking-normal">Hare Krishna Leaderboard</h1>
-          <p className="mt-4 max-w-md leading-7 text-saffron-50">
-            Track chanting rounds with groups, friends, and global leaderboards. Built for honesty, consistency,
-            and gentle accountability.
-          </p>
         </section>
-        <section className="p-6 sm:p-8">
+        <section className="p-5 sm:p-8 lg:p-10">
           <AuthModeTabs />
           {message && (
             <div className="mb-4 rounded-md border border-peacock-200 bg-peacock-50 px-4 py-3 text-sm font-semibold text-peacock-900">
@@ -64,7 +70,7 @@ export function AuthPanel() {
           {authMode === "forgot" && <ForgotForm />}
           {authMode === "newPassword" && <NewPasswordForm />}
           {authMode === "checkEmail" && <CheckEmailScreen />}
-          <p className="mt-5 rounded-md bg-stone-50 px-4 py-3 text-xs leading-5 text-stone-600">
+          <p className="mt-5 rounded-md border border-stone-100 bg-stone-50 px-4 py-3 text-xs leading-5 text-stone-600">
             {supabase
               ? `${runtimeLabel(publicSupabaseConfig.mode)}. Email confirmation, password reset, and OTP use Supabase.`
               : `${runtimeLabel(publicSupabaseConfig.mode)}. Demo login: demo@example.com or gauranga_das, password HareKrishna108. Data is stored in this browser.`}
@@ -72,6 +78,16 @@ export function AuthPanel() {
         </section>
       </div>
     </main>
+  );
+}
+
+function AuthFeature({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+  return (
+    <div className="rounded-lg border border-white/20 bg-white/12 p-3 backdrop-blur">
+      <div className="mb-2 grid h-9 w-9 place-items-center rounded-md bg-white/18">{icon}</div>
+      <p className="font-black">{title}</p>
+      <p className="mt-1 text-sm leading-5 text-saffron-50">{body}</p>
+    </div>
   );
 }
 
@@ -102,13 +118,13 @@ function AuthModeTabs() {
   const { authMode, setAuthMode } = useChanting();
   if (authMode === "checkEmail" || authMode === "newPassword") return null;
   return (
-    <div className="mb-6 grid grid-cols-2 gap-1 rounded-md bg-saffron-50 p-1 sm:grid-cols-4">
+    <div className="mb-6 grid grid-cols-2 gap-1 rounded-lg border border-saffron-100 bg-saffron-50 p-1 sm:grid-cols-4">
       {(["signin", "signup", "forgot", "otp"] as const).map((mode) => (
         <button
           key={mode}
           type="button"
-          className={`flex-1 rounded px-3 py-2 text-sm font-bold capitalize ${
-            authMode === mode ? "bg-white text-saffron-900 shadow-sm" : "text-stone-600"
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-bold capitalize transition ${
+            authMode === mode ? "bg-white text-saffron-900 shadow-sm" : "text-stone-600 hover:bg-white/60"
           }`}
           onClick={() => setAuthMode(mode)}
         >
@@ -327,7 +343,7 @@ function SignUpForm() {
       <label className="block">
         <span className="mb-1 block text-sm font-bold text-stone-700">Country</span>
         <select
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 outline-none focus:border-saffron-500"
+          className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
           value={form.country}
           onChange={(event) => {
             const country = event.target.value;

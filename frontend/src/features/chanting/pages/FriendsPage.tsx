@@ -48,8 +48,8 @@ export function FriendsPage() {
   return (
     <div className="space-y-6">
       <FriendSearch />
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-saffron-200 bg-white/85 p-4 shadow-soft">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border border-saffron-200 bg-white/90 p-4 shadow-soft">
           <p className="text-sm font-bold text-stone-500">Accepted friends</p>
           <p className="mt-1 text-3xl font-black text-saffron-900">{acceptedRequests.length}</p>
         </div>
@@ -57,7 +57,7 @@ export function FriendsPage() {
           <p className="text-sm font-bold text-stone-500">Incoming requests</p>
           <p className="mt-1 text-3xl font-black text-peacock-900">{incomingRequests.length}</p>
         </div>
-        <div className="rounded-lg border border-stone-200 bg-white/85 p-4 shadow-soft">
+        <div className="rounded-lg border border-stone-200 bg-white/90 p-4 shadow-soft">
           <p className="text-sm font-bold text-stone-500">Outgoing requests</p>
           <p className="mt-1 text-3xl font-black text-stone-900">{outgoingRequests.length}</p>
         </div>
@@ -66,12 +66,12 @@ export function FriendsPage() {
         {acceptedRequests.length === 0 ? (
           <EmptyState text="Accepted friends will appear here." />
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 xl:grid-cols-2">
             {acceptedRequests.map((request) => {
               const friendId = request.fromUserId === currentUser.id ? request.toUserId : request.fromUserId;
               const friend = state.users.find((user) => user.id === friendId);
               return (
-                <div key={request.id} className="flex flex-col gap-3 rounded-md border border-stone-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar src={friend?.avatarUrl || ""} label={friend?.displayName || friend?.username || "Friend"} />
                     <div className="min-w-0">
@@ -101,7 +101,7 @@ export function FriendsPage() {
             {incomingRequests.map((request) => {
               const sender = state.users.find((user) => user.id === request.fromUserId);
               return (
-                <div key={request.id} className="flex flex-col gap-3 rounded-md border border-stone-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <p className="font-bold">{sender?.username}</p>
                   <div className="flex gap-2">
                     <button
@@ -133,7 +133,7 @@ export function FriendsPage() {
             {outgoingRequests.map((request) => {
               const receiver = state.users.find((user) => user.id === request.toUserId);
               return (
-                <div key={request.id} className="flex flex-col gap-3 rounded-md border border-stone-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <p className="font-bold">@{receiver?.username}</p>
                   <button
                     className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
@@ -238,7 +238,7 @@ function FriendSearch() {
             const isExact = user.username.toLowerCase() === cleanQuery;
             const alreadyRelated = relatedUserIds.has(user.id);
             return (
-              <div key={user.id} className="flex items-center justify-between rounded-md border border-stone-200 bg-white p-3">
+              <div key={user.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar src={user.avatarUrl} label={user.displayName || user.username} />
                   <div className="min-w-0">
@@ -258,6 +258,7 @@ function FriendSearch() {
                     <p className="text-sm text-stone-600">{user.country}</p>
                   </div>
                 </div>
+                <div className="flex flex-wrap gap-2 sm:justify-end">
                 <button
                   className={`rounded-md px-3 py-2 text-sm font-bold ${
                     alreadyRelated ? "bg-stone-100 text-stone-500" : "bg-saffron-500 text-white"
@@ -268,6 +269,7 @@ function FriendSearch() {
                   {alreadyRelated ? "Added" : "Add"}
                 </button>
                 <ModerationReportButton userId={user.id} username={user.username} />
+                </div>
               </div>
             );
           })

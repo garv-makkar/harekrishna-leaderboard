@@ -20,8 +20,10 @@ body {
   margin: 0;
   color: var(--foreground);
   background:
-    radial-gradient(circle at top left, rgba(255, 201, 71, 0.24), transparent 28rem),
-    linear-gradient(135deg, #fffaf0 0%, #fff8e6 42%, #edf8f5 100%);
+    linear-gradient(90deg, rgba(217, 143, 8, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(32, 142, 142, 0.04) 1px, transparent 1px),
+    linear-gradient(135deg, #fffaf0 0%, #fff8e6 48%, #edf8f5 100%);
+  background-size: 28px 28px, 28px 28px, auto;
   font-family: Arial, Helvetica, sans-serif;
 }
 
