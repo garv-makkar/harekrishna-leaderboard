@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, CalendarDays, Download, ExternalLink, Flame, Medal, Moon, PlusCircle, Target } from "lucide-react";
+import { Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, ExternalLink, Flame, History, Medal, Moon, PlusCircle, Target, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   approximateHinduCalendar,
+  addDays,
   bestStreak,
   computeMilestones,
   currentStreak,
@@ -40,6 +41,9 @@ export function HomePage() {
     updateUserPreferences,
     refreshRemoteState,
     joinedGroups,
+    groupMemberCount,
+    setSelectedGroupId,
+    emailVerified,
     friends,
     showActionFeedback
   } = useChanting();
@@ -69,6 +73,98 @@ export function HomePage() {
   const hinduDay = approximateHinduCalendar(todayKey);
   const dailyGoal = currentUser.dailyGoal || 16;
   const remainingGoalRounds = Math.max(0, dailyGoal - currentRounds);
+  const goalPercent = Math.min(100, Math.round((currentRounds / Math.max(1, dailyGoal)) * 100));
+  const yesterdayKey = addDays(todayKey, -1);
+  const yesterdayRounds = state.chantTotals.find((item) => item.userId === currentUser.id && item.localDate === yesterdayKey)?.rounds || 0;
+  const canEditYesterday = editableDates.includes(yesterdayKey);
+  const activeGroupCards = joinedGroups.slice(0, 4).map((group) => {
+    const memberIds = state.groupMembers.filter((member) => member.groupId === group.id).map((member) => member.userId);
+    const todayTotal = state.chantTotals
+      .filter((total) => memberIds.includes(total.userId) && total.localDate === todayKey)
+      .reduce((sum, total) => sum + total.rounds, 0);
+    const latestUpdate = latestChantUpdate(state.chantTotals, memberIds, todayKey, todayKey);
+    return {
+      group,
+      memberCount: groupMemberCount(group.id),
+      todayTotal,
+      latestUpdate
+    };
+  });
+  const onboardingItems: OnboardingChecklistItem[] = [
+    {
+      id: "rounds",
+      title: "Log first rounds",
+      text: "Save at least one round so your streak and leaderboards begin.",
+      complete: allTimeRounds > 0,
+      action: "Set draft to 1",
+      onClick: () => {
+        setSelectedDate(todayKey);
+        setRoundInput("1");
+      }
+    },
+    {
+      id: "goal",
+      title: "Set daily goal",
+      text: "Keep a realistic target visible on your daily dashboard.",
+      complete: currentUser.dailyGoal > 0,
+      action: "Edit goal",
+      onClick: () => {
+        document.getElementById("daily-goal-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    },
+    {
+      id: "avatar",
+      title: "Add profile picture",
+      text: "Make your profile easier to recognize in groups and leaderboards.",
+      complete: Boolean(currentUser.avatarUrl),
+      action: "Open profile",
+      onClick: () =>
+        showActionFeedback({
+          title: "Open Profile",
+          body: "Add or update your profile picture from Profile settings.",
+          action: { label: "Go to Profile", tab: "profile" }
+        })
+    },
+    {
+      id: "group",
+      title: "Join or create group",
+      text: "Groups make your daily practice social and easier to follow.",
+      complete: joinedGroups.length > 0,
+      action: "Open groups",
+      onClick: () =>
+        showActionFeedback({
+          title: "Open Groups",
+          body: "Create a group or join one with a code.",
+          action: { label: "Go to Groups", tab: "groups" }
+        })
+    },
+    {
+      id: "friend",
+      title: "Add a friend",
+      text: "Build a private friends leaderboard.",
+      complete: friends.length > 0,
+      action: "Open friends",
+      onClick: () =>
+        showActionFeedback({
+          title: "Open Friends",
+          body: "Search by username and send a friend request.",
+          action: { label: "Go to Friends", tab: "friends" }
+        })
+    },
+    {
+      id: "email",
+      title: "Verify email",
+      text: emailVerified === null ? "Check account status from Profile." : "Keep account recovery reliable.",
+      complete: emailVerified !== false,
+      action: "Open profile",
+      onClick: () =>
+        showActionFeedback({
+          title: "Open Profile",
+          body: "Profile shows whether your email is verified.",
+          action: { label: "Go to Profile", tab: "profile" }
+        })
+    }
+  ];
   const homeLeaderboardUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, state.users.map((user) => user.id), todayKey, todayKey));
   const nextMilestone = milestones
     .filter((milestone) => !milestone.earned)
@@ -304,6 +400,116 @@ export function HomePage() {
         </ActionEmptyState>
       )}
 
+      <OnboardingChecklist items={onboardingItems} />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
+        <Panel title="Daily focus" icon={<Target size={18} />}>
+          <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-4 text-center">
+              <p className="text-xs font-black uppercase text-stone-500">Goal progress</p>
+              <p className="mt-2 text-5xl font-black text-saffron-900">{goalPercent}%</p>
+              <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
+                <div className="h-full bg-saffron-500" style={{ width: `${goalPercent}%` }} />
+              </div>
+              <p className="mt-3 text-sm font-bold text-stone-700">
+                {remainingGoalRounds === 0 ? "Goal complete today" : `${remainingGoalRounds} left today`}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <DailyFocusTile label="Current streak" value={streakNow} note={`Best streak ${streakBest}`} />
+              <DailyFocusTile label="Last 7 days" value={sevenDayRounds} note={`${history.filter((item) => item.rounds > 0).length} active days`} />
+              <DailyFocusTile label="Yesterday" value={yesterdayRounds} note={canEditYesterday ? "Still editable" : "Edit window closed"} />
+              <DailyFocusTile label="Groups joined" value={joinedGroups.length} note={joinedGroups.length ? "Active group shortcuts below" : "Join or create your first group"} />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {canEditYesterday && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-stone-200"
+                disabled={isBusy}
+                onClick={() => {
+                  setSelectedDate(yesterdayKey);
+                  setPreviousDraft(null);
+                  setRoundInput(String(yesterdayRounds));
+                }}
+              >
+                <History size={16} /> Edit yesterday
+              </button>
+            )}
+            {remainingGoalRounds > 0 && (
+              <button
+                type="button"
+                className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white"
+                disabled={isBusy}
+                onClick={() => setPresetTotal(dailyGoal)}
+              >
+                Set draft to goal
+              </button>
+            )}
+          </div>
+        </Panel>
+
+        <Panel title="Active groups" icon={<Users size={18} />}>
+          {activeGroupCards.length === 0 ? (
+            <ActionEmptyState
+              icon={<Users size={20} />}
+              title="No groups yet"
+              text="Create a group or join one with a code to make your daily rounds visible in group leaderboards."
+            >
+              <button
+                type="button"
+                className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white"
+                onClick={() =>
+                  showActionFeedback({
+                    title: "Open Groups",
+                    body: "Create or join a chanting group from the Groups page.",
+                    action: { label: "Go to Groups", tab: "groups" }
+                  })
+                }
+              >
+                Open groups
+              </button>
+            </ActionEmptyState>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {activeGroupCards.map(({ group, memberCount, todayTotal, latestUpdate }) => (
+                <button
+                  key={group.id}
+                  type="button"
+                  className="rounded-lg border border-stone-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-saffron-300"
+                  onClick={() => {
+                    setSelectedGroupId(group.id);
+                    showActionFeedback({
+                      title: group.name,
+                      body: "Open Groups to view this group leaderboard, activity, and members.",
+                      action: { label: "Open group", tab: "groups" }
+                    });
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-black text-stone-950">{group.name}</p>
+                      <p className="mt-1 text-sm text-stone-600">{memberCount} member{memberCount === 1 ? "" : "s"}</p>
+                    </div>
+                    <ChevronRight size={18} className="shrink-0 text-stone-400" />
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <DailyFocusTile label="Today total" value={todayTotal} note="group rounds" compact />
+                    <div className="rounded-md border border-stone-100 bg-stone-50 px-3 py-2">
+                      <p className="text-xs font-black uppercase text-stone-500">Last update</p>
+                      <p className="mt-1 text-sm font-black text-stone-900">
+                        {latestUpdate ? latestUpdateLabel(latestUpdate) : "No update"}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+
       {isFirstRun && (
         <Panel title="Start in three steps" icon={<PlusCircle size={18} />}>
           <div className="grid gap-3 md:grid-cols-3">
@@ -369,6 +575,7 @@ export function HomePage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div id="daily-goal-panel">
         <Panel title="Daily goal" icon={<Target size={18} />}>
           <div className="grid gap-4 md:grid-cols-[1fr_260px]">
             <div>
@@ -405,6 +612,7 @@ export function HomePage() {
             </div>
           </div>
         </Panel>
+        </div>
         <WeeklySummaryCard history={history} weeklyRounds={weeklyRounds} streakNow={streakNow} />
       </div>
 
@@ -558,6 +766,99 @@ export function HomePage() {
   );
 }
 
+type OnboardingChecklistItem = {
+  id: string;
+  title: string;
+  text: string;
+  complete: boolean;
+  action: string;
+  onClick: () => void;
+};
+
+function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
+  const completed = items.filter((item) => item.complete).length;
+  const total = items.length;
+  const allComplete = completed === total;
+  const progress = Math.round((completed / Math.max(1, total)) * 100);
+
+  if (allComplete) {
+    return (
+      <Panel title="Setup complete" icon={<CheckCircle2 size={18} />}>
+        <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-black text-emerald-900">Your account setup checklist is complete.</p>
+            <p className="mt-1 text-sm leading-6 text-stone-700">You have logged rounds, prepared your profile, and connected socially.</p>
+          </div>
+          <span className="rounded-md bg-white px-3 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
+            {completed}/{total}
+          </span>
+        </div>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel title="Setup checklist" icon={<CheckCircle2 size={18} />}>
+      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-black text-stone-950">{completed}/{total} complete</p>
+          <p className="mt-1 text-sm leading-6 text-stone-700">Finish these quick steps to get the full leaderboard experience.</p>
+        </div>
+        <div className="min-w-[180px]">
+          <div className="h-3 overflow-hidden rounded-full bg-white">
+            <div className="h-full bg-saffron-500" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="mt-1 text-right text-xs font-black text-saffron-900">{progress}%</p>
+        </div>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className={`rounded-lg border px-4 py-3 shadow-sm ${
+              item.complete ? "border-emerald-100 bg-emerald-50/70" : "border-stone-200 bg-white"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <span
+                className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md ${
+                  item.complete ? "bg-emerald-100 text-emerald-800" : "bg-stone-100 text-stone-500"
+                }`}
+              >
+                {item.complete ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-black text-stone-950">{item.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-stone-600">{item.text}</p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-md px-2 py-1 text-xs font-black uppercase ${
+                      item.complete ? "bg-white text-emerald-800 ring-1 ring-emerald-100" : "bg-saffron-50 text-saffron-900"
+                    }`}
+                  >
+                    {item.complete ? "Done" : "Open"}
+                  </span>
+                </div>
+                {!item.complete && (
+                  <button
+                    type="button"
+                    className="mt-3 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white"
+                    onClick={item.onClick}
+                  >
+                    {item.action}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
 function WeeklySummaryCard({
   history,
   weeklyRounds,
@@ -603,6 +904,26 @@ function StartStep({
       >
         {action}
       </button>
+    </div>
+  );
+}
+
+function DailyFocusTile({
+  label,
+  value,
+  note,
+  compact = false
+}: {
+  label: string;
+  value: number;
+  note: string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`rounded-md border border-stone-100 bg-stone-50 px-3 ${compact ? "py-2" : "py-3"}`}>
+      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
+      <p className={`${compact ? "text-xl" : "text-2xl"} mt-1 font-black text-stone-950`}>{value}</p>
+      <p className="text-sm text-stone-600">{note}</p>
     </div>
   );
 }

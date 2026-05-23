@@ -1,11 +1,11 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { CheckCircle2, ChevronRight, Copy, ImageUp, Link, MessageSquare, Plus, RefreshCw, Search, Settings, Share2, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
+import { CheckCircle2, ChevronRight, Clock3, Copy, ImageUp, Link, MessageSquare, Plus, RefreshCw, Search, Settings, Share2, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
-import { groupCodeProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, uid } from "../domain";
+import { addDays, currentStreak, formatDate, groupCodeProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
 import { ModerationReportButton } from "../ModerationReportButton";
 import { ActionEmptyState, Avatar, EmptyState, Field, InlineNotice, Leaderboard, LeaderboardSkeleton, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
 
@@ -266,12 +266,15 @@ export function GroupsPage({
       </Panel>
       {selectedGroup && (
         <>
-        <GroupInviteCard
-          group={selectedGroup}
-          role={selectedRole}
-          memberCount={selectedMemberCount}
-          onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-        />
+        <GroupSectionJumpBar />
+        <div id="group-invite">
+          <GroupInviteCard
+            group={selectedGroup}
+            role={selectedRole}
+            memberCount={selectedMemberCount}
+            onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+          />
+        </div>
         {selectedRole === "owner" && (
           <GroupOwnerDashboard
             group={selectedGroup}
@@ -280,60 +283,70 @@ export function GroupsPage({
           />
         )}
         <GroupTargetPanel group={selectedGroup} />
+        <div id="group-activity">
+          <GroupActivityFeed group={selectedGroup} />
+        </div>
+        <div id="group-members">
+          <GroupMemberRoster group={selectedGroup} />
+        </div>
         <GroupAccountabilityPanel group={selectedGroup} />
-        <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
-          {isLoadingGroups && selectedMemberCount === 0 ? (
-            <LeaderboardSkeleton />
-          ) : (
-            <>
-              <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
-              <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
-              <GroupLeaderboardToggle showAll={showAllMembers} onChange={setShowAllMembers} />
-              <Leaderboard
-                title=""
-                period={period}
-                periodText={range.label}
-                currentUserId={currentUser.id}
-                emptyText="No one in this group has added rounds for this period yet."
-                visibility={showAllMembers ? "all" : "active"}
-                lastUpdated={selectedLastUpdated}
-                isRefreshing={isBusy || isLoadingGroups}
-                onRefresh={() => refreshRemoteState(currentUser.id)}
-                rows={rankUsersInRange(
-                  state.groupMembers
-                    .filter((member) => member.groupId === selectedGroup.id)
-                    .map((member) => state.users.find((user) => user.id === member.userId))
-                    .filter(Boolean) as UserProfile[],
-                  state.chantTotals,
-                  range.start,
-                  range.end
-                )}
-              />
-            </>
-          )}
-        </Panel>
-        <Panel title={`${selectedGroup.name} controls`} icon={<Settings size={18} />}>
-          {selectedRole === "owner" ? (
-            <GroupOwnerControls group={selectedGroup} role={selectedRole} />
-          ) : selectedRole === "moderator" ? (
-            <GroupOwnerControls group={selectedGroup} role={selectedRole} />
-          ) : (
-            <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-black text-stone-900">Member controls</p>
-                <p className="text-sm text-stone-600">You can leave this group. Your chanting history stays on your profile.</p>
+        <div id="group-leaderboard">
+          <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
+            {isLoadingGroups && selectedMemberCount === 0 ? (
+              <LeaderboardSkeleton />
+            ) : (
+              <>
+                <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
+                <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
+                <GroupLeaderboardToggle showAll={showAllMembers} onChange={setShowAllMembers} />
+                <Leaderboard
+                  title=""
+                  period={period}
+                  periodText={range.label}
+                  currentUserId={currentUser.id}
+                  emptyText="No one in this group has added rounds for this period yet."
+                  visibility={showAllMembers ? "all" : "active"}
+                  lastUpdated={selectedLastUpdated}
+                  isRefreshing={isBusy || isLoadingGroups}
+                  onRefresh={() => refreshRemoteState(currentUser.id)}
+                  rows={rankUsersInRange(
+                    state.groupMembers
+                      .filter((member) => member.groupId === selectedGroup.id)
+                      .map((member) => state.users.find((user) => user.id === member.userId))
+                      .filter(Boolean) as UserProfile[],
+                    state.chantTotals,
+                    range.start,
+                    range.end
+                  )}
+                />
+              </>
+            )}
+          </Panel>
+        </div>
+        <div id="group-controls">
+          <Panel title={`${selectedGroup.name} controls`} icon={<Settings size={18} />}>
+            {selectedRole === "owner" ? (
+              <GroupOwnerControls group={selectedGroup} role={selectedRole} />
+            ) : selectedRole === "moderator" ? (
+              <GroupOwnerControls group={selectedGroup} role={selectedRole} />
+            ) : (
+              <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-black text-stone-900">Member controls</p>
+                  <p className="text-sm text-stone-600">You can leave this group. Your chanting history stays on your profile.</p>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-md bg-stone-900 px-4 py-3 text-sm font-bold text-white"
+                  disabled={isBusy}
+                  onClick={leaveSelectedGroup}
+                >
+                  Leave group
+                </button>
               </div>
-              <button
-                type="button"
-                className="rounded-md bg-stone-900 px-4 py-3 text-sm font-bold text-white"
-                disabled={isBusy}
-                onClick={leaveSelectedGroup}
-              >
-                Leave group
-              </button>
-            </div>
-          )}
-        </Panel>
+            )}
+          </Panel>
+        </div>
         </>
       )}
       <div ref={actionPanelRef}>
@@ -386,6 +399,38 @@ function GroupStat({ label, value }: { label: string; value: number }) {
     <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
       <p className="mt-1 text-3xl font-black text-stone-950">{value}</p>
+    </div>
+  );
+}
+
+function GroupSectionJumpBar() {
+  const sections = [
+    { id: "group-invite", label: "Invite" },
+    { id: "group-activity", label: "Activity" },
+    { id: "group-members", label: "Members" },
+    { id: "group-leaderboard", label: "Leaderboard" },
+    { id: "group-controls", label: "Controls" }
+  ];
+
+  const jumpTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div className="sticky top-[84px] z-20 rounded-lg border border-saffron-200 bg-white/90 p-2 shadow-soft backdrop-blur">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="px-2 text-xs font-black uppercase text-stone-500">Jump to</span>
+        {sections.map((section) => (
+          <button
+            key={section.id}
+            type="button"
+            className="rounded-md bg-stone-100 px-3 py-2 text-sm font-black text-stone-700 transition hover:bg-saffron-50 hover:text-saffron-900"
+            onClick={() => jumpTo(section.id)}
+          >
+            {section.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -823,6 +868,330 @@ function GroupOwnerDashboard({
         </div>
       </div>
     </Panel>
+  );
+}
+
+type GroupActivityItem = {
+  id: string;
+  at: string;
+  title: string;
+  body: string;
+  user?: UserProfile;
+  tone: "rounds" | "member" | "group" | "announcement";
+};
+
+function GroupActivityFeed({ group }: { group: Group }) {
+  const { state, todayKey, setSelectedPublicUserId } = useChanting();
+  const memberships = state.groupMembers.filter((member) => member.groupId === group.id);
+  const memberIds = new Set(memberships.map((member) => member.userId));
+  const owner = state.users.find((user) => user.id === group.ownerId);
+
+  const roundItems: GroupActivityItem[] = state.chantTotals
+    .filter((total) => memberIds.has(total.userId) && total.updatedAt)
+    .map((total) => {
+      const user = state.users.find((item) => item.id === total.userId);
+      const name = user?.displayName || user?.username || "A member";
+      return {
+        id: `round-${total.userId}-${total.localDate}`,
+        at: total.updatedAt,
+        title: `${name} logged ${total.rounds} round${total.rounds === 1 ? "" : "s"}`,
+        body: `${activityDateLabel(total.localDate, todayKey)} | Updated ${latestUpdateLabel(total.updatedAt)}`,
+        user,
+        tone: "rounds"
+      };
+    });
+
+  const memberItems: GroupActivityItem[] = memberships.map((member) => {
+    const user = state.users.find((item) => item.id === member.userId);
+    const name = user?.displayName || user?.username || "A member";
+    return {
+      id: `member-${member.groupId}-${member.userId}`,
+      at: member.joinedAt,
+      title: `${name} joined the group`,
+      body: `${member.role === "owner" ? "Owner" : member.role === "moderator" ? "Moderator" : "Member"} | ${latestUpdateLabel(member.joinedAt)}`,
+      user,
+      tone: "member"
+    };
+  });
+
+  const groupItems: GroupActivityItem[] = [
+    {
+      id: `group-created-${group.id}`,
+      at: group.createdAt,
+      title: `${group.name} was created`,
+      body: owner ? `Created by @${owner.username} | ${latestUpdateLabel(group.createdAt)}` : latestUpdateLabel(group.createdAt),
+      user: owner,
+      tone: "group"
+    },
+    ...(group.announcement
+      ? [{
+          id: `announcement-${group.id}`,
+          at: group.createdAt,
+          title: "Pinned announcement is active",
+          body: group.announcement,
+          tone: "announcement" as const
+        }]
+      : [])
+  ];
+
+  const items = [...roundItems, ...memberItems, ...groupItems]
+    .filter((item) => item.at)
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, 10);
+
+  const todayRoundUpdates = roundItems.filter((item) => item.body.startsWith("Today")).length;
+
+  return (
+    <Panel title="Group activity" icon={<Clock3 size={18} />}>
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <GroupStat label="Recent items" value={items.length} />
+        <GroupStat label="Today updates" value={todayRoundUpdates} />
+        <GroupStat label="Members tracked" value={memberships.length} />
+      </div>
+      {items.length === 0 ? (
+        <EmptyState text="No group activity yet. Round updates and member joins will appear here." />
+      ) : (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div key={item.id} className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 gap-3">
+                  {item.user ? (
+                    <button
+                      type="button"
+                      className="shrink-0"
+                      onClick={() => setSelectedPublicUserId(item.user!.id)}
+                      aria-label={`Open ${item.user.username}'s profile`}
+                    >
+                      <Avatar src={item.user.avatarUrl} label={item.user.displayName || item.user.username} />
+                    </button>
+                  ) : (
+                    <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-md ${activityIconClass(item.tone)}`}>
+                      {activitySymbol(item.tone)}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-black text-stone-950">{item.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-stone-600">{item.body}</p>
+                    {item.user && <p className="mt-1 text-xs font-bold text-stone-500">@{item.user.username}</p>}
+                  </div>
+                </div>
+                <span className={`shrink-0 rounded-md px-3 py-2 text-xs font-black uppercase ${activityBadgeClass(item.tone)}`}>
+                  {activityLabel(item.tone)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function activityDateLabel(dateKey: string, todayKey: string) {
+  if (dateKey === todayKey) return "Today";
+  if (dateKey === addDays(todayKey, -1)) return "Yesterday";
+  return formatDate(dateKey);
+}
+
+function activityLabel(tone: GroupActivityItem["tone"]) {
+  if (tone === "rounds") return "Rounds";
+  if (tone === "member") return "Member";
+  if (tone === "announcement") return "Pinned";
+  return "Group";
+}
+
+function activitySymbol(tone: GroupActivityItem["tone"]) {
+  if (tone === "announcement") return "!";
+  if (tone === "group") return "HK";
+  if (tone === "member") return "+";
+  return "#";
+}
+
+function activityBadgeClass(tone: GroupActivityItem["tone"]) {
+  if (tone === "rounds") return "bg-peacock-50 text-peacock-900";
+  if (tone === "member") return "bg-saffron-50 text-saffron-900";
+  if (tone === "announcement") return "bg-emerald-50 text-emerald-800";
+  return "bg-stone-100 text-stone-700";
+}
+
+function activityIconClass(tone: GroupActivityItem["tone"]) {
+  if (tone === "announcement") return "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100";
+  if (tone === "group") return "lotus-mark text-white";
+  if (tone === "member") return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100";
+  return "bg-peacock-50 text-peacock-900 ring-1 ring-peacock-100";
+}
+
+function GroupMemberRoster({ group }: { group: Group }) {
+  const { state, todayKey, setSelectedPublicUserId } = useChanting();
+  const [searchText, setSearchText] = useState("");
+  const [roleFilter, setRoleFilter] = useState<GroupRole | "all">("all");
+  const [activityFilter, setActivityFilter] = useState<"all" | "today" | "week" | "inactive-week">("all");
+  const members = state.groupMembers
+    .filter((member) => member.groupId === group.id)
+    .map((membership) => ({
+      membership,
+      user: state.users.find((item) => item.id === membership.userId)
+    }))
+    .filter((item) => item.user) as { membership: GroupMember; user: UserProfile }[];
+
+  const rows = members
+    .map(({ membership, user }) => {
+      const latestUpdate = latestChantUpdate(state.chantTotals, [user.id], "0000-01-01", todayKey);
+      return {
+        membership,
+        user,
+        todayRounds: sumRounds(state.chantTotals, user.id, "daily", todayKey),
+        weekRounds: sumRounds(state.chantTotals, user.id, "weekly", todayKey),
+        streak: currentStreak(state.chantTotals, user.id, todayKey),
+        latestUpdate
+      };
+    })
+    .sort((a, b) => {
+      const roleOrder = { owner: 0, moderator: 1, member: 2 };
+      const roleDiff = roleOrder[a.membership.role] - roleOrder[b.membership.role];
+      if (roleDiff !== 0) return roleDiff;
+      if (b.todayRounds !== a.todayRounds) return b.todayRounds - a.todayRounds;
+      return a.user.username.localeCompare(b.user.username);
+    });
+
+  const activeToday = rows.filter((row) => row.todayRounds > 0).length;
+  const activeThisWeek = rows.filter((row) => row.weekRounds > 0).length;
+  const cleanSearch = searchText.trim().toLowerCase();
+  const visibleRows = rows.filter((row) => {
+    const matchesSearch =
+      !cleanSearch ||
+      row.user.username.toLowerCase().includes(cleanSearch) ||
+      (row.user.displayName || "").toLowerCase().includes(cleanSearch) ||
+      row.membership.role.includes(cleanSearch);
+    const matchesRole = roleFilter === "all" || row.membership.role === roleFilter;
+    const matchesActivity =
+      activityFilter === "all" ||
+      (activityFilter === "today" && row.todayRounds > 0) ||
+      (activityFilter === "week" && row.weekRounds > 0) ||
+      (activityFilter === "inactive-week" && row.weekRounds === 0);
+    return matchesSearch && matchesRole && matchesActivity;
+  });
+
+  return (
+    <Panel title="Group members" icon={<Users size={18} />}>
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <GroupStat label="Members" value={rows.length} />
+        <GroupStat label="Active today" value={activeToday} />
+        <GroupStat label="Active week" value={activeThisWeek} />
+      </div>
+      <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 p-3">
+        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_220px]">
+          <label className="block">
+            <span className="mb-1 block text-sm font-bold text-stone-700">Search members</span>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={17} />
+              <input
+                className="w-full rounded-md border border-stone-300 bg-white py-3 pl-10 pr-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
+                placeholder="username, name, or role"
+                type="search"
+              />
+            </div>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-bold text-stone-700">Role</span>
+            <select
+              className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+              value={roleFilter}
+              onChange={(event) => setRoleFilter(event.target.value as GroupRole | "all")}
+            >
+              <option value="all">All roles</option>
+              <option value="owner">Owner</option>
+              <option value="moderator">Moderators</option>
+              <option value="member">Members</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-bold text-stone-700">Activity</span>
+            <select
+              className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+              value={activityFilter}
+              onChange={(event) => setActivityFilter(event.target.value as typeof activityFilter)}
+            >
+              <option value="all">All activity</option>
+              <option value="today">Active today</option>
+              <option value="week">Active this week</option>
+              <option value="inactive-week">Inactive this week</option>
+            </select>
+          </label>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-stone-600 ring-1 ring-stone-200">
+            Showing {visibleRows.length} of {rows.length}
+          </span>
+          {(searchText || roleFilter !== "all" || activityFilter !== "all") && (
+            <button
+              type="button"
+              className="rounded-md bg-white px-3 py-2 text-sm font-black text-stone-800 ring-1 ring-stone-200"
+              onClick={() => {
+                setSearchText("");
+                setRoleFilter("all");
+                setActivityFilter("all");
+              }}
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <EmptyState text="No members are visible in this group yet." />
+      ) : visibleRows.length === 0 ? (
+        <EmptyState text="No members match the current search and filters." />
+      ) : (
+        <div className="grid gap-3 xl:grid-cols-2">
+          {visibleRows.map((row) => (
+            <div key={row.user.id} className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 gap-3">
+                  <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate font-black text-stone-950">{row.user.displayName || row.user.username}</p>
+                      <span className={`rounded-md px-2 py-1 text-xs font-black uppercase ${roleBadgeClass(row.membership.role)}`}>
+                        {row.membership.role}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-sm text-stone-600">@{row.user.username}</p>
+                    <p className="mt-2 text-xs font-bold text-stone-500">
+                      {row.latestUpdate ? `Last updated ${latestUpdateLabel(row.latestUpdate)}` : "No rounds logged yet"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white"
+                  onClick={() => setSelectedPublicUserId(row.user.id)}
+                >
+                  View profile
+                </button>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <MemberRosterStat label="Today" value={row.todayRounds} />
+                <MemberRosterStat label="Week" value={row.weekRounds} />
+                <MemberRosterStat label="Streak" value={row.streak} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function MemberRosterStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-stone-100 bg-stone-50 px-3 py-2 text-center">
+      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
+      <p className="mt-1 text-xl font-black text-stone-950">{value}</p>
+    </div>
   );
 }
 
