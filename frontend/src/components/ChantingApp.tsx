@@ -5,6 +5,7 @@ import {
   Bell,
   CalendarDays,
   CheckCircle2,
+  ExternalLink,
   Globe2,
   HeartHandshake,
   Home,
@@ -621,6 +622,14 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
             Joined {formatDate(user.joinedAt.slice(0, 10))}. {friendCount} accepted friend{friendCount === 1 ? "" : "s"}.
             {privacy.showStreak ? ` Best streak is ${bestStreak(state.chantTotals, user.id)} day${bestStreak(state.chantTotals, user.id) === 1 ? "" : "s"}.` : ""}
           </p>
+          <a
+            href={`/u/${encodeURIComponent(user.username)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100"
+          >
+            <ExternalLink size={16} /> Open shareable profile
+          </a>
         </div>
         {(privacy.showRecentHistory || privacy.showMilestones) && (
         <div className="mb-5 grid gap-4 lg:grid-cols-[1fr_220px]">

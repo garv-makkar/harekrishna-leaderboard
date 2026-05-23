@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { Award, Bell, CheckCircle2, Circle, Download, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Award, Bell, CheckCircle2, Circle, Copy, Download, ExternalLink, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { ProfilePrivacy } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
@@ -528,7 +528,7 @@ export function ProfilePage() {
 }
 
 function PublicProfilePreview() {
-  const { state, currentUser, todayKey } = useChanting();
+  const { state, currentUser, todayKey, showMessage } = useChanting();
   if (!currentUser) return null;
   const privacy = { ...defaultProfilePrivacy, ...(currentUser.privacy || {}) };
   const allTimeRounds = sumRounds(state.chantTotals, currentUser.id, "allTime", todayKey);
@@ -571,8 +571,41 @@ function PublicProfilePreview() {
         <PrivacyVisibilityPill label="Milestones" visible={privacy.showMilestones} />
         <PrivacyVisibilityPill label="Country" visible={privacy.showCountry} />
       </div>
+      <div className="mt-4 flex flex-col gap-2 rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-black text-peacock-950">Shareable profile link</p>
+          <p className="mt-1 break-all text-sm font-bold text-peacock-900">{publicProfilePath(currentUser.username)}</p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100"
+            onClick={() => {
+              const url = `${window.location.origin}${publicProfilePath(currentUser.username)}`;
+              navigator.clipboard.writeText(url).then(
+                () => showMessage("Public profile link copied."),
+                () => showMessage(url)
+              );
+            }}
+          >
+            <Copy size={16} /> Copy
+          </button>
+          <a
+            className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white"
+            href={publicProfilePath(currentUser.username)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <ExternalLink size={16} /> Open
+          </a>
+        </div>
+      </div>
     </Panel>
   );
+}
+
+function publicProfilePath(username: string) {
+  return `/u/${encodeURIComponent(username)}`;
 }
 
 function PublicProfilePrivacyPanel({
