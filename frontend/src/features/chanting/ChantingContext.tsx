@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type {
+  AppNotification,
   AppState,
   FriendRequest,
   Group,
@@ -17,6 +18,7 @@ import {
   GroupMemberRow,
   GroupRow,
   ModerationReportRow,
+  NotificationRow,
   ProfileRow,
   STORAGE_KEY,
   AuthMode,
@@ -28,11 +30,13 @@ import {
   fromFriendRequestRow,
   fromGroupRow,
   fromModerationReportRow,
+  fromNotificationRow,
   fromProfileRow,
   lastEditableDates,
   loadState,
   localDateKey,
   MAX_DAILY_ROUNDS,
+  computeMilestones,
   readableError,
   uid,
   urlAuthError,
@@ -125,6 +129,18 @@ type ChantingContextValue = {
   checkIdentityConflicts: (username: string, email: string, phone: string) => Promise<void>;
   submitUserReport: (reportedUserId: string, reason: string, details: string) => Promise<void>;
   updateModerationReportStatus: (reportId: string, status: ModerationReport["status"]) => Promise<void>;
+  addNotification: (notification: NewNotification) => Promise<void>;
+  markNotificationRead: (notificationId: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+};
+
+type NewNotification = {
+  title: string;
+  body: string;
+  tone?: AppNotification["tone"];
+  actionTab?: AppNotification["actionTab"];
+  dedupeKey?: string;
+  userId?: string;
 };
 
 type RemoteScope = "core" | "groups" | "friends" | "admin" | "all";
@@ -211,7 +227,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
           }
           await refreshRemoteState(data.session.user.id, "core");
         } else {
-          setState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [] });
+          setState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [], notifications: [] });
         }
         setIsLoaded(true);
         setSelectedDate(localDateKey(new Date(), detectTimezone()));
@@ -243,7 +259,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       }
       if (event === "SIGNED_IN" && session?.user) refreshRemoteState(session.user.id, "core");
       if (event === "SIGNED_OUT") {
-        setState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [] });
+        setState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [], notifications: [] });
         setIsAdmin(false);
         setLoadedRemoteSlices({ groups: false, friends: false, admin: false });
         setLoadingRemoteSlices({ groups: false, friends: false, admin: false });
@@ -296,13 +312,14 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     const shouldLoadFriends = scope === "friends" || scope === "all";
     const shouldLoadAdmin = scope === "admin";
 
-    const [profilesResult, totalsResult, groupsResult, membersResult, requestsResult, reportsResult] = await Promise.all([
+    const [profilesResult, totalsResult, groupsResult, membersResult, requestsResult, reportsResult, notificationsResult] = await Promise.all([
       shouldLoadCore ? supabase.from("profiles").select("*").order("username") : Promise.resolve({ data: null, error: null }),
       shouldLoadCore ? supabase.from("chant_totals").select("*") : Promise.resolve({ data: null, error: null }),
       shouldLoadGroups ? supabase.from("groups").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
       shouldLoadGroups ? supabase.from("group_members").select("*") : Promise.resolve({ data: null, error: null }),
       shouldLoadFriends ? supabase.from("friend_requests").select("*") : Promise.resolve({ data: null, error: null }),
-      shouldLoadAdmin ? supabase.from("moderation_reports").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null })
+      shouldLoadAdmin ? supabase.from("moderation_reports").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
+      shouldLoadCore ? supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at", { ascending: false }).limit(80) : Promise.resolve({ data: null, error: null })
     ]);
 
     const error = profilesResult.error || totalsResult.error || groupsResult.error || membersResult.error || requestsResult.error || reportsResult.error;
@@ -326,7 +343,11 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
           }))
         : state.groupMembers,
       friendRequests: shouldLoadFriends ? ((requestsResult.data || []) as FriendRequestRow[]).map(fromFriendRequestRow) : state.friendRequests,
-      moderationReports: shouldLoadAdmin ? ((reportsResult.data || []) as ModerationReportRow[]).map(fromModerationReportRow) : state.moderationReports || []
+      moderationReports: shouldLoadAdmin ? ((reportsResult.data || []) as ModerationReportRow[]).map(fromModerationReportRow) : state.moderationReports || [],
+      notifications:
+        shouldLoadCore && !notificationsResult.error
+          ? ((notificationsResult.data || []) as NotificationRow[]).map(fromNotificationRow)
+          : state.notifications || []
     };
     setState(nextState);
     setLoadedRemoteSlices((current) => ({
@@ -340,7 +361,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     if (!adminError) setIsAdmin(Boolean(adminData));
     const current = nextState.users.find((user) => user.id === currentUserId);
     setSelectedDate(localDateKey(new Date(), current?.timezone || detectTimezone()));
-  }, [state.chantTotals, state.friendRequests, state.groupMembers, state.groups, state.moderationReports, state.users]);
+  }, [state.chantTotals, state.friendRequests, state.groupMembers, state.groups, state.moderationReports, state.notifications, state.users]);
 
   const ensureGroupsData = useCallback(async () => {
     if (!supabase || !currentUser || loadedRemoteSlices.groups || loadingRemoteSlices.groups) return;
@@ -440,6 +461,77 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     setActionFeedback(null);
   }
 
+  const addNotification = async (notification: NewNotification) => {
+    const userId = notification.userId || currentUser?.id;
+    if (!userId) return;
+    const dedupeKey = notification.dedupeKey || "";
+    if (dedupeKey && (state.notifications || []).some((item) => item.userId === userId && item.dedupeKey === dedupeKey)) return;
+    const createdAt = new Date().toISOString();
+    const nextNotification: AppNotification = {
+      id: uid("note"),
+      userId,
+      title: notification.title,
+      body: notification.body,
+      tone: notification.tone || "info",
+      actionTab: notification.actionTab || "",
+      dedupeKey,
+      readAt: "",
+      createdAt
+    };
+
+    setState((current) => ({
+      ...current,
+      notifications: [nextNotification, ...(current.notifications || [])].slice(0, 80)
+    }));
+
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("notifications")
+      .insert({
+        user_id: userId,
+        title: nextNotification.title,
+        body: nextNotification.body,
+        tone: nextNotification.tone,
+        action_tab: nextNotification.actionTab || null,
+        dedupe_key: nextNotification.dedupeKey || null
+      })
+      .select("*")
+      .single();
+    if (error) return;
+    if (data) {
+      const saved = fromNotificationRow(data as NotificationRow);
+      setState((current) => ({
+        ...current,
+        notifications: [saved, ...(current.notifications || []).filter((item) => item.id !== nextNotification.id)].slice(0, 80)
+      }));
+    }
+  };
+
+  const markNotificationRead = async (notificationId: string) => {
+    const readAt = new Date().toISOString();
+    setState((current) => ({
+      ...current,
+      notifications: (current.notifications || []).map((item) =>
+        item.id === notificationId ? { ...item, readAt: item.readAt || readAt } : item
+      )
+    }));
+    if (!supabase) return;
+    await supabase.from("notifications").update({ read_at: readAt }).eq("id", notificationId);
+  };
+
+  const markAllNotificationsRead = async () => {
+    if (!currentUser) return;
+    const readAt = new Date().toISOString();
+    setState((current) => ({
+      ...current,
+      notifications: (current.notifications || []).map((item) =>
+        item.userId === currentUser.id ? { ...item, readAt: item.readAt || readAt } : item
+      )
+    }));
+    if (!supabase) return;
+    await supabase.from("notifications").update({ read_at: readAt }).eq("user_id", currentUser.id).is("read_at", null);
+  };
+
   const currentRounds =
     state.chantTotals.find((total) => total.userId === currentUser?.id && total.localDate === selectedDate)?.rounds || 0;
   const draftRounds = Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(Number(roundInput) || 0)));
@@ -452,6 +544,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const cleanRounds = Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(rounds || 0)));
+    const nextTotalsPreview = previewTotals(state.chantTotals, currentUser.id, dateKey, cleanRounds);
     if (supabase) {
       const client = supabase;
       await runRemote(async () => {
@@ -464,6 +557,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
         await refreshRemoteState(currentUser.id);
         setRoundInput(String(cleanRounds));
+        await notifyRoundSave(dateKey, cleanRounds, nextTotalsPreview);
         showActionFeedback({
           title: "Rounds saved",
           body: `${cleanRounds} round${cleanRounds === 1 ? "" : "s"} saved for ${formatDate(dateKey)}.`,
@@ -487,11 +581,44 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         ];
     saveState({ ...state, chantTotals: nextTotals });
     setRoundInput(String(cleanRounds));
+    await notifyRoundSave(dateKey, cleanRounds, nextTotals);
     showActionFeedback({
       title: "Rounds saved",
       body: `${cleanRounds} round${cleanRounds === 1 ? "" : "s"} saved for ${formatDate(dateKey)}.`,
       action: { label: "View global leaderboard", tab: "global" }
     });
+  };
+
+  const notifyRoundSave = async (dateKey: string, cleanRounds: number, nextTotals: AppState["chantTotals"]) => {
+    if (!currentUser) return;
+    await addNotification({
+      title: "Rounds saved",
+      body: `${cleanRounds} round${cleanRounds === 1 ? "" : "s"} saved for ${formatDate(dateKey)}.`,
+      tone: "success",
+      actionTab: "activity",
+      dedupeKey: `rounds-${dateKey}-${cleanRounds}`
+    });
+    if (dateKey === todayKey && currentUser.dailyGoal > 0 && cleanRounds >= currentUser.dailyGoal) {
+      await addNotification({
+        title: "Daily goal reached",
+        body: `You reached your ${currentUser.dailyGoal}-round goal for today.`,
+        tone: "success",
+        actionTab: "home",
+        dedupeKey: `daily-goal-${dateKey}`
+      });
+    }
+    const previousMilestones = computeMilestones(state, currentUser, todayKey).filter((item) => item.earned).map((item) => item.id);
+    const nextMilestones = computeMilestones({ ...state, chantTotals: nextTotals }, currentUser, todayKey).filter((item) => item.earned);
+    for (const milestone of nextMilestones) {
+      if (previousMilestones.includes(milestone.id)) continue;
+      await addNotification({
+        title: `Milestone unlocked: ${milestone.title}`,
+        body: milestone.description,
+        tone: "success",
+        actionTab: "profile",
+        dedupeKey: `milestone-${milestone.id}`
+      });
+    }
   };
 
   const adjustDraftRounds = (amount: number) => {
@@ -536,6 +663,13 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
           .eq("id", requestId);
         if (error) throw error;
         await refreshRemoteState(currentUser.id);
+        await addNotification({
+          title: "Friend request accepted",
+          body: "Your friends leaderboard now includes this devotee.",
+          tone: "success",
+          actionTab: "friends",
+          dedupeKey: `friend-accepted-${requestId}`
+        });
         showActionFeedback({
           title: "Friend request accepted",
           body: "Your friends leaderboard now includes this devotee.",
@@ -549,6 +683,13 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       friendRequests: state.friendRequests.map((request) =>
         request.id === requestId ? { ...request, status: "accepted" } : request
       )
+    });
+    await addNotification({
+      title: "Friend request accepted",
+      body: "Your friends leaderboard now includes this devotee.",
+      tone: "success",
+      actionTab: "friends",
+      dedupeKey: `friend-accepted-${requestId}`
     });
     showActionFeedback({
       title: "Friend request accepted",
@@ -746,7 +887,10 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     resolveLoginEmail,
     checkIdentityConflicts,
     submitUserReport,
-    updateModerationReportStatus
+    updateModerationReportStatus,
+    addNotification,
+    markNotificationRead,
+    markAllNotificationsRead
   };
 
   return <ChantingContext.Provider value={value}>{children}</ChantingContext.Provider>;
@@ -760,4 +904,15 @@ export function makeFriendRequest(fromUserId: string, toUserId: string): FriendR
     status: "pending",
     createdAt: new Date().toISOString()
   };
+}
+
+function previewTotals(totals: AppState["chantTotals"], userId: string, dateKey: string, rounds: number) {
+  const updatedAt = new Date().toISOString();
+  const existing = totals.find((total) => total.userId === userId && total.localDate === dateKey);
+  if (existing) {
+    return totals.map((total) =>
+      total.userId === userId && total.localDate === dateKey ? { ...total, rounds, updatedAt } : total
+    );
+  }
+  return [...totals, { userId, localDate: dateKey, rounds, updatedAt }];
 }

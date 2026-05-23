@@ -254,7 +254,7 @@ function FriendLeaderboardToggle({ showAll, onChange }: { showAll: boolean; onCh
 }
 
 function FriendSearch() {
-  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, showActionFeedback, showMessage } = useChanting();
+  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, showActionFeedback, showMessage, addNotification } = useChanting();
   const [query, setQuery] = useState("");
   if (!currentUser) return null;
 
@@ -301,6 +301,13 @@ function FriendSearch() {
         });
         if (error) throw error;
         await refreshRemoteState(currentUser.id);
+        await addNotification({
+          title: "Friend request sent",
+          body: `Waiting for @${targetUser?.username || "that user"} to accept.`,
+          tone: "info",
+          actionTab: "friends",
+          dedupeKey: `friend-request-sent-${toUserId}`
+        });
         showActionFeedback({
           title: "Friend request sent",
           body: `Waiting for @${targetUser?.username || "that user"} to accept. You can track it in outgoing requests.`,
@@ -310,6 +317,13 @@ function FriendSearch() {
       return;
     }
     saveState({ ...state, friendRequests: [...state.friendRequests, makeFriendRequest(currentUser.id, toUserId)] });
+    await addNotification({
+      title: "Friend request sent",
+      body: `Waiting for @${targetUser?.username || "that user"} to accept.`,
+      tone: "info",
+      actionTab: "friends",
+      dedupeKey: `friend-request-sent-${toUserId}`
+    });
     showActionFeedback({
       title: "Friend request sent",
       body: `Waiting for @${targetUser?.username || "that user"} to accept. You can track it in outgoing requests.`,

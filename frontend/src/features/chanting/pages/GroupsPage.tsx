@@ -1723,7 +1723,7 @@ function roleBadgeClass(role: GroupRole) {
 }
 
 function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
-  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showActionFeedback, showMessage } = useChanting();
+  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showActionFeedback, addNotification } = useChanting();
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -1787,6 +1787,13 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
         setCode("");
         setImageUrl("");
         void refreshRemoteState(currentUser.id, "groups");
+        await addNotification({
+          title: "Group created",
+          body: `${group.name} is ready. Share code ${cleanCode} with members.`,
+          tone: "success",
+          actionTab: "groups",
+          dedupeKey: `group-created-${group.id}`
+        });
         showActionFeedback({
           title: "Group created",
           body: `${name.trim()} is ready. Share code ${cleanCode} with members to start the group leaderboard.`,
@@ -1818,6 +1825,13 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
     setName("");
     setCode("");
     setImageUrl("");
+    await addNotification({
+      title: "Group created",
+      body: `${group.name} is ready. Share code ${cleanCode} with members.`,
+      tone: "success",
+      actionTab: "groups",
+      dedupeKey: `group-created-${group.id}`
+    });
     showActionFeedback({
       title: "Group created",
       body: `${group.name} is ready. Share code ${cleanCode} with members to start the group leaderboard.`,
@@ -1856,7 +1870,7 @@ function JoinGroupForm({
   initialCode?: string;
   onJoined?: () => void;
 }) {
-  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showActionFeedback, showMessage } = useChanting();
+  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showActionFeedback, addNotification } = useChanting();
   const [code, setCode] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -1903,6 +1917,13 @@ function JoinGroupForm({
         setCode("");
         onJoined?.();
         void refreshRemoteState(currentUser.id, "groups");
+        await addNotification({
+          title: "Group joined",
+          body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,
+          tone: "success",
+          actionTab: "groups",
+          dedupeKey: `group-joined-${group.id}`
+        });
         showActionFeedback({
           title: "Group joined",
           body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,
@@ -1921,6 +1942,13 @@ function JoinGroupForm({
     setSelectedGroupId(group.id);
     setCode("");
     onJoined?.();
+    await addNotification({
+      title: "Group joined",
+      body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,
+      tone: "success",
+      actionTab: "groups",
+      dedupeKey: `group-joined-${group.id}`
+    });
     showActionFeedback({
       title: "Group joined",
       body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,

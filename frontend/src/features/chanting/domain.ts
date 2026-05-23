@@ -1,4 +1,5 @@
 import type {
+  AppNotification,
   AppState,
   ChantTotal,
   FriendRequest,
@@ -149,6 +150,18 @@ export type ModerationReportRow = {
   reason: string;
   details: string;
   status: "open" | "reviewed" | "dismissed";
+  created_at: string;
+};
+
+export type NotificationRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  tone: "success" | "info" | "warning";
+  action_tab?: TabId | null;
+  dedupe_key?: string | null;
+  read_at?: string | null;
   created_at: string;
 };
 
@@ -545,7 +558,8 @@ export function createSeedState(): AppState {
         createdAt: joinedAt
       }
     ],
-    moderationReports: []
+    moderationReports: [],
+    notifications: []
   };
 }
 
@@ -558,7 +572,8 @@ export function loadState(): AppState {
     return {
       ...parsed,
       users: (parsed.users || []).map(withDefaultProfilePrivacy),
-      moderationReports: parsed.moderationReports || []
+      moderationReports: parsed.moderationReports || [],
+      notifications: parsed.notifications || []
     };
   } catch {
     return createSeedState();
@@ -924,6 +939,20 @@ export function fromModerationReportRow(row: ModerationReportRow): ModerationRep
     reason: row.reason,
     details: row.details || "",
     status: row.status,
+    createdAt: row.created_at
+  };
+}
+
+export function fromNotificationRow(row: NotificationRow): AppNotification {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    title: row.title,
+    body: row.body,
+    tone: row.tone,
+    actionTab: row.action_tab || "",
+    dedupeKey: row.dedupe_key || "",
+    readAt: row.read_at || "",
     createdAt: row.created_at
   };
 }

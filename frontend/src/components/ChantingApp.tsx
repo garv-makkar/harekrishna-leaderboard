@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { publicSupabaseConfig, runtimeLabel } from "@/lib/config";
 import { supabase } from "@/lib/supabase";
+import type { AppNotification } from "@/lib/types";
 import { AboutPage } from "@/features/chanting/pages/AboutPage";
 import { AuthPanel } from "@/features/chanting/AuthPanel";
 import { type ActionFeedback, useChanting } from "@/features/chanting/ChantingContext";
@@ -53,6 +54,24 @@ const tabs = [
   { id: "admin", label: "Admin", icon: ShieldCheck, adminOnly: true },
   { id: "about", label: "About", icon: Sparkles }
 ] as const;
+
+type DropdownNotification = {
+  id: string;
+  persistedId?: string;
+  tone: "success" | "info" | "warning";
+  title: string;
+  body: string;
+  readAt: string;
+  action?: {
+    type: "accept-friend";
+    requestId: string;
+    label: string;
+  } | {
+    type: "open-tab";
+    tab: TabId;
+    label: string;
+  };
+};
 
 export default function ChantingApp() {
   const [activeTab, setActiveTab] = useState<TabId>("home");
@@ -137,6 +156,8 @@ function AppShell({
     friends,
     isAdmin,
     message,
+    markAllNotificationsRead,
+    markNotificationRead,
     saveState,
     selectedPublicUserId,
     setSelectedPublicUserId,
@@ -167,7 +188,7 @@ function AppShell({
     ? state.friendRequests.filter((request) => request.toUserId === currentUser.id && request.status === "pending").length
     : 0;
   const notifications = buildNotifications(state, currentUser?.id || "", emailVerified, message);
-  const urgentNotificationCount = notifications.filter((item) => item.tone !== "success").length;
+  const urgentNotificationCount = notifications.filter((item) => !item.readAt).length;
   const activeTabLabel = tabs.find((tab) => tab.id === activeTab)?.label || "Dashboard";
 
   const handleTabChange = (tab: TabId) => {
@@ -308,16 +329,34 @@ function AppShell({
                   {showNotifications && (
                     <div className="absolute right-0 z-30 mt-3 w-[min(380px,calc(100vw-2rem))] rounded-lg border border-saffron-200 bg-white p-3 shadow-soft">
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="font-black text-stone-900">Notifications</p>
-                        <button
-                          type="button"
-                          className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700"
-                          onClick={() => setShowNotifications(false)}
-                        >
-                          Close
-                        </button>
+                        <div>
+                          <p className="font-black text-stone-900">Notifications</p>
+                          <p className="text-xs font-bold text-stone-500">{urgentNotificationCount} unread</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900 ring-1 ring-peacock-100"
+                            disabled={urgentNotificationCount === 0}
+                            onClick={() => void markAllNotificationsRead()}
+                          >
+                            Mark all read
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700"
+                            onClick={() => setShowNotifications(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-2">
+                        {notifications.length === 0 && (
+                          <p className="rounded-md border border-dashed border-stone-200 bg-stone-50 px-3 py-4 text-sm text-stone-600">
+                            No notifications yet. Saved rounds, groups, friends, and milestones will appear here.
+                          </p>
+                        )}
                         {notifications.map((item) => (
                           <div
                             key={item.id}
@@ -329,13 +368,22 @@ function AppShell({
                                   : "border-peacock-100 bg-peacock-50 text-peacock-900"
                             }`}
                           >
-                            <p className="font-black">{item.title}</p>
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-black">{item.title}</p>
+                              {!item.readAt && (
+                                <span className="rounded-sm bg-white/80 px-1.5 py-0.5 text-[10px] font-black uppercase text-stone-700 ring-1 ring-white">
+                                  New
+                                </span>
+                              )}
+                            </div>
                             <p>{item.body}</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
                             {item.action && (
                               <button
                                 type="button"
                                 className="mt-2 rounded-md bg-white px-3 py-2 text-xs font-black text-stone-800 ring-1 ring-stone-200"
                                 onClick={async () => {
+                                  if (item.persistedId) await markNotificationRead(item.persistedId);
                                   if (item.action?.type === "accept-friend") {
                                     await acceptFriendRequest(item.action.requestId);
                                     setShowNotifications(false);
@@ -349,6 +397,16 @@ function AppShell({
                                 {item.action.label}
                               </button>
                             )}
+                            {item.persistedId && !item.readAt && (
+                              <button
+                                type="button"
+                                className="mt-2 rounded-md bg-white/80 px-3 py-2 text-xs font-black text-stone-700 ring-1 ring-white"
+                                onClick={() => void markNotificationRead(item.persistedId!)}
+                              >
+                                Mark read
+                              </button>
+                            )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -700,15 +758,15 @@ function buildNotifications(
   currentUserId: string,
   emailVerified: boolean | null,
   message: string
-) {
-  const currentUser = state.users.find((user) => user.id === currentUserId);
+): DropdownNotification[] {
   const incoming = state.friendRequests.filter((request) => request.toUserId === currentUserId && request.status === "pending");
   const outgoing = state.friendRequests.filter((request) => request.fromUserId === currentUserId && request.status === "pending");
-  const groups = state.groupMembers
-    .filter((member) => member.userId === currentUserId)
-    .map((member) => state.groups.find((group) => group.id === member.groupId))
-    .filter(Boolean);
   const openReports = (state.moderationReports || []).filter((report) => report.reporterId === currentUserId && report.status === "open");
+  const persisted = (state.notifications || [])
+    .filter((notification) => notification.userId === currentUserId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 30)
+    .map(notificationToDropdownItem);
   const items = [
     ...incoming.map((request) => {
       const sender = state.users.find((user) => user.id === request.fromUserId);
@@ -717,6 +775,7 @@ function buildNotifications(
         tone: "warning" as const,
         title: "Friend request",
         body: `@${sender?.username || "Someone"} sent you a friend request.`,
+        readAt: "",
         action: { type: "accept-friend" as const, requestId: request.id, label: "Accept request" }
       };
     }),
@@ -727,6 +786,7 @@ function buildNotifications(
         tone: "info" as const,
         title: "Request pending",
         body: `Waiting for @${receiver?.username || "that user"} to accept your friend request.`,
+        readAt: new Date().toISOString(),
         action: { type: "open-tab" as const, tab: "friends" as TabId, label: "View requests" }
       };
     }),
@@ -736,6 +796,7 @@ function buildNotifications(
           tone: "warning" as const,
           title: "Email not verified",
           body: "Confirm your email to keep account recovery reliable.",
+          readAt: "",
           action: { type: "open-tab" as const, tab: "profile" as TabId, label: "Open profile" }
         }]
       : []),
@@ -744,40 +805,34 @@ function buildNotifications(
           id: "reports-open",
           tone: "info" as const,
           title: "Reports submitted",
-          body: `${openReports.length} report${openReports.length === 1 ? "" : "s"} waiting for future moderator review.`
+          body: `${openReports.length} report${openReports.length === 1 ? "" : "s"} waiting for future moderator review.`,
+          readAt: new Date().toISOString()
         }]
       : []),
-    ...(currentUser?.reminderEnabled
-      ? [{
-          id: "daily-reminder",
-          tone: "info" as const,
-          title: "Daily reminder",
-          body: `Reminder preference is set for ${currentUser.reminderTime || "20:00"} in ${currentUser.timezone}.`,
-          action: { type: "open-tab" as const, tab: "profile" as TabId, label: "Edit reminder" }
-        }]
-      : []),
-    {
-      id: "groups-summary",
-      tone: "success" as const,
-      title: "Groups",
-      body: groups.length > 0 ? `You are in ${groups.length} group${groups.length === 1 ? "" : "s"}.` : "Create or join a group to start a group leaderboard.",
-      action: { type: "open-tab" as const, tab: "groups" as TabId, label: groups.length > 0 ? "View groups" : "Create group" }
-    },
-    {
-      id: "profile-summary",
-      tone: "success" as const,
-      title: "Profile",
-      body: currentUser?.avatarUrl ? "Your profile picture is set." : "Add a profile picture from Profile settings.",
-      action: { type: "open-tab" as const, tab: "profile" as TabId, label: "Open profile" }
-    },
     ...(message
       ? [{
           id: "latest-message",
           tone: "success" as const,
           title: "Latest update",
-          body: message
+          body: message,
+          readAt: new Date().toISOString()
         }]
-      : [])
+      : []),
+    ...persisted
   ];
-  return items;
+  return items.slice(0, 40);
+}
+
+function notificationToDropdownItem(notification: AppNotification): DropdownNotification {
+  return {
+    id: `stored-${notification.id}`,
+    persistedId: notification.id,
+    tone: notification.tone,
+    title: notification.title,
+    body: notification.body,
+    readAt: notification.readAt,
+    action: notification.actionTab
+      ? { type: "open-tab" as const, tab: notification.actionTab as TabId, label: "Open" }
+      : undefined
+  };
 }

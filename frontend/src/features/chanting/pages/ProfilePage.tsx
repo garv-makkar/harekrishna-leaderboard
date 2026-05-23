@@ -143,7 +143,7 @@ export function ProfilePage() {
         if (!response.ok) throw new Error(result.error || "Account deletion failed.");
         await client.auth.signOut();
         setDeleteConfirmation("");
-        saveState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [] });
+        saveState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [], notifications: [] });
         setAuthMode("signup");
         showMessage("Account deleted.");
       }).catch((error: Error) => showMessage(readableError(error)));
@@ -710,7 +710,8 @@ function DataPrivacyPanel() {
         .sort((a, b) => a.localDate.localeCompare(b.localDate)),
       groups: userGroups,
       friendRequests: friendConnections,
-      submittedReports
+      submittedReports,
+      notifications: (state.notifications || []).filter((notification) => notification.userId === currentUser.id)
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" }));
     const link = document.createElement("a");

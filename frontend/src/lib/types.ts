@@ -70,6 +70,18 @@ export type ModerationReport = {
   createdAt: string;
 };
 
+export type AppNotification = {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+  tone: "success" | "info" | "warning";
+  actionTab: "home" | "groups" | "friends" | "global" | "activity" | "profile" | "admin" | "about" | "";
+  dedupeKey: string;
+  readAt: string;
+  createdAt: string;
+};
+
 export type AppState = {
   users: UserProfile[];
   chantTotals: ChantTotal[];
@@ -77,5 +89,6 @@ export type AppState = {
   groupMembers: GroupMember[];
   friendRequests: FriendRequest[];
   moderationReports: ModerationReport[];
+  notifications: AppNotification[];
   currentUserId: string | null;
 };
