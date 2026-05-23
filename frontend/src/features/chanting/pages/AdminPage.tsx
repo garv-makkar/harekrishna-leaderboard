@@ -8,6 +8,13 @@ import { addDays, formatDate, roundsForDate } from "../domain";
 import { Avatar, EmptyState, InlineNotice, MetricSkeletonGrid, Panel, PanelSkeleton } from "../ui";
 
 const statusOptions: Array<ModerationReport["status"] | "all"> = ["open", "reviewed", "dismissed", "all"];
+const signalFilters = [
+  { label: "All signals", value: "all" },
+  { label: "Max 999", value: "max" },
+  { label: "Big jumps", value: "jump" },
+  { label: "Recent high", value: "recent" }
+] as const;
+type SignalFilter = typeof signalFilters[number]["value"];
 
 export function AdminPage() {
   const {
@@ -20,6 +27,7 @@ export function AdminPage() {
     updateModerationReportStatus
   } = useChanting();
   const [statusFilter, setStatusFilter] = useState<ModerationReport["status"] | "all">("open");
+  const [signalFilter, setSignalFilter] = useState<SignalFilter>("all");
 
   useEffect(() => {
     ensureAdminData();
@@ -31,6 +39,7 @@ export function AdminPage() {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [state.moderationReports, statusFilter]);
   const qualitySignals = useMemo(() => buildQualitySignals(state), [state]);
+  const filteredQualitySignals = qualitySignals.filter((signal) => signalFilter === "all" || signal.type === signalFilter);
 
   if (!currentUser) return null;
 
@@ -55,11 +64,30 @@ export function AdminPage() {
         <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm text-peacock-900">
           These are review hints only. Chanting totals are still honesty-based, and this panel does not change user data.
         </div>
-        {qualitySignals.length === 0 ? (
+        <div className="mb-4 grid gap-3 sm:grid-cols-3">
+          <AdminMetric label="Max entries" value={qualitySignals.filter((signal) => signal.type === "max").length} />
+          <AdminMetric label="Big jumps" value={qualitySignals.filter((signal) => signal.type === "jump").length} />
+          <AdminMetric label="Recent high" value={qualitySignals.filter((signal) => signal.type === "recent").length} />
+        </div>
+        <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+          {signalFilters.map((filter) => (
+            <button
+              key={filter.value}
+              type="button"
+              className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                signalFilter === filter.value ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+              }`}
+              onClick={() => setSignalFilter(filter.value)}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+        {filteredQualitySignals.length === 0 ? (
           <EmptyState text="No unusual entries found right now." />
         ) : (
           <div className="space-y-3">
-            {qualitySignals.slice(0, 30).map((signal) => (
+            {filteredQualitySignals.slice(0, 30).map((signal) => (
               <div key={signal.id} className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <ReportPerson title={signal.label} user={signal.user} fallback={signal.userId} />
@@ -184,6 +212,7 @@ function buildQualitySignals(state: ReturnType<typeof useChanting>["state"]) {
     if (entry.rounds >= 999) {
       signals.push({
         id: `${entry.userId}-${entry.localDate}-cap`,
+        type: "max" as const,
         label: "Max entry",
         user,
         userId: entry.userId,
@@ -194,6 +223,7 @@ function buildQualitySignals(state: ReturnType<typeof useChanting>["state"]) {
     if (jump >= 108) {
       signals.push({
         id: `${entry.userId}-${entry.localDate}-jump`,
+        type: "jump" as const,
         label: "Large jump",
         user,
         userId: entry.userId,
@@ -204,6 +234,7 @@ function buildQualitySignals(state: ReturnType<typeof useChanting>["state"]) {
     if (recentUpdate && entry.rounds >= 64) {
       signals.push({
         id: `${entry.userId}-${entry.localDate}-recent`,
+        type: "recent" as const,
         label: "Recent high edit",
         user,
         userId: entry.userId,

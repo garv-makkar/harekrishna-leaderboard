@@ -23,6 +23,7 @@ export function FriendsPage() {
     loadingRemoteSlices
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
+  const [showAllFriends, setShowAllFriends] = useState(false);
   const searchPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -209,17 +210,40 @@ export function FriendsPage() {
           <>
             <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
             <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
+            <FriendLeaderboardToggle showAll={showAllFriends} onChange={setShowAllFriends} />
             <Leaderboard
               title=""
               period={period}
               periodText={range.label}
               currentUserId={currentUser.id}
               emptyText="No friends have added rounds for this period yet."
+              visibility={showAllFriends ? "all" : "active"}
               rows={rankUsersInRange(friendUsers, state.chantTotals, range.start, range.end)}
             />
           </>
         )}
       </Panel>
+    </div>
+  );
+}
+
+function FriendLeaderboardToggle({ showAll, onChange }: { showAll: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+      <button
+        type="button"
+        className={`rounded-md px-3 py-2 text-sm font-black transition ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        onClick={() => onChange(false)}
+      >
+        Active only
+      </button>
+      <button
+        type="button"
+        className={`rounded-md px-3 py-2 text-sm font-black transition ${showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        onClick={() => onChange(true)}
+      >
+        All friends
+      </button>
     </div>
   );
 }

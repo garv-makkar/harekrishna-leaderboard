@@ -9,6 +9,7 @@ import { Leaderboard, Panel, PeriodHistoryControls, PeriodTabs } from "../ui";
 export function GlobalPage() {
   const { state, currentUser, period, setPeriod, todayKey } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
+  const [showAllUsers, setShowAllUsers] = useState(false);
   useEffect(() => setPeriodOffset(0), [period]);
   if (!currentUser) return null;
   const range = leaderboardRange(period, todayKey, periodOffset);
@@ -35,15 +36,50 @@ export function GlobalPage() {
       <Panel title="Rankings" icon={<Globe2 size={18} />}>
         <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
         <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
+        <LeaderboardVisibilityToggle
+          showAll={showAllUsers}
+          onChange={setShowAllUsers}
+          allLabel="All users"
+        />
         <Leaderboard
           title=""
           period={period}
           periodText={range.label}
           currentUserId={currentUser.id}
           emptyText="No global entries for this period yet."
+          visibility={showAllUsers ? "all" : "active"}
           rows={rankUsersInRange(state.users, state.chantTotals, range.start, range.end)}
         />
       </Panel>
+    </div>
+  );
+}
+
+function LeaderboardVisibilityToggle({
+  showAll,
+  onChange,
+  allLabel
+}: {
+  showAll: boolean;
+  onChange: (value: boolean) => void;
+  allLabel: string;
+}) {
+  return (
+    <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+      <button
+        type="button"
+        className={`rounded-md px-3 py-2 text-sm font-black transition ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        onClick={() => onChange(false)}
+      >
+        Active only
+      </button>
+      <button
+        type="button"
+        className={`rounded-md px-3 py-2 text-sm font-black transition ${showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        onClick={() => onChange(true)}
+      >
+        {allLabel}
+      </button>
     </div>
   );
 }

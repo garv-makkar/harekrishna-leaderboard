@@ -359,7 +359,8 @@ export function Leaderboard({
   period,
   periodText,
   currentUserId,
-  emptyText
+  emptyText,
+  visibility = "logged"
 }: {
   title: string;
   rows: RankedUser[];
@@ -367,12 +368,18 @@ export function Leaderboard({
   periodText?: string;
   currentUserId: string;
   emptyText: string;
+  visibility?: "active" | "logged" | "all";
 }) {
   const { setSelectedPublicUserId } = useChanting();
   const currentRowRef = useRef<HTMLDivElement | null>(null);
   const activeRows = rows.filter((row) => row.rounds > 0);
   const currentRow = rows.find((row) => row.user.id === currentUserId);
-  const visibleRows = rows.filter((row) => row.rounds > 0 || row.hasEntry || row.user.id === currentUserId);
+  const visibleRows = rows.filter((row) => {
+    if (row.user.id === currentUserId) return true;
+    if (visibility === "all") return true;
+    if (visibility === "active") return row.rounds > 0;
+    return row.rounds > 0 || row.hasEntry;
+  });
   if (visibleRows.length === 0) return <EmptyState text={emptyText} />;
   const leaderRows = activeRows.slice(0, 3);
   const currentRowIndex = visibleRows.findIndex((row) => row.user.id === currentUserId);

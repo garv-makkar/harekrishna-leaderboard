@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Award, CalendarDays, Flame, Medal, PlusCircle, Target } from "lucide-react";
+import { Award, CalendarDays, Download, Flame, Medal, Moon, PlusCircle, Target } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
+  approximateHinduCalendar,
   bestStreak,
   computeMilestones,
   currentStreak,
@@ -35,6 +36,7 @@ export function HomePage() {
     isBusy
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
+  const [shareStatus, setShareStatus] = useState("");
 
   if (!currentUser) return null;
 
@@ -50,6 +52,7 @@ export function HomePage() {
   const sevenDayRounds = history.reduce((sum, item) => sum + item.rounds, 0);
   const selectedDateLabel = selectedDate === todayKey ? "Today" : formatDate(selectedDate || todayKey);
   const hasStartedChanting = allTimeRounds > 0;
+  const hinduDay = approximateHinduCalendar(todayKey);
   const nextMilestone = milestones
     .filter((milestone) => !milestone.earned)
     .sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
@@ -58,6 +61,52 @@ export function HomePage() {
   const setPresetTotal = (value: number) => {
     setPreviousDraft(draftRounds);
     setRoundInput(String(Math.max(0, Math.min(MAX_DAILY_ROUNDS, value))));
+  };
+  const downloadShareCard = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 630;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+    gradient.addColorStop(0, "#fff7ed");
+    gradient.addColorStop(1, "#e0f2f1");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#d98f08";
+    ctx.fillRect(0, 0, 1200, 18);
+    ctx.fillStyle = "#1c1917";
+    ctx.font = "900 54px Arial";
+    ctx.fillText("Hare Krishna Leaderboard", 72, 110);
+    ctx.font = "700 28px Arial";
+    ctx.fillStyle = "#57534e";
+    ctx.fillText(`${currentUser.displayName || currentUser.username} • ${formatDate(todayKey)}`, 72, 156);
+    ctx.fillStyle = "#0f766e";
+    ctx.font = "900 150px Arial";
+    ctx.fillText(String(currentRounds), 72, 330);
+    ctx.font = "900 42px Arial";
+    ctx.fillStyle = "#1c1917";
+    ctx.fillText("rounds today", 72, 382);
+    ctx.font = "700 30px Arial";
+    ctx.fillStyle = "#57534e";
+    ctx.fillText(`${weeklyRounds} this week • ${streakNow} day streak • ${allTimeRounds} all time`, 72, 450);
+    ctx.fillStyle = "#fef3c7";
+    ctx.fillRect(72, 500, 700, 58);
+    ctx.fillStyle = "#92400e";
+    ctx.font = "800 24px Arial";
+    ctx.fillText(`${hinduDay.paksha} ${hinduDay.name}${hinduDay.isEkadashi ? " • Ekadashi" : ""}`, 96, 538);
+    ctx.fillStyle = "#0f766e";
+    ctx.font = "900 88px Arial";
+    ctx.fillText("HK", 930, 330);
+    ctx.font = "700 24px Arial";
+    ctx.fillStyle = "#57534e";
+    ctx.fillText("Self-entered chanting log", 838, 374);
+    const link = document.createElement("a");
+    link.download = `chanting-share-${currentUser.username}-${todayKey}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    setShareStatus("Share card downloaded.");
+    window.setTimeout(() => setShareStatus(""), 2500);
   };
 
   return (
@@ -239,6 +288,45 @@ export function HomePage() {
         <MetricCard label="This week" value={weeklyRounds} note="Weeks start Monday" />
         <MetricCard label="This month" value={monthlyRounds} note={`${monthDays} active day${monthDays === 1 ? "" : "s"}`} />
         <MetricCard label="All time" value={allTimeRounds} note={`Since ${formatDate(currentUser.joinedAt.slice(0, 10))}`} />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Panel title="Vaishnava day note" icon={<Moon size={18} />}>
+          <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+              <p className="text-xs font-black uppercase text-stone-500">Approximate tithi</p>
+              <p className="mt-1 text-2xl font-black text-saffron-900">{hinduDay.name}</p>
+              <p className="text-sm font-bold text-stone-700">{hinduDay.paksha}</p>
+            </div>
+            <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-950">
+              <p className="font-black">
+                {hinduDay.isEkadashi
+                  ? "Approximate Ekadashi today"
+                  : hinduDay.isDashami
+                    ? "Dashami: Ekadashi may be near"
+                    : hinduDay.isDwadashi
+                      ? "Dwadashi: check parana timings locally"
+                      : "Panchang reminder"}
+              </p>
+              <p>{hinduDay.note}</p>
+            </div>
+          </div>
+        </Panel>
+        <Panel title="Share progress" icon={<Download size={18} />}>
+          <div className="space-y-3">
+            <p className="text-sm leading-6 text-stone-600">
+              Download a simple image card with today&apos;s rounds, streak, and weekly total.
+            </p>
+            {shareStatus && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{shareStatus}</p>}
+            <button
+              type="button"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-black text-white"
+              onClick={downloadShareCard}
+            >
+              <Download size={18} /> Download share card
+            </button>
+          </div>
+        </Panel>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">

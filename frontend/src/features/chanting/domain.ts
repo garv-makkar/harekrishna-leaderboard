@@ -332,6 +332,45 @@ export function localDayBoundaryText(timezone: string) {
   return `Today is ${formatDate(localDateKey(new Date(), timezone))}. Your chanting day runs from 12:00 AM to 11:59 PM in ${timezone}. Weeks start on Monday.`;
 }
 
+export function approximateHinduCalendar(dateKey: string) {
+  const tithiNames = [
+    "Pratipada",
+    "Dvitiya",
+    "Tritiya",
+    "Chaturthi",
+    "Panchami",
+    "Shashthi",
+    "Saptami",
+    "Ashtami",
+    "Navami",
+    "Dashami",
+    "Ekadashi",
+    "Dwadashi",
+    "Trayodashi",
+    "Chaturdashi",
+    "Purnima/Amavasya"
+  ];
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14);
+  const synodicMonthMs = 29.530588853 * 24 * 60 * 60 * 1000;
+  const ageMs = ((date.getTime() - knownNewMoon) % synodicMonthMs + synodicMonthMs) % synodicMonthMs;
+  const tithi = Math.floor(ageMs / (synodicMonthMs / 30)) + 1;
+  const paksha = tithi <= 15 ? "Shukla Paksha" : "Krishna Paksha";
+  const tithiInPaksha = ((tithi - 1) % 15) + 1;
+  const name = tithiNames[tithiInPaksha - 1];
+  const isEkadashi = tithiInPaksha === 11;
+  return {
+    name,
+    paksha,
+    tithi,
+    tithiInPaksha,
+    isEkadashi,
+    isDashami: tithiInPaksha === 10,
+    isDwadashi: tithiInPaksha === 12,
+    note: "Approximate tithi based on lunar phase. Use your local temple panchang for fasting and festival observance."
+  };
+}
+
 export function normalizePhone(phone: string, countryName: string) {
   const cleaned = cleanPhoneInput(phone);
   if (!cleaned) return "";

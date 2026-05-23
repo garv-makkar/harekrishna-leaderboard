@@ -33,6 +33,7 @@ export function GroupsPage() {
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [actionMode, setActionMode] = useState<"join" | "create">("join");
+  const [showAllMembers, setShowAllMembers] = useState(false);
   const actionPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -207,6 +208,7 @@ export function GroupsPage() {
           onCopyCode={() => copyGroupCode(selectedGroup.code)}
           onCopyInvite={() => copyGroupInvite(selectedGroup)}
         />
+        <GroupAccountabilityPanel group={selectedGroup} />
         <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
           {isLoadingGroups && selectedMemberCount === 0 ? (
             <LeaderboardSkeleton />
@@ -214,12 +216,14 @@ export function GroupsPage() {
             <>
               <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
               <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
+              <GroupLeaderboardToggle showAll={showAllMembers} onChange={setShowAllMembers} />
               <Leaderboard
                 title=""
                 period={period}
                 periodText={range.label}
                 currentUserId={currentUser.id}
                 emptyText="No one in this group has added rounds for this period yet."
+                visibility={showAllMembers ? "all" : "active"}
                 rows={rankUsersInRange(
                   state.groupMembers
                     .filter((member) => member.groupId === selectedGroup.id)
@@ -357,6 +361,77 @@ function GroupInviteCard({
         </div>
       </div>
     </section>
+  );
+}
+
+function GroupAccountabilityPanel({ group }: { group: Group }) {
+  const { state, todayKey, setSelectedPublicUserId } = useChanting();
+  const members = state.groupMembers
+    .filter((member) => member.groupId === group.id)
+    .map((member) => state.users.find((user) => user.id === member.userId))
+    .filter(Boolean) as UserProfile[];
+  const rows = members.map((user) => {
+    const entry = state.chantTotals.find((total) => total.userId === user.id && total.localDate === todayKey);
+    return { user, entry };
+  });
+  const updated = rows.filter((row) => row.entry);
+  const pending = rows.filter((row) => !row.entry);
+
+  return (
+    <Panel title="Today accountability" icon={<Users size={18} />}>
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <GroupStat label="Updated today" value={updated.length} />
+        <GroupStat label="Not updated" value={pending.length} />
+        <GroupStat label="Members" value={members.length} />
+      </div>
+      {pending.length === 0 ? (
+        <InlineNotice tone="success">Everyone in this group has logged an entry for today.</InlineNotice>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm font-bold text-stone-600">Members not updated today</p>
+          <div className="grid gap-3 xl:grid-cols-2">
+            {pending.map(({ user }) => (
+              <button
+                key={user.id}
+                type="button"
+                className="flex min-w-0 items-center gap-3 rounded-lg border border-stone-200 bg-white p-3 text-left shadow-sm transition hover:border-saffron-200 hover:bg-saffron-50"
+                onClick={() => setSelectedPublicUserId(user.id)}
+              >
+                <Avatar src={user.avatarUrl} label={user.displayName || user.username} />
+                <div className="min-w-0">
+                  <p className="truncate font-black text-stone-900">{user.displayName || user.username}</p>
+                  <p className="truncate text-sm text-stone-600">@{user.username}</p>
+                </div>
+                <span className="ml-auto rounded-md bg-stone-100 px-2 py-1 text-xs font-black text-stone-600">
+                  No entry
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function GroupLeaderboardToggle({ showAll, onChange }: { showAll: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+      <button
+        type="button"
+        className={`rounded-md px-3 py-2 text-sm font-black transition ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        onClick={() => onChange(false)}
+      >
+        Active only
+      </button>
+      <button
+        type="button"
+        className={`rounded-md px-3 py-2 text-sm font-black transition ${showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        onClick={() => onChange(true)}
+      >
+        All members
+      </button>
+    </div>
   );
 }
 

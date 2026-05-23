@@ -34,6 +34,7 @@ import {
   computeMilestones,
   currentStreak,
   formatDate,
+  recentChantingHistory,
   sumRounds
 } from "@/features/chanting/domain";
 import { Avatar, MilestoneGrid, SkeletonBlock } from "@/features/chanting/ui";
@@ -531,12 +532,19 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
   const user = state.users.find((item) => item.id === userId);
   if (!user || !currentUser) return null;
   const groupCount = state.groupMembers.filter((member) => member.userId === user.id).length;
+  const userGroups = state.groupMembers
+    .filter((member) => member.userId === user.id)
+    .map((member) => state.groups.find((group) => group.id === member.groupId))
+    .filter(Boolean);
   const friendCount = state.friendRequests.filter(
     (request) =>
       request.status === "accepted" &&
       (request.fromUserId === user.id || request.toUserId === user.id)
   ).length;
   const milestones = computeMilestones(state, user, todayKey);
+  const recentHistory = recentChantingHistory(state.chantTotals, user.id, todayKey, 7);
+  const sevenDayRounds = recentHistory.reduce((sum, item) => sum + item.rounds, 0);
+  const earnedMilestones = milestones.filter((milestone) => milestone.earned).length;
 
   return (
     <div className="fixed inset-0 z-40 bg-stone-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
@@ -558,10 +566,12 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
             <X size={18} />
           </button>
         </div>
-        <div className="mb-5 grid gap-3 sm:grid-cols-4">
+        <div className="mb-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <ProfileStat label="Today" value={sumRounds(state.chantTotals, user.id, "daily", todayKey)} />
           <ProfileStat label="This week" value={sumRounds(state.chantTotals, user.id, "weekly", todayKey)} />
-          <ProfileStat label="Best streak" value={bestStreak(state.chantTotals, user.id)} />
+          <ProfileStat label="This month" value={sumRounds(state.chantTotals, user.id, "monthly", todayKey)} />
+          <ProfileStat label="7 days" value={sevenDayRounds} />
+          <ProfileStat label="Streak" value={currentStreak(state.chantTotals, user.id, todayKey)} />
           <ProfileStat label="Groups" value={groupCount} />
         </div>
         <div className="mb-5 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm text-peacock-900">
@@ -571,9 +581,46 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
           </div>
           <p className="mt-1">
             Joined {formatDate(user.joinedAt.slice(0, 10))}. {friendCount} accepted friend{friendCount === 1 ? "" : "s"}.
-            Current streak is {currentStreak(state.chantTotals, user.id, todayKey)} day{currentStreak(state.chantTotals, user.id, todayKey) === 1 ? "" : "s"}.
+            Best streak is {bestStreak(state.chantTotals, user.id)} day{bestStreak(state.chantTotals, user.id) === 1 ? "" : "s"}.
           </p>
         </div>
+        <div className="mb-5 grid gap-4 lg:grid-cols-[1fr_220px]">
+          <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="font-black text-stone-900">Recent 7 days</p>
+              <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-black text-saffron-900">
+                {sevenDayRounds} rounds
+              </span>
+            </div>
+            <div className="grid gap-2 [grid-template-columns:repeat(7,minmax(32px,1fr))]">
+              {recentHistory.map((item) => (
+                <div key={item.dateKey} className="rounded-md bg-stone-50 px-1 py-2 text-center">
+                  <p className="text-sm font-black text-stone-900">{item.rounds}</p>
+                  <p className="truncate text-[11px] font-bold text-stone-500">
+                    {item.dateKey === todayKey ? "Today" : formatDate(item.dateKey).replace(/,.*$/, "")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-lg border border-saffron-200 bg-saffron-50 p-4">
+            <p className="font-black text-saffron-900">Milestones</p>
+            <p className="mt-2 text-3xl font-black text-stone-950">{earnedMilestones}/{milestones.length}</p>
+            <p className="text-sm text-stone-600">earned</p>
+          </div>
+        </div>
+        {userGroups.length > 0 && (
+          <div className="mb-5 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+            <p className="mb-2 font-black text-stone-900">Groups</p>
+            <div className="flex flex-wrap gap-2">
+              {userGroups.slice(0, 6).map((group) => (
+                <span key={group!.id} className="rounded-md bg-white px-3 py-2 text-sm font-bold text-stone-700 ring-1 ring-stone-200">
+                  {group!.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         <MilestoneGrid milestones={milestones} limit={4} />
       </div>
     </div>
