@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Bell,
   CalendarDays,
+  CheckCircle2,
   Globe2,
   HeartHandshake,
   Home,
@@ -20,7 +21,7 @@ import { publicSupabaseConfig, runtimeLabel } from "@/lib/config";
 import { supabase } from "@/lib/supabase";
 import { AboutPage } from "@/features/chanting/pages/AboutPage";
 import { AuthPanel } from "@/features/chanting/AuthPanel";
-import { useChanting } from "@/features/chanting/ChantingContext";
+import { type ActionFeedback, useChanting } from "@/features/chanting/ChantingContext";
 import { FriendsPage } from "@/features/chanting/pages/FriendsPage";
 import { GlobalPage } from "@/features/chanting/pages/GlobalPage";
 import { GroupsPage } from "@/features/chanting/pages/GroupsPage";
@@ -107,6 +108,8 @@ function LoadingShell() {
 function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (tab: TabId) => void }) {
   const {
     acceptFriendRequest,
+    actionFeedback,
+    clearActionFeedback,
     currentUser,
     emailVerified,
     ensureFriendsData,
@@ -325,10 +328,16 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
           </header>
 
           <section className="min-w-0 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
-          {message && (
-            <div className="mb-4 rounded-md border border-peacock-200 bg-peacock-50 px-4 py-3 text-sm font-semibold text-peacock-900">
-              {message}
-            </div>
+          {(message || actionFeedback) && (
+            <FeedbackBanner
+              feedback={actionFeedback}
+              message={message}
+              onAction={(tab) => {
+                handleTabChange(tab);
+                clearActionFeedback();
+              }}
+              onDismiss={clearActionFeedback}
+            />
           )}
           {activeTab === "home" && <HomePage />}
           {activeTab === "groups" && <GroupsPage />}
@@ -345,6 +354,74 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
         <PublicUserDialog userId={selectedPublicUserId} onClose={() => setSelectedPublicUserId("")} />
       )}
     </main>
+  );
+}
+
+function FeedbackBanner({
+  feedback,
+  message,
+  onAction,
+  onDismiss
+}: {
+  feedback: ActionFeedback | null;
+  message: string;
+  onAction: (tab: TabId) => void;
+  onDismiss: () => void;
+}) {
+  if (!feedback) {
+    return (
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-peacock-200 bg-peacock-50 px-4 py-3 text-sm font-semibold text-peacock-900">
+        <span>{message}</span>
+        <button
+          type="button"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-white/70 text-peacock-900 ring-1 ring-peacock-100"
+          aria-label="Dismiss message"
+          onClick={onDismiss}
+        >
+          <X size={16} />
+        </button>
+      </div>
+    );
+  }
+
+  const isInfo = feedback.tone === "info";
+  return (
+    <div className={`mb-4 rounded-lg border px-4 py-3 shadow-sm ${
+      isInfo ? "border-peacock-200 bg-peacock-50 text-peacock-950" : "border-emerald-200 bg-emerald-50 text-emerald-950"
+    }`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white ring-1 ${
+            isInfo ? "text-peacock-700 ring-peacock-100" : "text-emerald-700 ring-emerald-100"
+          }`}>
+            <CheckCircle2 size={19} />
+          </span>
+          <div className="min-w-0">
+            <p className="font-black">{feedback.title}</p>
+            <p className="mt-0.5 text-sm leading-5 text-stone-700">{feedback.body}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+          {feedback.action && (
+            <button
+              type="button"
+              className="rounded-md bg-white px-3 py-2 text-sm font-black text-stone-900 ring-1 ring-stone-200"
+              onClick={() => onAction(feedback.action!.tab)}
+            >
+              {feedback.action.label}
+            </button>
+          )}
+          <button
+            type="button"
+            className="grid h-10 w-10 place-items-center rounded-md bg-white/75 text-stone-700 ring-1 ring-stone-200"
+            aria-label="Dismiss message"
+            onClick={onDismiss}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

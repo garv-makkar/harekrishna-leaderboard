@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { ChevronRight, ImageUp, Plus, Search, Settings, Trash2, Trophy, UserPlus, Users } from "lucide-react";
+import { ChevronRight, Copy, ImageUp, MessageSquare, Plus, Search, Settings, Trash2, Trophy, UserPlus, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
@@ -200,6 +200,13 @@ export function GroupsPage() {
       </Panel>
       {selectedGroup && (
         <>
+        <GroupInviteCard
+          group={selectedGroup}
+          role={selectedRole}
+          memberCount={selectedMemberCount}
+          onCopyCode={() => copyGroupCode(selectedGroup.code)}
+          onCopyInvite={() => copyGroupInvite(selectedGroup)}
+        />
         <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
           {isLoadingGroups && selectedMemberCount === 0 ? (
             <LeaderboardSkeleton />
@@ -285,6 +292,71 @@ function GroupStat({ label, value }: { label: string; value: number }) {
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
       <p className="mt-1 text-3xl font-black text-stone-950">{value}</p>
     </div>
+  );
+}
+
+function GroupInviteCard({
+  group,
+  role,
+  memberCount,
+  onCopyCode,
+  onCopyInvite
+}: {
+  group: Group;
+  role: GroupRole | undefined;
+  memberCount: number;
+  onCopyCode: () => void;
+  onCopyInvite: () => void;
+}) {
+  const inviteText = `Join my Hare Krishna Leaderboard group "${group.name}" with code ${group.code}.`;
+  return (
+    <section className="overflow-hidden rounded-lg border border-peacock-100 bg-peacock-50/80 shadow-soft">
+      <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="p-4 sm:p-5">
+          <div className="mb-3 flex items-center gap-2 text-peacock-900">
+            <MessageSquare size={18} />
+            <p className="font-black">Invite members</p>
+          </div>
+          <p className="text-sm leading-6 text-stone-700">
+            Share this code with people you want in the group. Group codes are global and unique.
+          </p>
+          <div className="mt-4 rounded-lg border border-peacock-100 bg-white px-4 py-3">
+            <p className="text-xs font-black uppercase text-stone-500">Share message preview</p>
+            <p className="mt-1 text-sm font-bold text-stone-800">{inviteText}</p>
+          </div>
+          {role === "owner" && (
+            <p className="mt-3 rounded-md bg-white/75 px-3 py-2 text-sm font-bold text-peacock-900 ring-1 ring-peacock-100">
+              Owner tip: keep codes memorable but specific. You can change the code in group controls.
+            </p>
+          )}
+        </div>
+        <div className="border-t border-peacock-100 bg-white/80 p-4 sm:p-5 lg:border-l lg:border-t-0">
+          <p className="text-xs font-black uppercase text-stone-500">Group code</p>
+          <p className="mt-2 rounded-md bg-stone-950 px-4 py-3 text-center text-2xl font-black tracking-normal text-white">
+            {group.code}
+          </p>
+          <div className="mt-3 grid gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-3 text-sm font-black text-white"
+              onClick={onCopyCode}
+            >
+              <Copy size={16} /> Copy code
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white"
+              onClick={onCopyInvite}
+            >
+              <MessageSquare size={16} /> Copy invite
+            </button>
+          </div>
+          <p className="mt-3 text-center text-sm font-bold text-stone-600">
+            {memberCount} member{memberCount === 1 ? "" : "s"}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -675,7 +747,7 @@ function roleBadgeClass(role: GroupRole) {
 }
 
 function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
-  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showMessage } = useChanting();
+  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showActionFeedback, showMessage } = useChanting();
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -719,7 +791,11 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
         setName("");
         setCode("");
         setImageUrl("");
-        showMessage(`Group created. Share code ${cleanCode} with members.`);
+        showActionFeedback({
+          title: "Group created",
+          body: `${name.trim()} is ready. Share code ${cleanCode} with members to start the group leaderboard.`,
+          action: { label: "View group", tab: "groups" }
+        });
       }).catch((error: Error) => setFormError(readableError(error)));
       return;
     }
@@ -743,7 +819,11 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
     setName("");
     setCode("");
     setImageUrl("");
-    showMessage(`Group created. Share code ${cleanCode} with members.`);
+    showActionFeedback({
+      title: "Group created",
+      body: `${group.name} is ready. Share code ${cleanCode} with members to start the group leaderboard.`,
+      action: { label: "View group", tab: "groups" }
+    });
   };
 
   const content = (
@@ -769,7 +849,7 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
 }
 
 function JoinGroupForm({ embedded = false }: { embedded?: boolean }) {
-  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showMessage } = useChanting();
+  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showActionFeedback, showMessage } = useChanting();
   const [code, setCode] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -803,7 +883,11 @@ function JoinGroupForm({ embedded = false }: { embedded?: boolean }) {
         await refreshRemoteState(currentUser.id);
         setSelectedGroupId(group.id);
         setCode("");
-        showMessage(`Joined ${group.name}.`);
+        showActionFeedback({
+          title: "Group joined",
+          body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,
+          action: { label: "View leaderboard", tab: "groups" }
+        });
       }).catch((error: Error) => setFormError(readableError(error)));
       return;
     }
@@ -816,7 +900,11 @@ function JoinGroupForm({ embedded = false }: { embedded?: boolean }) {
     });
     setSelectedGroupId(group.id);
     setCode("");
-    showMessage(`Joined ${group.name}.`);
+    showActionFeedback({
+      title: "Group joined",
+      body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,
+      action: { label: "View leaderboard", tab: "groups" }
+    });
   };
 
   const content = (

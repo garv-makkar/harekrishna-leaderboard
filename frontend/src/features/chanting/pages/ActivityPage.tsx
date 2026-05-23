@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart3, CalendarDays, Download, ListChecks } from "lucide-react";
+import { BarChart3, CalendarDays, Download, ListChecks, ShieldCheck } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   addDays,
@@ -20,7 +20,7 @@ const rangeOptions = [
 ];
 
 export function ActivityPage() {
-  const { state, currentUser, todayKey, setSelectedDate, showMessage } = useChanting();
+  const { state, currentUser, todayKey, editableDates, setSelectedDate, showMessage } = useChanting();
   const [days, setDays] = useState(30);
 
   const history = useMemo(
@@ -126,6 +126,13 @@ export function ActivityPage() {
       </Panel>
 
       <Panel title="Logged days" icon={<ListChecks size={18} />}>
+        <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-900">
+          <div className="flex items-center gap-2 font-black">
+            <ShieldCheck size={16} />
+            Data confidence
+          </div>
+          <p>Rounds are self-entered. Dates marked editable can still be corrected from Home; older dates are locked by the 7-day edit rule.</p>
+        </div>
         {allEntries.length === 0 ? (
           <EmptyState text="No chanting history yet. Add rounds on Home and your logged days will appear here." />
         ) : (
@@ -134,11 +141,18 @@ export function ActivityPage() {
               const previousDate = addDays(entry.localDate, -1);
               const previousRounds = roundsForDate(state.chantTotals, currentUser.id, previousDate);
               const delta = entry.rounds - previousRounds;
+              const isEditable = editableDates.includes(entry.localDate);
+              const freshness = freshnessLabel(entry.updatedAt);
               return (
                 <div key={entry.localDate} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-stone-100 bg-white px-3 py-3 last:border-b-0 sm:grid-cols-[1fr_90px_90px] sm:px-4">
                   <div>
                     <p className="font-black text-stone-900">{formatDate(entry.localDate)}</p>
                     <p className="text-sm text-stone-500">Updated {new Date(entry.updatedAt).toLocaleString()}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <ConfidenceBadge tone="peacock" text="Self-entered" />
+                      <ConfidenceBadge tone={isEditable ? "saffron" : "stone"} text={isEditable ? "Editable" : "Locked"} />
+                      <ConfidenceBadge tone={freshness === "Updated today" ? "emerald" : "stone"} text={freshness} />
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-black text-peacock-900">{entry.rounds}</p>
@@ -167,6 +181,27 @@ function SummaryTile({ label, value, note }: { label: string; value: number; not
       <p className="text-sm text-stone-600">{note}</p>
     </div>
   );
+}
+
+function ConfidenceBadge({ tone, text }: { tone: "peacock" | "saffron" | "emerald" | "stone"; text: string }) {
+  const toneClass =
+    tone === "peacock"
+      ? "bg-peacock-50 text-peacock-900 ring-peacock-100"
+      : tone === "saffron"
+        ? "bg-saffron-50 text-saffron-900 ring-saffron-100"
+        : tone === "emerald"
+          ? "bg-emerald-50 text-emerald-800 ring-emerald-100"
+          : "bg-stone-100 text-stone-700 ring-stone-200";
+  return <span className={`rounded-md px-2 py-1 text-xs font-black ring-1 ${toneClass}`}>{text}</span>;
+}
+
+function freshnessLabel(updatedAt: string) {
+  const updated = new Date(updatedAt);
+  const now = new Date();
+  if (updated.toDateString() === now.toDateString()) return "Updated today";
+  const ageMs = now.getTime() - updated.getTime();
+  if (ageMs >= 0 && ageMs < 7 * 24 * 60 * 60 * 1000) return "Updated this week";
+  return "Older update";
 }
 
 function shortDate(dateKey: string) {

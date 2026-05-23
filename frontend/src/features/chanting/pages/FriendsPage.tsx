@@ -225,7 +225,7 @@ export function FriendsPage() {
 }
 
 function FriendSearch() {
-  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, showMessage } = useChanting();
+  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, showActionFeedback, showMessage } = useChanting();
   const [query, setQuery] = useState("");
   if (!currentUser) return null;
 
@@ -252,6 +252,7 @@ function FriendSearch() {
     });
 
   const sendRequest = async (toUserId: string) => {
+    const targetUser = state.users.find((user) => user.id === toUserId);
     const exists = state.friendRequests.some(
       (request) =>
         (request.fromUserId === currentUser.id && request.toUserId === toUserId) ||
@@ -271,12 +272,20 @@ function FriendSearch() {
         });
         if (error) throw error;
         await refreshRemoteState(currentUser.id);
-        showMessage("Friend request sent.");
+        showActionFeedback({
+          title: "Friend request sent",
+          body: `Waiting for @${targetUser?.username || "that user"} to accept. You can track it in outgoing requests.`,
+          action: { label: "View requests", tab: "friends" }
+        });
       }).catch((error: Error) => showMessage(readableError(error)));
       return;
     }
     saveState({ ...state, friendRequests: [...state.friendRequests, makeFriendRequest(currentUser.id, toUserId)] });
-    showMessage("Friend request sent.");
+    showActionFeedback({
+      title: "Friend request sent",
+      body: `Waiting for @${targetUser?.username || "that user"} to accept. You can track it in outgoing requests.`,
+      action: { label: "View requests", tab: "friends" }
+    });
   };
 
     return (

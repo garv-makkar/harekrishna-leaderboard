@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import { Award, Download, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Award, CheckCircle2, Circle, Download, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useChanting } from "../ChantingContext";
 import {
@@ -37,13 +37,24 @@ export function ProfilePage() {
     deleteConfirmation,
     setDeleteConfirmation,
     setAuthMode,
-    todayKey
+    todayKey,
+    joinedGroups,
+    friends
   } = useChanting();
   const [avatarStatus, setAvatarStatus] = useState("");
   const [avatarError, setAvatarError] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!currentUser) return null;
+  const profileCompletionItems = [
+    { label: "Profile picture", done: Boolean(currentUser.avatarUrl) },
+    { label: "Display name", done: Boolean(currentUser.displayName && currentUser.displayName !== currentUser.username) },
+    { label: "Email verified", done: Boolean(emailVerified) },
+    { label: "Timezone set", done: Boolean(currentUser.timezone) },
+    { label: "Joined a group", done: joinedGroups.length > 0 },
+    { label: "Added a friend", done: friends.length > 0 },
+    { label: "Logged rounds", done: state.chantTotals.some((total) => total.userId === currentUser.id && total.rounds > 0) }
+  ];
 
   const uploadAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -236,6 +247,8 @@ export function ProfilePage() {
           </div>
         </div>
       </section>
+
+      <ProfileCompletionPanel items={profileCompletionItems} />
 
       <form className="space-y-6" onSubmit={submit}>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -471,6 +484,40 @@ function DataPrivacyPanel() {
         >
           <Download size={18} /> Download my data
         </button>
+      </div>
+    </Panel>
+  );
+}
+
+function ProfileCompletionPanel({ items }: { items: { label: string; done: boolean }[] }) {
+  const completed = items.filter((item) => item.done).length;
+  const percent = Math.round((completed / Math.max(1, items.length)) * 100);
+  const nextItem = items.find((item) => !item.done);
+  return (
+    <Panel title="Profile completeness" icon={<CheckCircle2 size={18} />}>
+      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+          <p className="text-sm font-black text-saffron-900">{percent}% complete</p>
+          <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
+            <div className="h-full bg-saffron-500" style={{ width: `${percent}%` }} />
+          </div>
+          <p className="mt-3 text-sm leading-6 text-stone-700">
+            {nextItem ? `Next: ${nextItem.label}.` : "Everything looks complete."}
+          </p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {items.map((item) => (
+            <div
+              key={item.label}
+              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-bold ${
+                item.done ? "border-emerald-100 bg-emerald-50 text-emerald-800" : "border-stone-200 bg-stone-50 text-stone-600"
+              }`}
+            >
+              {item.done ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </Panel>
   );

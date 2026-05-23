@@ -252,8 +252,8 @@ export function MilestoneGrid({ milestones, limit }: { milestones: Milestone[]; 
               key={milestone.id}
               className={`rounded-md border px-4 py-3 ${
                 milestone.earned
-                  ? "border-saffron-200 bg-saffron-50"
-                  : "border-stone-200 bg-stone-50"
+                  ? "border-saffron-200 bg-saffron-50 shadow-sm"
+                  : "border-stone-200 bg-stone-50/80"
               }`}
             >
               <div className="mb-2 flex items-start justify-between gap-2">
@@ -263,10 +263,10 @@ export function MilestoneGrid({ milestones, limit }: { milestones: Milestone[]; 
                 </div>
                 <span
                   className={`rounded-md px-2 py-1 text-xs font-black ${
-                    milestone.earned ? "bg-peacock-50 text-peacock-900" : "bg-white text-stone-600"
+                    milestone.earned ? "bg-peacock-50 text-peacock-900" : "bg-white text-stone-600 ring-1 ring-stone-200"
                   }`}
                 >
-                  {milestone.earned ? "Earned" : `${percent}%`}
+                  {milestone.earned ? "Unlocked" : `${percent}%`}
                 </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-white">
@@ -276,7 +276,7 @@ export function MilestoneGrid({ milestones, limit }: { milestones: Milestone[]; 
                 />
               </div>
               <p className="mt-2 text-xs font-bold text-stone-500">
-                {milestone.progress} / {milestone.target}
+                {milestone.earned ? "Achievement earned" : `Locked: ${milestone.progress} / ${milestone.target}`}
               </p>
             </div>
           );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, CalendarDays, Flame, PlusCircle } from "lucide-react";
+import { Award, CalendarDays, Flame, Medal, PlusCircle, Target } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   bestStreak,
@@ -50,6 +50,15 @@ export function HomePage() {
   const sevenDayRounds = history.reduce((sum, item) => sum + item.rounds, 0);
   const selectedDateLabel = selectedDate === todayKey ? "Today" : formatDate(selectedDate || todayKey);
   const hasStartedChanting = allTimeRounds > 0;
+  const nextMilestone = milestones
+    .filter((milestone) => !milestone.earned)
+    .sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
+  const latestEarnedMilestone = [...milestones].reverse().find((milestone) => milestone.earned);
+  const earnedMilestoneCount = milestones.filter((milestone) => milestone.earned).length;
+  const setPresetTotal = (value: number) => {
+    setPreviousDraft(draftRounds);
+    setRoundInput(String(Math.max(0, Math.min(MAX_DAILY_ROUNDS, value))));
+  };
 
   return (
     <div className="space-y-6">
@@ -109,6 +118,27 @@ export function HomePage() {
                 max={999}
                 helper="This is the full total for the selected date."
               />
+            </div>
+
+            <div className="mt-4">
+              <p className="mb-2 text-sm font-bold text-stone-700">Quick totals</p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                {[1, 4, 8, 16, 32, 64].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`rounded-md px-3 py-3 text-sm font-black ring-1 transition ${
+                      draftRounds === value
+                        ? "bg-saffron-500 text-white ring-saffron-500"
+                        : "bg-white text-stone-800 ring-stone-200 hover:bg-saffron-50"
+                    }`}
+                    onClick={() => setPresetTotal(value)}
+                    disabled={isBusy}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
@@ -258,6 +288,12 @@ export function HomePage() {
         </Panel>
 
         <Panel title="Milestones" icon={<Award size={18} />}>
+          <AchievementSpotlight
+            earnedCount={earnedMilestoneCount}
+            totalCount={milestones.length}
+            latestEarned={latestEarnedMilestone}
+            nextMilestone={nextMilestone}
+          />
           <MilestoneGrid milestones={milestones} limit={4} />
         </Panel>
       </div>
@@ -269,6 +305,56 @@ export function HomePage() {
         emptyText="No global chanting entries for today yet. Save your rounds and your row will appear here."
         rows={rankUsers(state.users, state.chantTotals, "daily", todayKey)}
       />
+    </div>
+  );
+}
+
+function AchievementSpotlight({
+  earnedCount,
+  totalCount,
+  latestEarned,
+  nextMilestone
+}: {
+  earnedCount: number;
+  totalCount: number;
+  latestEarned: ReturnType<typeof computeMilestones>[number] | undefined;
+  nextMilestone: ReturnType<typeof computeMilestones>[number] | undefined;
+}) {
+  const nextPercent = nextMilestone
+    ? Math.round((nextMilestone.progress / Math.max(1, nextMilestone.target)) * 100)
+    : 100;
+  return (
+    <div className="mb-4 grid gap-3 md:grid-cols-2">
+      <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+        <div className="mb-2 flex items-center gap-2 text-saffron-900">
+          <Medal size={18} />
+          <p className="font-black">Achievement progress</p>
+        </div>
+        <p className="text-sm leading-6 text-stone-700">
+          {earnedCount} of {totalCount} unlocked
+          {latestEarned ? `, latest: ${latestEarned.title}.` : "."}
+        </p>
+      </div>
+      <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3">
+        <div className="mb-2 flex items-center gap-2 text-peacock-900">
+          <Target size={18} />
+          <p className="font-black">{nextMilestone ? "Next milestone" : "All milestones earned"}</p>
+        </div>
+        {nextMilestone ? (
+          <>
+            <p className="text-sm font-black text-stone-900">{nextMilestone.title}</p>
+            <p className="text-sm leading-6 text-stone-700">{nextMilestone.description}</p>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+              <div className="h-full bg-peacock-500" style={{ width: `${nextPercent}%` }} />
+            </div>
+            <p className="mt-1 text-xs font-bold text-stone-600">
+              {nextMilestone.progress} / {nextMilestone.target}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm leading-6 text-stone-700">Beautiful. You have completed every milestone currently available.</p>
+        )}
+      </div>
     </div>
   );
 }

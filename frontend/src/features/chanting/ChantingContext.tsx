@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type {
   AppState,
@@ -20,8 +20,10 @@ import {
   ProfileRow,
   STORAGE_KEY,
   AuthMode,
+  TabId,
   createSeedState,
   detectTimezone,
+  formatDate,
   fromChantTotalRow,
   fromFriendRequestRow,
   fromGroupRow,
@@ -54,6 +56,16 @@ type ProfileForm = {
   avatarUrl: string;
 };
 
+export type ActionFeedback = {
+  title: string;
+  body: string;
+  tone?: "success" | "info";
+  action?: {
+    label: string;
+    tab: TabId;
+  };
+};
+
 type ChantingContextValue = {
   state: AppState;
   saveState: (next: AppState) => void;
@@ -68,6 +80,9 @@ type ChantingContextValue = {
   setPendingAuthNotice: (notice: PendingAuthNotice) => void;
   message: string;
   showMessage: (text: string) => void;
+  actionFeedback: ActionFeedback | null;
+  showActionFeedback: (feedback: ActionFeedback) => void;
+  clearActionFeedback: () => void;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   roundInput: string;
@@ -140,6 +155,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     next: "signin"
   });
   const [message, setMessage] = useState("");
+  const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
+  const messageTimeoutRef = useRef<number | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [roundInput, setRoundInput] = useState("0");
   const [period, setPeriod] = useState<LeaderboardPeriod>("daily");
@@ -400,8 +417,26 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   };
 
   function showMessage(text: string) {
+    if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
+    setActionFeedback(null);
     setMessage(text);
-    window.setTimeout(() => setMessage(""), 3000);
+    messageTimeoutRef.current = window.setTimeout(() => setMessage(""), 3500);
+  }
+
+  function showActionFeedback(feedback: ActionFeedback) {
+    if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
+    setMessage(feedback.title);
+    setActionFeedback(feedback);
+    messageTimeoutRef.current = window.setTimeout(() => {
+      setMessage("");
+      setActionFeedback(null);
+    }, 7000);
+  }
+
+  function clearActionFeedback() {
+    if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
+    setMessage("");
+    setActionFeedback(null);
   }
 
   const currentRounds =
@@ -428,7 +463,11 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
         await refreshRemoteState(currentUser.id);
         setRoundInput(String(cleanRounds));
-        showMessage("Rounds saved.");
+        showActionFeedback({
+          title: "Rounds saved",
+          body: `${cleanRounds} round${cleanRounds === 1 ? "" : "s"} saved for ${formatDate(dateKey)}.`,
+          action: { label: "View global leaderboard", tab: "global" }
+        });
       }).catch((error: Error) => showMessage(readableError(error, "rounds")));
       return;
     }
@@ -447,6 +486,11 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         ];
     saveState({ ...state, chantTotals: nextTotals });
     setRoundInput(String(cleanRounds));
+    showActionFeedback({
+      title: "Rounds saved",
+      body: `${cleanRounds} round${cleanRounds === 1 ? "" : "s"} saved for ${formatDate(dateKey)}.`,
+      action: { label: "View global leaderboard", tab: "global" }
+    });
   };
 
   const adjustDraftRounds = (amount: number) => {
@@ -491,7 +535,11 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
           .eq("id", requestId);
         if (error) throw error;
         await refreshRemoteState(currentUser.id);
-        showMessage("Friend request accepted.");
+        showActionFeedback({
+          title: "Friend request accepted",
+          body: "Your friends leaderboard now includes this devotee.",
+          action: { label: "View friends leaderboard", tab: "friends" }
+        });
       }).catch((error: Error) => showMessage(readableError(error)));
       return;
     }
@@ -501,7 +549,11 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         request.id === requestId ? { ...request, status: "accepted" } : request
       )
     });
-    showMessage("Friend request accepted.");
+    showActionFeedback({
+      title: "Friend request accepted",
+      body: "Your friends leaderboard now includes this devotee.",
+      action: { label: "View friends leaderboard", tab: "friends" }
+    });
   };
 
   const joinedGroups = currentUser
@@ -619,6 +671,9 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     setPendingAuthNotice,
     message,
     showMessage,
+    actionFeedback,
+    showActionFeedback,
+    clearActionFeedback,
     selectedDate,
     setSelectedDate,
     roundInput,
