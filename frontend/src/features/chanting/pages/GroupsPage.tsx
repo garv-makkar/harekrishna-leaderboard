@@ -436,7 +436,7 @@ function GroupSectionJumpBar() {
 }
 
 function groupInviteUrl(group: Group) {
-  const path = `?group=${encodeURIComponent(group.code)}`;
+  const path = `/g/${encodeURIComponent(group.code)}`;
   if (typeof window === "undefined") return path;
   return `${window.location.origin}${path}`;
 }

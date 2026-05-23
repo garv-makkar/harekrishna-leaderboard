@@ -579,7 +579,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   };
 
   const copyGroupInvite = async (group: Group) => {
-    const inviteUrl = typeof window === "undefined" ? "" : `${window.location.origin}?group=${group.code}`;
+    const inviteUrl = typeof window === "undefined" ? "" : `${window.location.origin}/g/${encodeURIComponent(group.code)}`;
     const text = `Join my Hare Krishna Leaderboard group "${group.name}" with code ${group.code}.${inviteUrl ? ` Link: ${inviteUrl}` : ""}`;
     try {
       await navigator.clipboard.writeText(text);
