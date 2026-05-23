@@ -6,6 +6,7 @@ import type {
   GroupRole,
   LeaderboardPeriod,
   ModerationReport,
+  ProfilePrivacy,
   UserProfile
 } from "@/lib/types";
 
@@ -58,6 +59,14 @@ export type Milestone = {
   target: number;
 };
 
+export type ActivityFeedItem = {
+  id: string;
+  title: string;
+  body: string;
+  at: string;
+  tone: "saffron" | "peacock" | "emerald" | "stone";
+};
+
 export type AuthMode = "signin" | "signup" | "forgot" | "otp" | "newPassword" | "checkEmail";
 export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "profile" | "admin" | "about";
 
@@ -73,8 +82,31 @@ export type ProfileRow = {
   daily_goal?: number;
   reminder_enabled?: boolean;
   reminder_time?: string;
+  show_country?: boolean;
+  show_groups?: boolean;
+  show_streak?: boolean;
+  show_recent_history?: boolean;
+  show_milestones?: boolean;
   joined_at: string;
 };
+
+export const defaultProfilePrivacy: ProfilePrivacy = {
+  showCountry: true,
+  showGroups: true,
+  showStreak: true,
+  showRecentHistory: true,
+  showMilestones: true
+};
+
+export function withDefaultProfilePrivacy(user: UserProfile): UserProfile {
+  return {
+    ...user,
+    privacy: {
+      ...defaultProfilePrivacy,
+      ...(user.privacy || {})
+    }
+  };
+}
 
 export type ChantTotalRow = {
   user_id: string;
@@ -439,6 +471,7 @@ export function createSeedState(): AppState {
       dailyGoal: 16,
       reminderEnabled: false,
       reminderTime: "20:00",
+      privacy: defaultProfilePrivacy,
       joinedAt
     },
     {
@@ -454,6 +487,7 @@ export function createSeedState(): AppState {
       dailyGoal: 16,
       reminderEnabled: false,
       reminderTime: "20:00",
+      privacy: defaultProfilePrivacy,
       joinedAt
     },
     {
@@ -469,6 +503,7 @@ export function createSeedState(): AppState {
       dailyGoal: 16,
       reminderEnabled: false,
       reminderTime: "20:00",
+      privacy: defaultProfilePrivacy,
       joinedAt
     }
   ];
@@ -520,7 +555,11 @@ export function loadState(): AppState {
   if (!stored) return createSeedState();
   try {
     const parsed = JSON.parse(stored) as AppState;
-    return { ...parsed, moderationReports: parsed.moderationReports || [] };
+    return {
+      ...parsed,
+      users: (parsed.users || []).map(withDefaultProfilePrivacy),
+      moderationReports: parsed.moderationReports || []
+    };
   } catch {
     return createSeedState();
   }
@@ -634,6 +673,138 @@ export function computeMilestones(state: AppState, user: UserProfile, todayKey: 
   ];
 }
 
+export function buildActivityFeed(state: AppState, currentUserId: string, todayKey: string): ActivityFeedItem[] {
+  const currentUser = state.users.find((user) => user.id === currentUserId);
+  const items: ActivityFeedItem[] = [];
+  const userTotals = state.chantTotals
+    .filter((total) => total.userId === currentUserId)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const latestRoundUpdate = userTotals[0]?.updatedAt || currentUser?.joinedAt || new Date().toISOString();
+  const todayRounds = roundsForDate(state.chantTotals, currentUserId, todayKey);
+
+  userTotals.forEach((total) => {
+    items.push({
+      id: `rounds-${total.localDate}`,
+      title: total.rounds > 0 ? `Logged ${total.rounds} round${total.rounds === 1 ? "" : "s"}` : "Logged a zero day",
+      body:
+        total.localDate === todayKey
+          ? "Today's chanting total was updated."
+          : `${formatDate(total.localDate)} was updated in your chanting history.`,
+      at: total.updatedAt,
+      tone: total.rounds > 0 ? "peacock" : "stone"
+    });
+  });
+
+  if (currentUser && todayRounds >= currentUser.dailyGoal && currentUser.dailyGoal > 0) {
+    items.push({
+      id: `goal-${todayKey}`,
+      title: "Daily goal completed",
+      body: `You reached your ${currentUser.dailyGoal}-round goal for today.`,
+      at: latestRoundUpdate,
+      tone: "emerald"
+    });
+  }
+
+  const streakNow = currentStreak(state.chantTotals, currentUserId, todayKey);
+  if (streakNow >= 2) {
+    items.push({
+      id: `streak-${streakNow}`,
+      title: `${streakNow}-day streak`,
+      body: "Your recent daily chanting rhythm is continuing.",
+      at: latestRoundUpdate,
+      tone: "saffron"
+    });
+  }
+
+  if (currentUser) {
+    computeMilestones(state, currentUser, todayKey)
+      .filter((milestone) => milestone.earned)
+      .forEach((milestone) => {
+        items.push({
+          id: `milestone-${milestone.id}`,
+          title: `Milestone unlocked: ${milestone.title}`,
+          body: milestone.description,
+          at: milestoneActivityTime(state, currentUserId, milestone.id, latestRoundUpdate),
+          tone: "emerald"
+        });
+      });
+  }
+
+  state.groupMembers
+    .filter((member) => member.userId === currentUserId)
+    .forEach((member) => {
+      const group = state.groups.find((item) => item.id === member.groupId);
+      items.push({
+        id: `group-member-${member.groupId}`,
+        title: member.role === "owner" ? "Created a group" : "Joined a group",
+        body: `${member.role === "owner" ? "You created" : "You joined"} ${group?.name || "a group"} as ${member.role}.`,
+        at: member.joinedAt,
+        tone: member.role === "owner" ? "saffron" : "peacock"
+      });
+    });
+
+  state.friendRequests
+    .filter((request) => request.fromUserId === currentUserId || request.toUserId === currentUserId)
+    .forEach((request) => {
+      const otherUserId = request.fromUserId === currentUserId ? request.toUserId : request.fromUserId;
+      const other = state.users.find((user) => user.id === otherUserId);
+      const outgoing = request.fromUserId === currentUserId;
+      items.push({
+        id: `friend-${request.id}`,
+        title: request.status === "accepted" ? "Friend connected" : outgoing ? "Friend request sent" : "Friend request received",
+        body:
+          request.status === "accepted"
+            ? `You and @${other?.username || "this user"} are now friends.`
+            : outgoing
+              ? `Waiting for @${other?.username || "this user"} to accept your request.`
+              : `@${other?.username || "Someone"} sent you a friend request.`,
+        at: request.createdAt,
+        tone: request.status === "accepted" ? "emerald" : "stone"
+      });
+    });
+
+  if (currentUser) {
+    items.push({
+      id: "profile-created",
+      title: "Account created",
+      body: `@${currentUser.username} joined Hare Krishna Leaderboard.`,
+      at: currentUser.joinedAt,
+      tone: "stone"
+    });
+  }
+
+  return items.sort((a, b) => b.at.localeCompare(a.at));
+}
+
+function milestoneActivityTime(state: AppState, currentUserId: string, milestoneId: string, fallback: string) {
+  if (milestoneId === "joined-group") {
+    return state.groupMembers
+      .filter((member) => member.userId === currentUserId)
+      .map((member) => member.joinedAt)
+      .sort()
+      .at(0) || fallback;
+  }
+  if (milestoneId === "created-group") {
+    return state.groups
+      .filter((group) => group.ownerId === currentUserId)
+      .map((group) => group.createdAt)
+      .sort()
+      .at(0) || fallback;
+  }
+  if (milestoneId === "first-friend") {
+    return state.friendRequests
+      .filter(
+        (request) =>
+          request.status === "accepted" &&
+          (request.fromUserId === currentUserId || request.toUserId === currentUserId)
+      )
+      .map((request) => request.createdAt)
+      .sort()
+      .at(0) || fallback;
+  }
+  return fallback;
+}
+
 function makeMilestone(id: string, title: string, description: string, progress: number, target: number): Milestone {
   return {
     id,
@@ -701,6 +872,13 @@ export function fromProfileRow(row: ProfileRow): UserProfile {
     dailyGoal: row.daily_goal ?? 16,
     reminderEnabled: Boolean(row.reminder_enabled),
     reminderTime: row.reminder_time || "20:00",
+    privacy: {
+      showCountry: row.show_country ?? true,
+      showGroups: row.show_groups ?? true,
+      showStreak: row.show_streak ?? true,
+      showRecentHistory: row.show_recent_history ?? true,
+      showMilestones: row.show_milestones ?? true
+    },
     joinedAt: row.joined_at
   };
 }

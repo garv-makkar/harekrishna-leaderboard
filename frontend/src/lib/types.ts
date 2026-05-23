@@ -1,6 +1,14 @@
 export type LeaderboardPeriod = "daily" | "weekly" | "monthly" | "allTime";
 export type GroupRole = "owner" | "moderator" | "member";
 
+export type ProfilePrivacy = {
+  showCountry: boolean;
+  showGroups: boolean;
+  showStreak: boolean;
+  showRecentHistory: boolean;
+  showMilestones: boolean;
+};
+
 export type UserProfile = {
   id: string;
   username: string;
@@ -14,6 +22,7 @@ export type UserProfile = {
   dailyGoal: number;
   reminderEnabled: boolean;
   reminderTime: string;
+  privacy: ProfilePrivacy;
   joinedAt: string;
 };
 

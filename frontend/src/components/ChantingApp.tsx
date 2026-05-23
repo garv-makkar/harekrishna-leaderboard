@@ -33,6 +33,7 @@ import {
   bestStreak,
   computeMilestones,
   currentStreak,
+  defaultProfilePrivacy,
   formatDate,
   normalizeGroupCode,
   recentChantingHistory,
@@ -566,6 +567,7 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
   const { currentUser, todayKey, state } = useChanting();
   const user = state.users.find((item) => item.id === userId);
   if (!user || !currentUser) return null;
+  const privacy = { ...defaultProfilePrivacy, ...(user.privacy || {}) };
   const groupCount = state.groupMembers.filter((member) => member.userId === user.id).length;
   const userGroups = state.groupMembers
     .filter((member) => member.userId === user.id)
@@ -605,9 +607,9 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
           <ProfileStat label="Today" value={sumRounds(state.chantTotals, user.id, "daily", todayKey)} />
           <ProfileStat label="This week" value={sumRounds(state.chantTotals, user.id, "weekly", todayKey)} />
           <ProfileStat label="This month" value={sumRounds(state.chantTotals, user.id, "monthly", todayKey)} />
-          <ProfileStat label="7 days" value={sevenDayRounds} />
-          <ProfileStat label="Streak" value={currentStreak(state.chantTotals, user.id, todayKey)} />
-          <ProfileStat label="Groups" value={groupCount} />
+          {privacy.showRecentHistory && <ProfileStat label="7 days" value={sevenDayRounds} />}
+          {privacy.showStreak && <ProfileStat label="Streak" value={currentStreak(state.chantTotals, user.id, todayKey)} />}
+          {privacy.showGroups && <ProfileStat label="Groups" value={groupCount} />}
         </div>
         <div className="mb-5 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm text-peacock-900">
           <div className="flex items-center gap-2 font-black">
@@ -615,11 +617,14 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
             Public profile
           </div>
           <p className="mt-1">
+            {privacy.showCountry ? `${user.country}. ` : ""}
             Joined {formatDate(user.joinedAt.slice(0, 10))}. {friendCount} accepted friend{friendCount === 1 ? "" : "s"}.
-            Best streak is {bestStreak(state.chantTotals, user.id)} day{bestStreak(state.chantTotals, user.id) === 1 ? "" : "s"}.
+            {privacy.showStreak ? ` Best streak is ${bestStreak(state.chantTotals, user.id)} day${bestStreak(state.chantTotals, user.id) === 1 ? "" : "s"}.` : ""}
           </p>
         </div>
+        {(privacy.showRecentHistory || privacy.showMilestones) && (
         <div className="mb-5 grid gap-4 lg:grid-cols-[1fr_220px]">
+          {privacy.showRecentHistory && (
           <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-2">
               <p className="font-black text-stone-900">Recent 7 days</p>
@@ -638,13 +643,17 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
               ))}
             </div>
           </div>
+          )}
+          {privacy.showMilestones && (
           <div className="rounded-lg border border-saffron-200 bg-saffron-50 p-4">
             <p className="font-black text-saffron-900">Milestones</p>
             <p className="mt-2 text-3xl font-black text-stone-950">{earnedMilestones}/{milestones.length}</p>
             <p className="text-sm text-stone-600">earned</p>
           </div>
+          )}
         </div>
-        {userGroups.length > 0 && (
+        )}
+        {privacy.showGroups && userGroups.length > 0 && (
           <div className="mb-5 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
             <p className="mb-2 font-black text-stone-900">Groups</p>
             <div className="flex flex-wrap gap-2">
@@ -656,7 +665,13 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
             </div>
           </div>
         )}
-        <MilestoneGrid milestones={milestones} limit={4} />
+        {privacy.showMilestones ? (
+          <MilestoneGrid milestones={milestones} limit={4} />
+        ) : (
+          <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-bold text-stone-600">
+            Milestones are hidden by this user's privacy settings.
+          </div>
+        )}
       </div>
     </div>
   );

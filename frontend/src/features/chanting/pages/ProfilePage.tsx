@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { Award, Bell, CheckCircle2, Circle, Download, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import type { ProfilePrivacy } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import {
   countries,
@@ -10,6 +11,7 @@ import {
   countryDialCode,
   createSeedState,
   currentStreak,
+  defaultProfilePrivacy,
   formatDate,
   hashPassword,
   localDayBoundaryText,
@@ -49,12 +51,15 @@ export function ProfilePage() {
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState("20:00");
   const [reminderStatus, setReminderStatus] = useState("");
+  const [privacyDraft, setPrivacyDraft] = useState<ProfilePrivacy>(defaultProfilePrivacy);
+  const [privacyStatus, setPrivacyStatus] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
     setReminderEnabled(currentUser.reminderEnabled);
     setReminderTime(currentUser.reminderTime || "20:00");
+    setPrivacyDraft({ ...defaultProfilePrivacy, ...(currentUser.privacy || {}) });
   }, [currentUser?.id, currentUser?.reminderEnabled, currentUser?.reminderTime, currentUser]);
 
   if (!currentUser) return null;
@@ -167,6 +172,46 @@ export function ProfilePage() {
     window.setTimeout(() => setReminderStatus(""), 2500);
   };
 
+  const savePrivacyPreferences = async () => {
+    setPrivacyStatus("");
+    const nextPrivacy = { ...defaultProfilePrivacy, ...privacyDraft };
+    if (supabase) {
+      const client = supabase;
+      await runRemote(async () => {
+        const { error } = await client
+          .from("profiles")
+          .update({
+            show_country: nextPrivacy.showCountry,
+            show_groups: nextPrivacy.showGroups,
+            show_streak: nextPrivacy.showStreak,
+            show_recent_history: nextPrivacy.showRecentHistory,
+            show_milestones: nextPrivacy.showMilestones
+          })
+          .eq("id", currentUser.id);
+        if (error) throw error;
+        await refreshRemoteState(currentUser.id, "core");
+        setPrivacyStatus("Privacy preferences saved.");
+      }).catch((error: Error) => {
+        setPrivacyStatus("");
+        showMessage(
+          error.message.toLowerCase().includes("show_country")
+            ? "Run migration 012_profile_privacy.sql in Supabase, then save privacy preferences again."
+            : readableError(error, "profile")
+        );
+      });
+      window.setTimeout(() => setPrivacyStatus(""), 2500);
+      return;
+    }
+    saveState({
+      ...state,
+      users: state.users.map((user) =>
+        user.id === currentUser.id ? { ...user, privacy: nextPrivacy } : user
+      )
+    });
+    setPrivacyStatus("Privacy preferences saved.");
+    window.setTimeout(() => setPrivacyStatus(""), 2500);
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const profile = {
@@ -268,6 +313,14 @@ export function ProfilePage() {
       </section>
 
       <ProfileCompletionPanel items={profileCompletionItems} />
+
+      <PublicProfilePrivacyPanel
+        isBusy={isBusy}
+        privacy={privacyDraft}
+        status={privacyStatus}
+        onChange={setPrivacyDraft}
+        onSave={savePrivacyPreferences}
+      />
 
       <PublicProfilePreview />
 
@@ -477,6 +530,7 @@ export function ProfilePage() {
 function PublicProfilePreview() {
   const { state, currentUser, todayKey } = useChanting();
   if (!currentUser) return null;
+  const privacy = { ...defaultProfilePrivacy, ...(currentUser.privacy || {}) };
   const allTimeRounds = sumRounds(state.chantTotals, currentUser.id, "allTime", todayKey);
   const streak = currentStreak(state.chantTotals, currentUser.id, todayKey);
   const groupCount = state.groupMembers.filter((member) => member.userId === currentUser.id).length;
@@ -501,16 +555,87 @@ function PublicProfilePreview() {
             <p className="truncate text-2xl font-black text-stone-950">{currentUser.displayName || currentUser.username}</p>
             <p className="truncate text-sm font-bold text-stone-600">@{currentUser.username}</p>
             <p className="mt-2 text-sm leading-6 text-stone-600">
-              {currentUser.country}. Joined {formatDate(currentUser.joinedAt.slice(0, 10))}.
+              {privacy.showCountry ? `${currentUser.country}. ` : ""}Joined {formatDate(currentUser.joinedAt.slice(0, 10))}.
             </p>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <PrivacyMetric label="All-time rounds" value={allTimeRounds} />
-          <PrivacyMetric label="Current streak" value={streak} />
-          <PrivacyMetric label="Groups" value={groupCount} />
+          {privacy.showStreak ? <PrivacyMetric label="Current streak" value={streak} /> : <PrivacyHiddenMetric label="Current streak" />}
+          {privacy.showGroups ? <PrivacyMetric label="Groups" value={groupCount} /> : <PrivacyHiddenMetric label="Groups" />}
           <PrivacyMetric label="Friends" value={friendCount} />
         </div>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <PrivacyVisibilityPill label="Recent 7 days" visible={privacy.showRecentHistory} />
+        <PrivacyVisibilityPill label="Milestones" visible={privacy.showMilestones} />
+        <PrivacyVisibilityPill label="Country" visible={privacy.showCountry} />
+      </div>
+    </Panel>
+  );
+}
+
+function PublicProfilePrivacyPanel({
+  isBusy,
+  privacy,
+  status,
+  onChange,
+  onSave
+}: {
+  isBusy: boolean;
+  privacy: ProfilePrivacy;
+  status: string;
+  onChange: (privacy: ProfilePrivacy) => void;
+  onSave: () => void | Promise<void>;
+}) {
+  const items: { key: keyof ProfilePrivacy; title: string; text: string }[] = [
+    { key: "showCountry", title: "Show country", text: "Display your country on public profile previews." },
+    { key: "showGroups", title: "Show joined groups", text: "Display group names and group count on profile previews." },
+    { key: "showStreak", title: "Show streak", text: "Display current and best streak information." },
+    { key: "showRecentHistory", title: "Show recent 7 days", text: "Display your recent daily round history." },
+    { key: "showMilestones", title: "Show milestones", text: "Display earned milestone progress." }
+  ];
+
+  const visibleCount = items.filter((item) => privacy[item.key]).length;
+
+  return (
+    <Panel title="Public profile privacy" icon={<ShieldCheck size={18} />}>
+      <div className="mb-4 rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-950">
+        <p className="font-black">Choose what other users see when they open your profile preview.</p>
+        <p>Your username, display name, avatar, and public leaderboard rows stay visible because they identify leaderboard entries.</p>
+      </div>
+      {status && <p className="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{status}</p>}
+      <div className="grid gap-3 lg:grid-cols-2">
+        {items.map((item) => (
+          <label
+            key={item.key}
+            className="flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm"
+          >
+            <input
+              type="checkbox"
+              className="mt-1 h-5 w-5 rounded border-stone-300 text-saffron-600 focus:ring-saffron-500"
+              checked={privacy[item.key]}
+              onChange={(event) => onChange({ ...privacy, [item.key]: event.target.checked })}
+            />
+            <span>
+              <span className="block font-black text-stone-950">{item.title}</span>
+              <span className="mt-1 block text-sm leading-6 text-stone-600">{item.text}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <span className="rounded-md bg-stone-50 px-3 py-2 text-sm font-bold text-stone-700 ring-1 ring-stone-200">
+          {visibleCount} of {items.length} optional sections visible
+        </span>
+        <button
+          type="button"
+          className="rounded-md bg-saffron-500 px-4 py-3 font-black text-white disabled:bg-saffron-200"
+          disabled={isBusy}
+          onClick={() => void onSave()}
+        >
+          Save privacy
+        </button>
       </div>
     </Panel>
   );
@@ -544,6 +669,7 @@ function DataPrivacyPanel() {
         country: currentUser.country,
         timezone: currentUser.timezone,
         avatarUrl: currentUser.avatarUrl,
+        privacy: currentUser.privacy,
         joinedAt: currentUser.joinedAt
       },
       chantingTotals: state.chantTotals
@@ -634,6 +760,25 @@ function PrivacyMetric({ label, value }: { label: string; value: number }) {
       <p className="text-sm font-bold text-stone-600">{label}</p>
       <p className="mt-1 text-3xl font-black text-stone-900">{value}</p>
     </div>
+  );
+}
+
+function PrivacyHiddenMetric({ label }: { label: string }) {
+  return (
+    <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 shadow-sm">
+      <p className="text-sm font-bold text-stone-600">{label}</p>
+      <p className="mt-1 text-sm font-black text-stone-500">Hidden</p>
+    </div>
+  );
+}
+
+function PrivacyVisibilityPill({ label, visible }: { label: string; visible: boolean }) {
+  return (
+    <span className={`rounded-md px-3 py-2 text-sm font-black ${
+      visible ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100" : "bg-stone-100 text-stone-600"
+    }`}>
+      {label}: {visible ? "Visible" : "Hidden"}
+    </span>
   );
 }
 

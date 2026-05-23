@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, ExternalLink, Flame, History, Medal, Moon, PlusCircle, Target, Users } from "lucide-react";
+import { AlertTriangle, Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, ExternalLink, Flame, History, ListChecks, Medal, Moon, PlusCircle, Target, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   approximateHinduCalendar,
   addDays,
   bestStreak,
+  buildActivityFeed,
   computeMilestones,
   currentStreak,
   daysChantedThisMonth,
@@ -20,6 +21,7 @@ import {
   sumRounds,
   VAISHNAVA_CALENDAR_REFERENCE
 } from "../domain";
+import type { ActivityFeedItem } from "../domain";
 import { ActionEmptyState, Field, Leaderboard, MetricCard, MilestoneGrid, Panel } from "../ui";
 
 export function HomePage() {
@@ -50,10 +52,15 @@ export function HomePage() {
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState("");
   const [goalDraft, setGoalDraft] = useState("16");
+  const [highRoundConfirmed, setHighRoundConfirmed] = useState(false);
 
   useEffect(() => {
     if (currentUser) setGoalDraft(String(currentUser.dailyGoal || 16));
   }, [currentUser?.dailyGoal, currentUser]);
+
+  useEffect(() => {
+    setHighRoundConfirmed(false);
+  }, [draftRounds, selectedDate]);
 
   if (!currentUser) return null;
 
@@ -166,14 +173,22 @@ export function HomePage() {
     }
   ];
   const homeLeaderboardUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, state.users.map((user) => user.id), todayKey, todayKey));
+  const recentActivityItems = buildActivityFeed(state, currentUser.id, todayKey).slice(0, 5);
   const nextMilestone = milestones
     .filter((milestone) => !milestone.earned)
     .sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
   const latestEarnedMilestone = [...milestones].reverse().find((milestone) => milestone.earned);
   const earnedMilestoneCount = milestones.filter((milestone) => milestone.earned).length;
+  const isLargeRoundEntry = draftRounds >= 64;
+  const needsHighRoundConfirmation = draftRounds >= 108;
+  const canSaveDraft = !isBusy && draftRounds !== currentRounds && (!needsHighRoundConfirmation || highRoundConfirmed);
   const setPresetTotal = (value: number) => {
     setPreviousDraft(draftRounds);
     setRoundInput(String(Math.max(0, Math.min(MAX_DAILY_ROUNDS, value))));
+  };
+  const saveDraftRounds = () => {
+    setPreviousDraft(null);
+    setDailyRounds(selectedDate, draftRounds);
   };
   const saveDailyGoal = async () => {
     await updateUserPreferences({ dailyGoal: Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(Number(goalDraft) || 0))) });
@@ -342,11 +357,8 @@ export function HomePage() {
               <button
                 type="button"
                 className="rounded-md bg-saffron-500 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-saffron-600"
-                onClick={() => {
-                  setPreviousDraft(null);
-                  setDailyRounds(selectedDate, draftRounds);
-                }}
-                disabled={isBusy || draftRounds === currentRounds}
+                onClick={saveDraftRounds}
+                disabled={!canSaveDraft}
               >
                 Save total
               </button>
@@ -356,8 +368,19 @@ export function HomePage() {
               Draft total: <b className="text-stone-900">{draftRounds}</b>
               {draftDelta !== 0 && <span> ({draftDelta > 0 ? `+${draftDelta}` : draftDelta} from saved)</span>}
               <span> Daily maximum is {MAX_DAILY_ROUNDS}.</span>
+              <span className="block font-bold text-stone-700">All round totals are self-entered.</span>
               <span className="block">{localDayBoundaryText(currentUser.timezone)}</span>
             </div>
+
+            {isLargeRoundEntry && (
+              <HighRoundGuardrail
+                confirmed={highRoundConfirmed}
+                draftRounds={draftRounds}
+                needsConfirmation={needsHighRoundConfirmation}
+                selectedDateLabel={selectedDateLabel}
+                onChange={setHighRoundConfirmed}
+              />
+            )}
           </div>
 
           <aside className="border-t border-saffron-100 bg-saffron-50/70 p-4 sm:p-5 xl:border-l xl:border-t-0">
@@ -401,6 +424,17 @@ export function HomePage() {
       )}
 
       <OnboardingChecklist items={onboardingItems} />
+
+      <HomeActivityFeed
+        items={recentActivityItems}
+        onOpenActivity={() =>
+          showActionFeedback({
+            title: "Open Activity",
+            body: "Activity has your feed, history, import, and export tools.",
+            action: { label: "Go to Activity", tab: "activity" }
+          })
+        }
+      />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
         <Panel title="Daily focus" icon={<Target size={18} />}>
@@ -749,11 +783,8 @@ export function HomePage() {
           <button
             type="button"
             className="rounded-md bg-saffron-500 px-3 py-3 text-sm font-black text-white disabled:bg-saffron-200"
-            disabled={isBusy || draftRounds === currentRounds}
-            onClick={() => {
-              setPreviousDraft(null);
-              setDailyRounds(selectedDate, draftRounds);
-            }}
+            disabled={!canSaveDraft}
+            onClick={saveDraftRounds}
           >
             Save
           </button>
@@ -774,6 +805,104 @@ type OnboardingChecklistItem = {
   action: string;
   onClick: () => void;
 };
+
+function HighRoundGuardrail({
+  confirmed,
+  draftRounds,
+  needsConfirmation,
+  selectedDateLabel,
+  onChange
+}: {
+  confirmed: boolean;
+  draftRounds: number;
+  needsConfirmation: boolean;
+  selectedDateLabel: string;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <div className={`mt-4 rounded-lg border px-4 py-3 text-sm leading-6 ${
+      needsConfirmation
+        ? "border-saffron-300 bg-saffron-50 text-saffron-950"
+        : "border-peacock-200 bg-peacock-50 text-peacock-950"
+    }`}>
+      <div className="flex gap-3">
+        <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-white text-saffron-800 ring-1 ring-saffron-100">
+          <AlertTriangle size={17} />
+        </span>
+        <div className="min-w-0">
+          <p className="font-black">
+            {needsConfirmation ? "Please confirm this high entry" : "Large entry, please double-check"}
+          </p>
+          <p>
+            You are saving {draftRounds} rounds for {selectedDateLabel}. This is allowed, but leaderboards are honesty-based and self-entered.
+          </p>
+          {needsConfirmation && (
+            <label className="mt-3 flex items-start gap-2 rounded-md bg-white px-3 py-2 font-bold text-stone-800 ring-1 ring-saffron-100">
+              <input
+                className="mt-1 h-4 w-4 rounded border-stone-300 text-saffron-600"
+                type="checkbox"
+                checked={confirmed}
+                onChange={(event) => onChange(event.target.checked)}
+              />
+              <span>I have double-checked this total and want to save it.</span>
+            </label>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeActivityFeed({ items, onOpenActivity }: { items: ActivityFeedItem[]; onOpenActivity: () => void }) {
+  return (
+    <Panel title="Recent activity" icon={<ListChecks size={18} />}>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+        <div className="grid gap-2">
+          {items.length === 0 ? (
+            <p className="rounded-md border border-dashed border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-600">
+              Save rounds, join a group, or add a friend and your activity will appear here.
+            </p>
+          ) : (
+            items.map((item) => (
+              <div key={item.id} className="grid gap-2 rounded-md border border-stone-200 bg-white px-3 py-3 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="min-w-0">
+                  <p className="truncate font-black text-stone-950">{item.title}</p>
+                  <p className="text-sm leading-6 text-stone-600">{item.body}</p>
+                </div>
+                <span className={`w-fit rounded-md px-2 py-1 text-xs font-black ${homeActivityBadgeClass(item.tone)}`}>
+                  {formatHomeFeedTime(item.at)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+        <button
+          type="button"
+          className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white shadow-sm"
+          onClick={onOpenActivity}
+        >
+          Open activity
+        </button>
+      </div>
+    </Panel>
+  );
+}
+
+function homeActivityBadgeClass(tone: ActivityFeedItem["tone"]) {
+  if (tone === "emerald") return "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100";
+  if (tone === "saffron") return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100";
+  if (tone === "peacock") return "bg-peacock-50 text-peacock-900 ring-1 ring-peacock-100";
+  return "bg-stone-100 text-stone-700 ring-1 ring-stone-200";
+}
+
+function formatHomeFeedTime(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
 
 function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
   const completed = items.filter((item) => item.complete).length;

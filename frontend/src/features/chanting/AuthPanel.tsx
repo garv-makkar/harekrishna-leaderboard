@@ -10,6 +10,7 @@ import {
   countries,
   countryDialCode,
   countryPhoneExample,
+  defaultProfilePrivacy,
   detectTimezone,
   hashPassword,
   isAccountNotFoundError,
@@ -354,6 +355,7 @@ function SignUpForm() {
       dailyGoal: 16,
       reminderEnabled: false,
       reminderTime: "20:00",
+      privacy: defaultProfilePrivacy,
       joinedAt: new Date().toISOString()
     };
     saveState({ ...state, users: [...state.users, user], currentUserId: user.id });

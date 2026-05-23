@@ -1,16 +1,18 @@
 "use client";
 
 import { ChangeEvent, useMemo, useRef, useState } from "react";
-import { BarChart3, CalendarDays, Download, FileUp, ListChecks, ShieldCheck } from "lucide-react";
+import { Award, BarChart3, CalendarDays, CheckCircle2, Download, FileUp, Flame, ListChecks, ShieldCheck, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   addDays,
   bestStreak,
+  buildActivityFeed,
   currentStreak,
   formatDate,
   recentChantingHistory,
   roundsForDate
 } from "../domain";
+import type { ActivityFeedItem } from "../domain";
 import { EmptyState, Panel } from "../ui";
 
 const rangeOptions = [
@@ -39,9 +41,7 @@ export function ActivityPage() {
   const allEntries = state.chantTotals
     .filter((total) => total.userId === currentUser.id && total.rounds > 0)
     .sort((a, b) => b.localDate.localeCompare(a.localDate));
-  const feedItems = buildActivityFeed(state, currentUser.id)
-    .sort((a, b) => b.at.localeCompare(a.at))
-    .slice(0, 12);
+  const feedItems = buildActivityFeed(state, currentUser.id, todayKey).slice(0, 14);
   const exportHistory = () => {
     const rows = [
       ["date", "rounds", "updated_at"],
@@ -146,9 +146,14 @@ export function ActivityPage() {
           <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
             {feedItems.map((item) => (
               <div key={item.id} className="grid gap-2 border-b border-stone-100 px-4 py-3 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center">
-                <div>
-                  <p className="font-black text-stone-900">{item.title}</p>
-                  <p className="text-sm leading-6 text-stone-600">{item.body}</p>
+                <div className="flex min-w-0 gap-3">
+                  <span className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-md ${feedIconClass(item.tone)}`}>
+                    {feedIcon(item)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-black text-stone-900">{item.title}</p>
+                    <p className="text-sm leading-6 text-stone-600">{item.body}</p>
+                  </div>
                 </div>
                 <span className="w-fit rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600">
                   {formatFeedTime(item.at)}
@@ -241,64 +246,6 @@ export function ActivityPage() {
   );
 }
 
-function buildActivityFeed(state: ReturnType<typeof useChanting>["state"], currentUserId: string) {
-  const currentUser = state.users.find((user) => user.id === currentUserId);
-  const items: { id: string; title: string; body: string; at: string }[] = [];
-
-  state.chantTotals
-    .filter((total) => total.userId === currentUserId)
-    .forEach((total) => {
-      items.push({
-        id: `rounds-${total.localDate}`,
-        title: `Logged ${total.rounds} round${total.rounds === 1 ? "" : "s"}`,
-        body: `${formatDate(total.localDate)} was updated in your chanting history.`,
-        at: total.updatedAt
-      });
-    });
-
-  state.groupMembers
-    .filter((member) => member.userId === currentUserId)
-    .forEach((member) => {
-      const group = state.groups.find((item) => item.id === member.groupId);
-      items.push({
-        id: `group-member-${member.groupId}`,
-        title: member.role === "owner" ? "Created a group" : "Joined a group",
-        body: `${member.role === "owner" ? "You created" : "You joined"} ${group?.name || "a group"} as ${member.role}.`,
-        at: member.joinedAt
-      });
-    });
-
-  state.friendRequests
-    .filter((request) => request.fromUserId === currentUserId || request.toUserId === currentUserId)
-    .forEach((request) => {
-      const otherUserId = request.fromUserId === currentUserId ? request.toUserId : request.fromUserId;
-      const other = state.users.find((user) => user.id === otherUserId);
-      const outgoing = request.fromUserId === currentUserId;
-      items.push({
-        id: `friend-${request.id}`,
-        title: request.status === "accepted" ? "Friend connected" : outgoing ? "Friend request sent" : "Friend request received",
-        body:
-          request.status === "accepted"
-            ? `You and @${other?.username || "this user"} are now friends.`
-            : outgoing
-              ? `Waiting for @${other?.username || "this user"} to accept your request.`
-              : `@${other?.username || "Someone"} sent you a friend request.`,
-        at: request.createdAt
-      });
-    });
-
-  if (currentUser) {
-    items.push({
-      id: "profile-created",
-      title: "Account created",
-      body: `@${currentUser.username} joined Hare Krishna Leaderboard.`,
-      at: currentUser.joinedAt
-    });
-  }
-
-  return items;
-}
-
 function formatFeedTime(value: string) {
   return new Date(value).toLocaleString(undefined, {
     day: "numeric",
@@ -306,6 +253,21 @@ function formatFeedTime(value: string) {
     hour: "numeric",
     minute: "2-digit"
   });
+}
+
+function feedIcon(item: ActivityFeedItem) {
+  if (item.id.startsWith("milestone")) return <Award size={17} />;
+  if (item.id.startsWith("goal")) return <CheckCircle2 size={17} />;
+  if (item.id.startsWith("streak")) return <Flame size={17} />;
+  if (item.id.startsWith("group") || item.id.startsWith("friend")) return <Users size={17} />;
+  return <ListChecks size={17} />;
+}
+
+function feedIconClass(tone: ActivityFeedItem["tone"]) {
+  if (tone === "emerald") return "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100";
+  if (tone === "saffron") return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100";
+  if (tone === "peacock") return "bg-peacock-50 text-peacock-900 ring-1 ring-peacock-100";
+  return "bg-stone-100 text-stone-600 ring-1 ring-stone-200";
 }
 
 function SummaryTile({ label, value, note }: { label: string; value: number; note: string }) {
