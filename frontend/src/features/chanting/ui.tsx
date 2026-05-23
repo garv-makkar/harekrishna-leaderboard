@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { LeaderboardPeriod } from "@/lib/types";
 import type { Milestone, RankedUser } from "./domain";
 import { detectTimezone, periodLabel, timezoneOptions } from "./domain";
@@ -378,15 +378,30 @@ export function Leaderboard({
 }) {
   const { setSelectedPublicUserId } = useChanting();
   const currentRowRef = useRef<HTMLDivElement | null>(null);
-  const activeRows = rows.filter((row) => row.rounds > 0);
+  const [onlyUpdatedToday, setOnlyUpdatedToday] = useState(false);
+  const [showZeroEntries, setShowZeroEntries] = useState(false);
+  const [showAllRows, setShowAllRows] = useState(false);
+  const todayText = new Date().toDateString();
   const currentRow = rows.find((row) => row.user.id === currentUserId);
-  const visibleRows = rows.filter((row) => {
+  const baseRows = rows.filter((row) => {
     if (row.user.id === currentUserId) return true;
     if (visibility === "all") return true;
+    if (showZeroEntries && row.hasEntry) return true;
     if (visibility === "active") return row.rounds > 0;
     return row.rounds > 0 || row.hasEntry;
   });
-  if (visibleRows.length === 0) return <EmptyState text={emptyText} />;
+  const filteredRows = baseRows.filter((row) => {
+    if (!onlyUpdatedToday) return true;
+    if (!row.lastUpdatedAt) return false;
+    return new Date(row.lastUpdatedAt).toDateString() === todayText;
+  });
+  const limitedRows = showAllRows ? filteredRows : filteredRows.slice(0, 10);
+  const visibleRows =
+    !showAllRows && currentRow && !limitedRows.some((row) => row.user.id === currentUserId) && filteredRows.some((row) => row.user.id === currentUserId)
+      ? [...limitedRows, currentRow]
+      : limitedRows;
+  if (baseRows.length === 0) return <EmptyState text={emptyText} />;
+  const activeRows = filteredRows.filter((row) => row.rounds > 0);
   const leaderRows = activeRows.slice(0, 3);
   const currentRowIndex = visibleRows.findIndex((row) => row.user.id === currentUserId);
   const tiedWithCount = currentRow
@@ -416,6 +431,37 @@ export function Leaderboard({
       {activeRows.length === 0 && (
         <div className="mb-4">
           <EmptyState text={emptyText} />
+        </div>
+      )}
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm">
+        <button
+          type="button"
+          className={`rounded-md px-3 py-2 text-sm font-black transition ${onlyUpdatedToday ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
+          onClick={() => setOnlyUpdatedToday((value) => !value)}
+        >
+          Updated today
+        </button>
+        <button
+          type="button"
+          className={`rounded-md px-3 py-2 text-sm font-black transition ${showZeroEntries ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
+          onClick={() => setShowZeroEntries((value) => !value)}
+        >
+          Show zero entries
+        </button>
+        <button
+          type="button"
+          className={`rounded-md px-3 py-2 text-sm font-black transition ${showAllRows ? "bg-peacock-600 text-white" : "bg-stone-100 text-stone-700 hover:bg-peacock-50"}`}
+          onClick={() => setShowAllRows((value) => !value)}
+        >
+          {showAllRows ? "Top 10" : "All rows"}
+        </button>
+        <span className="ml-auto rounded-md bg-stone-50 px-3 py-2 text-sm font-bold text-stone-600">
+          Showing {visibleRows.length} of {filteredRows.length}
+        </span>
+      </div>
+      {filteredRows.length === 0 && (
+        <div className="mb-4">
+          <EmptyState text="No rows match the current leaderboard filters." />
         </div>
       )}
       {leaderRows.length > 0 && (

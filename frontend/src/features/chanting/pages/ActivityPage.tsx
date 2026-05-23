@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BarChart3, CalendarDays, Download, ListChecks, ShieldCheck } from "lucide-react";
+import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { BarChart3, CalendarDays, Download, FileUp, ListChecks, ShieldCheck } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   addDays,
@@ -20,8 +20,10 @@ const rangeOptions = [
 ];
 
 export function ActivityPage() {
-  const { state, currentUser, todayKey, editableDates, setSelectedDate, showMessage } = useChanting();
+  const { state, currentUser, todayKey, editableDates, setSelectedDate, setDailyRounds, showMessage } = useChanting();
   const [days, setDays] = useState(30);
+  const [importStatus, setImportStatus] = useState("");
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const history = useMemo(
     () => recentChantingHistory(state.chantTotals, currentUser?.id || "", todayKey, days),
@@ -59,6 +61,36 @@ export function ActivityPage() {
     URL.revokeObjectURL(url);
     showMessage("History exported as CSV.");
   };
+  const importHistory = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImportStatus("Reading CSV...");
+    const text = await file.text();
+    const rows = parseCsvRows(text);
+    const header = rows[0]?.map((cell) => cell.toLowerCase()) || [];
+    const dateIndex = header.indexOf("date");
+    const roundsIndex = header.indexOf("rounds");
+    if (dateIndex < 0 || roundsIndex < 0) {
+      setImportStatus("CSV must include date and rounds columns.");
+      return;
+    }
+    const entries = rows
+      .slice(1)
+      .map((row) => ({
+        dateKey: row[dateIndex],
+        rounds: Math.max(0, Math.min(999, Math.floor(Number(row[roundsIndex]) || 0)))
+      }))
+      .filter((entry) => /^\d{4}-\d{2}-\d{2}$/.test(entry.dateKey) && editableDates.includes(entry.dateKey));
+    if (entries.length === 0) {
+      setImportStatus("No editable dates found. Import currently accepts only today and the previous 6 days.");
+      return;
+    }
+    for (const entry of entries) {
+      await setDailyRounds(entry.dateKey, entry.rounds);
+    }
+    setImportStatus(`Imported ${entries.length} editable entr${entries.length === 1 ? "y" : "ies"}. Older dates were skipped.`);
+    if (importInputRef.current) importInputRef.current.value = "";
+  };
 
   return (
     <div className="space-y-6">
@@ -85,7 +117,20 @@ export function ActivityPage() {
           >
             <Download size={16} /> Export CSV
           </button>
+          <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={importHistory} />
+          <button
+            type="button"
+            className="inline-flex w-fit items-center gap-2 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white shadow-sm"
+            onClick={() => importInputRef.current?.click()}
+          >
+            <FileUp size={16} /> Import CSV
+          </button>
         </div>
+        {importStatus && (
+          <div className="mb-4 rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3 text-sm font-bold text-saffron-900">
+            {importStatus}
+          </div>
+        )}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryTile label="Rounds" value={totalRounds} note={`last ${days} days`} />
           <SummaryTile label="Active days" value={activeDays} note={`${days - activeDays} blank day${days - activeDays === 1 ? "" : "s"}`} />
@@ -299,6 +344,34 @@ function shortDate(dateKey: string) {
     day: "numeric",
     month: "short"
   });
+}
+
+function parseCsvRows(text: string) {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => line.trim())
+    .map((line) => {
+      const cells: string[] = [];
+      let cell = "";
+      let quoted = false;
+      for (let index = 0; index < line.length; index += 1) {
+        const char = line[index];
+        const next = line[index + 1];
+        if (char === '"' && quoted && next === '"') {
+          cell += '"';
+          index += 1;
+        } else if (char === '"') {
+          quoted = !quoted;
+        } else if (char === "," && !quoted) {
+          cells.push(cell);
+          cell = "";
+        } else {
+          cell += char;
+        }
+      }
+      cells.push(cell);
+      return cells.map((value) => value.trim());
+    });
 }
 
 function csvCell(value: string) {

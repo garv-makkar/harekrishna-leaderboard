@@ -40,6 +40,7 @@ export function GroupsPage({
   const [periodOffset, setPeriodOffset] = useState(0);
   const [actionMode, setActionMode] = useState<"join" | "create">("join");
   const [showAllMembers, setShowAllMembers] = useState(false);
+  const [recentCopy, setRecentCopy] = useState("");
   const actionPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -67,6 +68,18 @@ export function GroupsPage({
   const openActionPanel = (mode: "join" | "create") => {
     setActionMode(mode);
     window.requestAnimationFrame(() => actionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
+  const rememberCopy = (text: string) => {
+    setRecentCopy(text);
+    window.setTimeout(() => setRecentCopy(""), 5000);
+  };
+  const copyCode = async (code: string) => {
+    await copyGroupCode(code);
+    rememberCopy(`Code ${code} copied.`);
+  };
+  const copyInvite = async (group: Group) => {
+    await copyGroupInvite(group);
+    rememberCopy(`Invite for ${group.name} copied with join link.`);
   };
 
   const leaveSelectedGroup = async () => {
@@ -121,18 +134,23 @@ export function GroupsPage({
                 <button
                   type="button"
                   className="rounded-md bg-stone-900 px-3 py-2 text-sm font-bold text-white"
-                  onClick={() => copyGroupCode(selectedGroup.code)}
+                  onClick={() => copyCode(selectedGroup.code)}
                 >
                   Copy code {selectedGroup.code}
                 </button>
                 <button
                   type="button"
                   className="rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
-                  onClick={() => copyGroupInvite(selectedGroup)}
+                  onClick={() => copyInvite(selectedGroup)}
                 >
                   Copy invite
                 </button>
               </div>
+            )}
+            {recentCopy && (
+              <p className="mt-3 inline-flex rounded-md bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
+                {recentCopy}
+              </p>
             )}
           </div>
           <div className="grid gap-3 border-t border-saffron-100 bg-saffron-50/70 p-4 sm:grid-cols-2 xl:grid-cols-1 xl:border-l xl:border-t-0">
@@ -198,14 +216,14 @@ export function GroupsPage({
                   <button
                     type="button"
                     className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700"
-                    onClick={() => copyGroupCode(group.code)}
+                    onClick={() => copyCode(group.code)}
                   >
                     Copy code {group.code}
                   </button>
                   <button
                     type="button"
                     className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900"
-                    onClick={() => copyGroupInvite(group)}
+                    onClick={() => copyInvite(group)}
                   >
                     Copy invite
                   </button>
@@ -221,13 +239,13 @@ export function GroupsPage({
           group={selectedGroup}
           role={selectedRole}
           memberCount={selectedMemberCount}
-          onCopyCode={() => copyGroupCode(selectedGroup.code)}
-          onCopyInvite={() => copyGroupInvite(selectedGroup)}
+          onCopyCode={() => copyCode(selectedGroup.code)}
+          onCopyInvite={() => copyInvite(selectedGroup)}
         />
         {selectedRole === "owner" && (
           <GroupOwnerDashboard
             group={selectedGroup}
-            onCopyInvite={() => copyGroupInvite(selectedGroup)}
+            onCopyInvite={() => copyInvite(selectedGroup)}
             onRefresh={() => refreshRemoteState(currentUser.id)}
           />
         )}
@@ -459,15 +477,32 @@ function GroupOwnerDashboard({
 }) {
   const { state, todayKey, isBusy } = useChanting();
   const memberIds = state.groupMembers.filter((member) => member.groupId === group.id).map((member) => member.userId);
+  const week = leaderboardRange("weekly", todayKey, 0);
   const rows = memberIds.map((userId) => {
     const user = state.users.find((item) => item.id === userId);
     const entry = state.chantTotals.find((total) => total.userId === userId && total.localDate === todayKey);
-    return { user, entry };
+    const weekEntries = state.chantTotals.filter((total) => total.userId === userId && total.localDate >= week.start && total.localDate <= week.end);
+    return { user, entry, weekEntries };
   });
   const updatedToday = rows.filter((row) => row.entry).length;
   const notUpdatedToday = rows.filter((row) => !row.entry).length;
   const todayRounds = rows.reduce((sum, row) => sum + (row.entry?.rounds || 0), 0);
   const targetPercent = group.targetDaily > 0 ? Math.min(100, Math.round((todayRounds / group.targetDaily) * 100)) : 0;
+  const weeklyTotal = rows.reduce((sum, row) => sum + row.weekEntries.reduce((entrySum, entry) => entrySum + entry.rounds, 0), 0);
+  const bestContributor = [...rows]
+    .map((row) => ({
+      user: row.user,
+      rounds: row.weekEntries.reduce((sum, entry) => sum + entry.rounds, 0),
+      activeDays: row.weekEntries.filter((entry) => entry.rounds > 0).length
+    }))
+    .sort((a, b) => b.rounds - a.rounds)[0];
+  const mostConsistent = [...rows]
+    .map((row) => ({
+      user: row.user,
+      activeDays: row.weekEntries.filter((entry) => entry.rounds > 0).length
+    }))
+    .sort((a, b) => b.activeDays - a.activeDays)[0];
+  const inactiveCount = rows.filter((row) => row.weekEntries.every((entry) => entry.rounds === 0)).length;
 
   return (
     <Panel title="Owner dashboard" icon={<Settings size={18} />}>
@@ -492,6 +527,12 @@ function GroupOwnerDashboard({
               </p>
             </div>
           )}
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <OwnerDigestTile label="Weekly total" value={`${weeklyTotal}`} note={week.label} />
+            <OwnerDigestTile label="Best contributor" value={bestContributor?.user?.username || "-"} note={`${bestContributor?.rounds || 0} rounds`} />
+            <OwnerDigestTile label="Most consistent" value={mostConsistent?.user?.username || "-"} note={`${mostConsistent?.activeDays || 0} active days`} />
+            <OwnerDigestTile label="Inactive this week" value={`${inactiveCount}`} note="members with no rounds" />
+          </div>
         </div>
         <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
           <p className="font-black text-saffron-950">Owner actions</p>
@@ -516,6 +557,16 @@ function GroupOwnerDashboard({
         </div>
       </div>
     </Panel>
+  );
+}
+
+function OwnerDigestTile({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
+      <p className="mt-1 truncate text-xl font-black text-stone-950">{value}</p>
+      <p className="text-sm text-stone-600">{note}</p>
+    </div>
   );
 }
 
@@ -600,6 +651,7 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
   const [targetWeekly, setTargetWeekly] = useState(String(group.targetWeekly || ""));
   const [deleteText, setDeleteText] = useState("");
   const [formError, setFormError] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
   const members = state.groupMembers
     .filter((member) => member.groupId === group.id)
     .map((member) => ({
@@ -607,6 +659,12 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
       user: state.users.find((user) => user.id === member.userId)
     }))
     .filter((item) => item.user) as { membership: GroupMember; user: UserProfile }[];
+  const cleanMemberSearch = memberSearch.trim().toLowerCase();
+  const visibleMembers = cleanMemberSearch
+    ? members.filter(({ user, membership }) =>
+        `${user.username} ${user.displayName} ${membership.role}`.toLowerCase().includes(cleanMemberSearch)
+      )
+    : members;
   const canEditGroup = role === "owner";
 
   useEffect(() => {
@@ -851,8 +909,18 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
             {members.length} member{members.length === 1 ? "" : "s"}
           </span>
         </div>
+        <div className="mb-3">
+          <Field
+            label="Search members"
+            value={memberSearch}
+            onChange={setMemberSearch}
+            placeholder="username, name, or role"
+            helper="Filter this group list without changing member data."
+          />
+        </div>
         <div className="space-y-2">
-          {members.map(({ membership, user }) => (
+          {visibleMembers.length === 0 && <EmptyState text="No members match that search." />}
+          {visibleMembers.map(({ membership, user }) => (
             <div key={user.id} className="rounded-lg border border-stone-100 bg-stone-50 p-3">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex min-w-0 items-center gap-3">

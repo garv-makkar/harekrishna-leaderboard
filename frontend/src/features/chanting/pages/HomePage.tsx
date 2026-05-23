@@ -38,7 +38,10 @@ export function HomePage() {
     setDailyRounds,
     isBusy,
     updateUserPreferences,
-    refreshRemoteState
+    refreshRemoteState,
+    joinedGroups,
+    friends,
+    showActionFeedback
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState("");
@@ -62,6 +65,7 @@ export function HomePage() {
   const sevenDayRounds = history.reduce((sum, item) => sum + item.rounds, 0);
   const selectedDateLabel = selectedDate === todayKey ? "Today" : formatDate(selectedDate || todayKey);
   const hasStartedChanting = allTimeRounds > 0;
+  const isFirstRun = !hasStartedChanting && joinedGroups.length === 0 && friends.length === 0;
   const hinduDay = approximateHinduCalendar(todayKey);
   const dailyGoal = currentUser.dailyGoal || 16;
   const remainingGoalRounds = Math.max(0, dailyGoal - currentRounds);
@@ -300,6 +304,46 @@ export function HomePage() {
         </ActionEmptyState>
       )}
 
+      {isFirstRun && (
+        <Panel title="Start in three steps" icon={<PlusCircle size={18} />}>
+          <div className="grid gap-3 md:grid-cols-3">
+            <StartStep
+              title="Log rounds"
+              text="Save your first round total for today."
+              action="Set draft to 1"
+              onClick={() => {
+                setSelectedDate(todayKey);
+                setRoundInput("1");
+              }}
+            />
+            <StartStep
+              title="Join a group"
+              text="Create a group or join one with a code."
+              action="Open groups"
+              onClick={() =>
+                showActionFeedback({
+                  title: "Open Groups",
+                  body: "Use the button below to create or join a chanting group.",
+                  action: { label: "Go to Groups", tab: "groups" }
+                })
+              }
+            />
+            <StartStep
+              title="Add a friend"
+              text="Search by username to build a private leaderboard."
+              action="Open friends"
+              onClick={() =>
+                showActionFeedback({
+                  title: "Open Friends",
+                  body: "Use the button below to search usernames and send friend requests.",
+                  action: { label: "Go to Friends", tab: "friends" }
+                })
+              }
+            />
+          </div>
+        </Panel>
+      )}
+
       {remainingGoalRounds > 0 && (
         <ActionEmptyState
           icon={<Target size={20} />}
@@ -534,6 +578,32 @@ function WeeklySummaryCard({
         <DashboardPill label="Streak" value={streakNow} note="current days" tone="peacock" />
       </div>
     </Panel>
+  );
+}
+
+function StartStep({
+  title,
+  text,
+  action,
+  onClick
+}: {
+  title: string;
+  text: string;
+  action: string;
+  onClick: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+      <p className="font-black text-stone-950">{title}</p>
+      <p className="mt-1 min-h-12 text-sm leading-6 text-stone-600">{text}</p>
+      <button
+        type="button"
+        className="mt-3 w-full rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white"
+        onClick={onClick}
+      >
+        {action}
+      </button>
+    </div>
   );
 }
 

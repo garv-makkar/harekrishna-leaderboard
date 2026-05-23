@@ -9,6 +9,7 @@ import {
   computeMilestones,
   countryDialCode,
   createSeedState,
+  currentStreak,
   formatDate,
   hashPassword,
   localDayBoundaryText,
@@ -16,6 +17,7 @@ import {
   readableError,
   passwordProblem,
   passwordRules,
+  sumRounds,
   timezoneForCountry,
   usernameHelpText,
   usernamePattern
@@ -267,6 +269,8 @@ export function ProfilePage() {
 
       <ProfileCompletionPanel items={profileCompletionItems} />
 
+      <PublicProfilePreview />
+
       <Panel title="Notification preferences" icon={<Bell size={18} />}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
           <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
@@ -467,6 +471,48 @@ export function ProfilePage() {
         </div>
       </Panel>
     </div>
+  );
+}
+
+function PublicProfilePreview() {
+  const { state, currentUser, todayKey } = useChanting();
+  if (!currentUser) return null;
+  const allTimeRounds = sumRounds(state.chantTotals, currentUser.id, "allTime", todayKey);
+  const streak = currentStreak(state.chantTotals, currentUser.id, todayKey);
+  const groupCount = state.groupMembers.filter((member) => member.userId === currentUser.id).length;
+  const friendCount = state.friendRequests.filter(
+    (request) =>
+      request.status === "accepted" &&
+      (request.fromUserId === currentUser.id || request.toUserId === currentUser.id)
+  ).length;
+
+  return (
+    <Panel title="Public profile preview" icon={<UserRound size={18} />}>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex min-w-0 flex-col gap-4 rounded-lg border border-stone-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center">
+          {currentUser.avatarUrl ? (
+            <img src={currentUser.avatarUrl} alt="" className="h-20 w-20 rounded-lg border border-stone-200 object-cover" />
+          ) : (
+            <div className="lotus-mark grid h-20 w-20 shrink-0 place-items-center rounded-lg text-xl font-black text-white">
+              {(currentUser.displayName || currentUser.username).slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-2xl font-black text-stone-950">{currentUser.displayName || currentUser.username}</p>
+            <p className="truncate text-sm font-bold text-stone-600">@{currentUser.username}</p>
+            <p className="mt-2 text-sm leading-6 text-stone-600">
+              {currentUser.country}. Joined {formatDate(currentUser.joinedAt.slice(0, 10))}.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PrivacyMetric label="All-time rounds" value={allTimeRounds} />
+          <PrivacyMetric label="Current streak" value={streak} />
+          <PrivacyMetric label="Groups" value={groupCount} />
+          <PrivacyMetric label="Friends" value={friendCount} />
+        </div>
+      </div>
+    </Panel>
   );
 }
 

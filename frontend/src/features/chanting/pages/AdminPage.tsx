@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import type { ModerationReport } from "@/lib/types";
+import { publicSupabaseConfig, runtimeLabel } from "@/lib/config";
 import { useChanting } from "../ChantingContext";
 import { addDays, formatDate, roundsForDate } from "../domain";
 import { Avatar, EmptyState, InlineNotice, MetricSkeletonGrid, Panel, PanelSkeleton } from "../ui";
@@ -22,6 +23,8 @@ export function AdminPage() {
     currentUser,
     isAdmin,
     isBusy,
+    emailVerified,
+    loadedRemoteSlices,
     ensureAdminData,
     loadingRemoteSlices,
     updateModerationReportStatus
@@ -60,6 +63,12 @@ export function AdminPage() {
 
   return (
     <div className="space-y-6">
+      <ProductionReadinessPanel
+        emailVerified={emailVerified}
+        loadedRemoteSlices={loadedRemoteSlices}
+        userCount={state.users.length}
+        groupCount={state.groups.length}
+      />
       <Panel title="Data quality signals" icon={<AlertTriangle size={18} />}>
         <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm text-peacock-900">
           These are review hints only. Chanting totals are still honesty-based, and this panel does not change user data.
@@ -197,6 +206,79 @@ export function AdminPage() {
         )}
       </Panel>
     </div>
+  );
+}
+
+function ProductionReadinessPanel({
+  emailVerified,
+  loadedRemoteSlices,
+  userCount,
+  groupCount
+}: {
+  emailVerified: boolean | null;
+  loadedRemoteSlices: { groups: boolean; friends: boolean; admin: boolean };
+  userCount: number;
+  groupCount: number;
+}) {
+  const checks = [
+    {
+      label: "Runtime",
+      ok: publicSupabaseConfig.mode === "supabase",
+      detail: runtimeLabel(publicSupabaseConfig.mode)
+    },
+    {
+      label: "Public env",
+      ok: publicSupabaseConfig.issues.length === 0,
+      detail: publicSupabaseConfig.issues[0] || publicSupabaseConfig.warnings[0] || "Supabase public env is usable."
+    },
+    {
+      label: "Core data",
+      ok: userCount > 0,
+      detail: `${userCount} user profile${userCount === 1 ? "" : "s"} loaded.`
+    },
+    {
+      label: "Groups data",
+      ok: loadedRemoteSlices.groups,
+      detail: loadedRemoteSlices.groups ? `${groupCount} group${groupCount === 1 ? "" : "s"} loaded.` : "Open Groups once to load group slices."
+    },
+    {
+      label: "Friends data",
+      ok: loadedRemoteSlices.friends,
+      detail: loadedRemoteSlices.friends ? "Friend request slice loaded." : "Open Friends once to load friend slices."
+    },
+    {
+      label: "Admin data",
+      ok: loadedRemoteSlices.admin,
+      detail: loadedRemoteSlices.admin ? "Admin review slice loaded." : "Admin slice has not loaded yet."
+    },
+    {
+      label: "Email status",
+      ok: emailVerified === true,
+      detail: emailVerified ? "Current admin email is verified." : "Verify email before production testing."
+    },
+    {
+      label: "Latest migration",
+      ok: true,
+      detail: "Code expects migration 011 for goals, reminders, and group announcements."
+    }
+  ];
+
+  return (
+    <Panel title="Production readiness" icon={<ShieldCheck size={18} />}>
+      <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-900">
+        This checklist is a quick app-side view. Before deployment, still confirm Supabase SQL migrations, storage buckets, SMTP, and environment variables in the Supabase/Vercel dashboards.
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {checks.map((check) => (
+          <div key={check.label} className={`rounded-lg border px-4 py-3 shadow-sm ${check.ok ? "border-emerald-100 bg-emerald-50" : "border-saffron-200 bg-saffron-50"}`}>
+            <p className={`text-sm font-black ${check.ok ? "text-emerald-800" : "text-saffron-900"}`}>
+              {check.ok ? "Ready" : "Check"}: {check.label}
+            </p>
+            <p className="mt-1 text-sm leading-5 text-stone-700">{check.detail}</p>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }
 
