@@ -60,6 +60,8 @@ type ChantingContextValue = {
   isLoaded: boolean;
   isBusy: boolean;
   isAdmin: boolean;
+  loadedRemoteSlices: RemoteSliceStatus;
+  loadingRemoteSlices: RemoteSliceStatus;
   authMode: AuthMode;
   setAuthMode: (mode: AuthMode) => void;
   pendingAuthNotice: PendingAuthNotice;
@@ -111,6 +113,12 @@ type ChantingContextValue = {
 
 type RemoteScope = "core" | "groups" | "friends" | "admin" | "all";
 
+type RemoteSliceStatus = {
+  groups: boolean;
+  friends: boolean;
+  admin: boolean;
+};
+
 const ChantingContext = createContext<ChantingContextValue | null>(null);
 
 export function useChanting() {
@@ -140,6 +148,11 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
   const [loadedRemoteSlices, setLoadedRemoteSlices] = useState({
+    groups: false,
+    friends: false,
+    admin: false
+  });
+  const [loadingRemoteSlices, setLoadingRemoteSlices] = useState({
     groups: false,
     friends: false,
     admin: false
@@ -215,6 +228,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         setState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [] });
         setIsAdmin(false);
         setLoadedRemoteSlices({ groups: false, friends: false, admin: false });
+        setLoadingRemoteSlices({ groups: false, friends: false, admin: false });
       }
     });
     return () => subscription.unsubscribe();
@@ -311,19 +325,34 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   }, [state.chantTotals, state.friendRequests, state.groupMembers, state.groups, state.moderationReports, state.users]);
 
   const ensureGroupsData = useCallback(async () => {
-    if (!supabase || !currentUser || loadedRemoteSlices.groups) return;
-    await refreshRemoteState(currentUser.id, "groups");
-  }, [currentUser, loadedRemoteSlices.groups, refreshRemoteState]);
+    if (!supabase || !currentUser || loadedRemoteSlices.groups || loadingRemoteSlices.groups) return;
+    setLoadingRemoteSlices((current) => ({ ...current, groups: true }));
+    try {
+      await refreshRemoteState(currentUser.id, "groups");
+    } finally {
+      setLoadingRemoteSlices((current) => ({ ...current, groups: false }));
+    }
+  }, [currentUser, loadedRemoteSlices.groups, loadingRemoteSlices.groups, refreshRemoteState]);
 
   const ensureFriendsData = useCallback(async () => {
-    if (!supabase || !currentUser || loadedRemoteSlices.friends) return;
-    await refreshRemoteState(currentUser.id, "friends");
-  }, [currentUser, loadedRemoteSlices.friends, refreshRemoteState]);
+    if (!supabase || !currentUser || loadedRemoteSlices.friends || loadingRemoteSlices.friends) return;
+    setLoadingRemoteSlices((current) => ({ ...current, friends: true }));
+    try {
+      await refreshRemoteState(currentUser.id, "friends");
+    } finally {
+      setLoadingRemoteSlices((current) => ({ ...current, friends: false }));
+    }
+  }, [currentUser, loadedRemoteSlices.friends, loadingRemoteSlices.friends, refreshRemoteState]);
 
   const ensureAdminData = useCallback(async () => {
-    if (!supabase || !currentUser || !isAdmin || loadedRemoteSlices.admin) return;
-    await refreshRemoteState(currentUser.id, "admin");
-  }, [currentUser, isAdmin, loadedRemoteSlices.admin, refreshRemoteState]);
+    if (!supabase || !currentUser || !isAdmin || loadedRemoteSlices.admin || loadingRemoteSlices.admin) return;
+    setLoadingRemoteSlices((current) => ({ ...current, admin: true }));
+    try {
+      await refreshRemoteState(currentUser.id, "admin");
+    } finally {
+      setLoadingRemoteSlices((current) => ({ ...current, admin: false }));
+    }
+  }, [currentUser, isAdmin, loadedRemoteSlices.admin, loadingRemoteSlices.admin, refreshRemoteState]);
 
   const runRemote = async (action: () => Promise<void>) => {
     setIsBusy(true);
@@ -582,6 +611,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     isLoaded,
     isBusy,
     isAdmin,
+    loadedRemoteSlices,
+    loadingRemoteSlices,
     authMode,
     setAuthMode,
     pendingAuthNotice,

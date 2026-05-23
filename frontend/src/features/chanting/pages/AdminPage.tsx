@@ -5,7 +5,7 @@ import { AlertTriangle, ShieldCheck } from "lucide-react";
 import type { ModerationReport } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import { addDays, formatDate, roundsForDate } from "../domain";
-import { Avatar, EmptyState, InlineNotice, Panel } from "../ui";
+import { Avatar, EmptyState, InlineNotice, MetricSkeletonGrid, Panel, PanelSkeleton } from "../ui";
 
 const statusOptions: Array<ModerationReport["status"] | "all"> = ["open", "reviewed", "dismissed", "all"];
 
@@ -16,6 +16,7 @@ export function AdminPage() {
     isAdmin,
     isBusy,
     ensureAdminData,
+    loadingRemoteSlices,
     updateModerationReportStatus
   } = useChanting();
   const [statusFilter, setStatusFilter] = useState<ModerationReport["status"] | "all">("open");
@@ -46,6 +47,7 @@ export function AdminPage() {
   const openCount = state.moderationReports.filter((report) => report.status === "open").length;
   const reviewedCount = state.moderationReports.filter((report) => report.status === "reviewed").length;
   const dismissedCount = state.moderationReports.filter((report) => report.status === "dismissed").length;
+  const isLoadingAdmin = loadingRemoteSlices.admin && state.moderationReports.length === 0;
 
   return (
     <div className="space-y-6">
@@ -58,7 +60,7 @@ export function AdminPage() {
         ) : (
           <div className="space-y-3">
             {qualitySignals.slice(0, 30).map((signal) => (
-              <div key={signal.id} className="rounded-md border border-stone-200 bg-white p-4">
+              <div key={signal.id} className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <ReportPerson title={signal.label} user={signal.user} fallback={signal.userId} />
                   <div className="rounded-md bg-stone-50 px-3 py-2 text-sm text-stone-700 sm:max-w-sm">
@@ -72,18 +74,24 @@ export function AdminPage() {
         )}
       </Panel>
       <Panel title="Admin review" icon={<ShieldCheck size={18} />}>
-        <div className="mb-5 grid gap-3 md:grid-cols-3">
-          <AdminMetric label="Open" value={openCount} />
-          <AdminMetric label="Reviewed" value={reviewedCount} />
-          <AdminMetric label="Dismissed" value={dismissedCount} />
-        </div>
-        <div className="mb-4 flex flex-wrap gap-2">
+        {isLoadingAdmin ? (
+          <div className="mb-5">
+            <MetricSkeletonGrid />
+          </div>
+        ) : (
+          <div className="mb-5 grid gap-3 sm:grid-cols-3">
+            <AdminMetric label="Open" value={openCount} />
+            <AdminMetric label="Reviewed" value={reviewedCount} />
+            <AdminMetric label="Dismissed" value={dismissedCount} />
+          </div>
+        )}
+        <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
           {statusOptions.map((status) => (
             <button
               key={status}
               type="button"
-              className={`rounded-md px-3 py-2 text-sm font-black capitalize ${
-                statusFilter === status ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700"
+              className={`rounded-md px-3 py-2 text-sm font-black capitalize transition ${
+                statusFilter === status ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
               }`}
               onClick={() => setStatusFilter(status)}
             >
@@ -91,7 +99,11 @@ export function AdminPage() {
             </button>
           ))}
         </div>
-        {reports.length === 0 ? (
+        {isLoadingAdmin ? (
+          <div className="-m-4 sm:-m-5">
+            <PanelSkeleton rows={3} title={false} />
+          </div>
+        ) : reports.length === 0 ? (
           <EmptyState text="No moderation reports match this filter." />
         ) : (
           <div className="space-y-3">
@@ -99,7 +111,7 @@ export function AdminPage() {
               const reporter = state.users.find((user) => user.id === report.reporterId);
               const reported = state.users.find((user) => user.id === report.reportedUserId);
               return (
-                <div key={report.id} className="rounded-md border border-stone-200 bg-white p-4">
+                <div key={report.id} className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
@@ -205,7 +217,7 @@ function buildQualitySignals(state: ReturnType<typeof useChanting>["state"]) {
 
 function AdminMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
+    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
       <p className="text-sm font-bold text-stone-600">{label}</p>
       <p className="mt-1 text-3xl font-black text-stone-900">{value}</p>
     </div>
@@ -214,7 +226,7 @@ function AdminMetric({ label, value }: { label: string; value: number }) {
 
 function ReportPerson({ title, user, fallback }: { title: string; user: { avatarUrl: string; displayName: string; username: string; email: string } | undefined; fallback: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-md border border-stone-100 bg-white px-3 py-2">
+    <div className="flex min-w-0 items-center gap-3 rounded-lg border border-stone-100 bg-white px-3 py-2 shadow-sm">
       <Avatar src={user?.avatarUrl || ""} label={user?.displayName || user?.username || "User"} />
       <div className="min-w-0">
         <p className="text-xs font-black uppercase text-stone-500">{title}</p>

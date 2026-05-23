@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { LeaderboardPeriod } from "@/lib/types";
 import type { Milestone, RankedUser } from "./domain";
 import { detectTimezone, periodLabel, timezoneOptions } from "./domain";
@@ -143,6 +144,75 @@ export function Panel({ title, icon, children }: { title: string; icon: React.Re
       </div>
       {children}
     </section>
+  );
+}
+
+export function SkeletonBlock({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-md bg-stone-200/80 ${className}`} />;
+}
+
+export function PanelSkeleton({
+  rows = 3,
+  title = true
+}: {
+  rows?: number;
+  title?: boolean;
+}) {
+  return (
+    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-4 shadow-soft sm:p-5">
+      {title && (
+        <div className="mb-4 flex items-center gap-3">
+          <SkeletonBlock className="h-9 w-9 shrink-0" />
+          <SkeletonBlock className="h-5 w-44 max-w-[70%]" />
+        </div>
+      )}
+      <div className="space-y-3">
+        {Array.from({ length: rows }).map((_, index) => (
+          <div key={index} className="rounded-lg border border-stone-100 bg-stone-50/70 p-3">
+            <div className="flex items-center gap-3">
+              <SkeletonBlock className="h-11 w-11 shrink-0" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <SkeletonBlock className="h-4 w-2/3" />
+                <SkeletonBlock className="h-3 w-1/2" />
+              </div>
+              <SkeletonBlock className="hidden h-9 w-20 sm:block" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function MetricSkeletonGrid({ count = 3 }: { count?: number }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} className="rounded-lg border border-stone-200 bg-white/90 p-4 shadow-soft">
+          <SkeletonBlock className="h-4 w-28" />
+          <SkeletonBlock className="mt-3 h-9 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function LeaderboardSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <SkeletonBlock className="h-10 w-20" />
+        <SkeletonBlock className="h-10 w-24" />
+        <SkeletonBlock className="h-10 w-24" />
+      </div>
+      <SkeletonBlock className="h-11 w-full" />
+      <div className="grid gap-3 lg:grid-cols-3">
+        <SkeletonBlock className="h-36" />
+        <SkeletonBlock className="h-36" />
+        <SkeletonBlock className="h-36" />
+      </div>
+      <PanelSkeleton rows={4} title={false} />
+    </div>
   );
 }
 
@@ -299,10 +369,13 @@ export function Leaderboard({
   emptyText: string;
 }) {
   const { setSelectedPublicUserId } = useChanting();
+  const currentRowRef = useRef<HTMLDivElement | null>(null);
   const activeRows = rows.filter((row) => row.rounds > 0);
   const currentRow = rows.find((row) => row.user.id === currentUserId);
   const visibleRows = rows.filter((row) => row.rounds > 0 || row.hasEntry || row.user.id === currentUserId);
   if (visibleRows.length === 0) return <EmptyState text={emptyText} />;
+  const leaderRows = activeRows.slice(0, 3);
+  const currentRowIndex = visibleRows.findIndex((row) => row.user.id === currentUserId);
   const tiedWithCount = currentRow
     ? rows.filter((row) => row.user.id !== currentUserId && row.rounds === currentRow.rounds && row.rank === currentRow.rank).length
     : 0;
@@ -327,6 +400,50 @@ export function Leaderboard({
       {activeRows.length === 0 && (
         <div className="mb-4">
           <EmptyState text={emptyText} />
+        </div>
+      )}
+      {leaderRows.length > 0 && (
+        <div className="mb-4 grid gap-3 lg:grid-cols-3">
+          {leaderRows.map((row) => {
+            const isCurrent = row.user.id === currentUserId;
+            return (
+              <button
+                key={`leader-${row.user.id}`}
+                type="button"
+                className={`min-w-0 rounded-lg border p-4 text-left shadow-sm transition hover:-translate-y-0.5 ${
+                  topRankCardClass(row.rank, isCurrent)
+                }`}
+                onClick={() => setSelectedPublicUserId(row.user.id)}
+              >
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className={`rounded-md px-3 py-2 text-sm font-black ${rankBadgeClass(row.rank)}`}>
+                    {rankLabel(row.rank)}
+                  </span>
+                  {isCurrent && (
+                    <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black text-saffron-900 ring-1 ring-saffron-200">
+                      You
+                    </span>
+                  )}
+                </div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-stone-950">{row.user.displayName || row.user.username}</p>
+                    <p className="truncate text-sm text-stone-600">@{row.user.username}</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-3xl font-black text-stone-950">{row.rounds}</p>
+                    <p className="text-sm font-bold text-stone-600">rounds</p>
+                  </div>
+                  <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black text-stone-700 ring-1 ring-white">
+                    {entryStatusText(row)}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
       {currentRow && (
@@ -371,22 +488,43 @@ export function Leaderboard({
           </div>
         </div>
       )}
+      {currentRow && currentRowIndex > 3 && (
+        <div className="mb-4 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50/80 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-black text-saffron-950">Your row is lower in this leaderboard.</p>
+            <p className="text-sm text-stone-600">Jump directly to your highlighted row.</p>
+          </div>
+          <button
+            type="button"
+            className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600"
+            onClick={() => currentRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
+          >
+            Jump to me
+          </button>
+        </div>
+      )}
       <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
         {visibleRows.map((row) => {
           const isCurrent = row.user.id === currentUserId;
           const isTied = row.rounds > 0 && activeRows.some((other) => other.user.id !== row.user.id && other.rank === row.rank && other.rounds === row.rounds);
+          const isTopRank = row.rounds > 0 && row.rank <= 3;
           return (
             <div
               key={row.user.id}
-              className={`grid grid-cols-[52px_1fr] items-center gap-3 border-b border-stone-100 px-3 py-3 last:border-b-0 sm:grid-cols-[70px_1fr_92px] sm:px-4 ${
-                isCurrent ? "bg-saffron-50/90 shadow-[inset_4px_0_0_#d98f08]" : "bg-white"
+              ref={isCurrent ? currentRowRef : undefined}
+              className={`grid grid-cols-[52px_1fr] items-start gap-3 border-b border-stone-100 px-3 py-3 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:items-center sm:px-4 ${
+                isCurrent
+                  ? "bg-saffron-50/90 shadow-[inset_4px_0_0_#d98f08]"
+                  : isTopRank
+                    ? "bg-white"
+                    : "bg-white"
               }`}
             >
               <div>
-                <p className="inline-flex min-w-10 justify-center rounded-md bg-stone-100 px-2 py-1 text-lg font-black text-stone-900">
-                  #{row.rank}
+                <p className={`inline-flex min-w-11 justify-center rounded-md px-2 py-1 text-lg font-black ${rankBadgeClass(row.rank)}`}>
+                  {rankLabel(row.rank)}
                 </p>
-                {isTied && <p className="text-xs font-bold text-peacock-700">Tied</p>}
+                {isTied && <p className="mt-1 text-xs font-bold text-peacock-700">Tied rank</p>}
               </div>
               <div className="flex min-w-0 items-center gap-3">
                 <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
@@ -397,7 +535,7 @@ export function Leaderboard({
                     onClick={() => setSelectedPublicUserId(row.user.id)}
                   >
                     {row.user.displayName || row.user.username}
-                    {isCurrent && <span className="ml-2 text-xs font-black text-saffron-700">You</span>}
+                    {isCurrent && <span className="ml-2 rounded-sm bg-saffron-500 px-1.5 py-0.5 text-xs font-black text-white">You</span>}
                   </button>
                   <p className="truncate text-sm text-stone-500">@{row.user.username}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -418,7 +556,8 @@ export function Leaderboard({
                   </div>
                 </div>
               </div>
-              <div className="col-span-2 text-right sm:col-span-1">
+              <div className="col-span-2 flex items-center justify-between gap-3 rounded-md bg-stone-50 px-3 py-2 text-left sm:col-span-1 sm:block sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
+                <p className="text-xs font-black uppercase text-stone-500 sm:hidden">Rounds</p>
                 <div className={`rounded-md px-3 py-2 font-black ring-1 ${
                   row.rounds > 0 ? "bg-peacock-50 text-peacock-900 ring-peacock-100" : row.hasEntry ? "bg-stone-100 text-stone-700 ring-stone-200" : "bg-stone-50 text-stone-500 ring-stone-100"
                 }`}>
@@ -439,6 +578,28 @@ function entryStatusText(row: RankedUser) {
   if (row.rounds === 0) return "0 logged";
   if (row.entryCount === 1) return "1 entry";
   return `${row.entryCount} entries`;
+}
+
+function rankLabel(rank: number) {
+  if (rank === 1) return "1st";
+  if (rank === 2) return "2nd";
+  if (rank === 3) return "3rd";
+  return `#${rank}`;
+}
+
+function rankBadgeClass(rank: number) {
+  if (rank === 1) return "bg-saffron-500 text-white";
+  if (rank === 2) return "bg-peacock-600 text-white";
+  if (rank === 3) return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-200";
+  return "bg-stone-100 text-stone-900";
+}
+
+function topRankCardClass(rank: number, isCurrent: boolean) {
+  if (isCurrent) return "border-saffron-400 bg-saffron-50";
+  if (rank === 1) return "border-saffron-300 bg-saffron-50";
+  if (rank === 2) return "border-peacock-200 bg-peacock-50";
+  if (rank === 3) return "border-saffron-200 bg-white";
+  return "border-stone-200 bg-white";
 }
 
 function lastUpdatedText(row: RankedUser) {
@@ -474,4 +635,33 @@ export function Avatar({ src, label }: { src: string; label: string }) {
 
 export function EmptyState({ text }: { text: string }) {
   return <p className="rounded-md border border-dashed border-stone-200 bg-stone-50/80 px-4 py-5 text-sm text-stone-600">{text}</p>;
+}
+
+export function ActionEmptyState({
+  icon,
+  title,
+  text,
+  children
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-dashed border-saffron-200 bg-saffron-50/70 p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-white text-saffron-700 ring-1 ring-saffron-100">
+            {icon}
+          </span>
+          <div className="min-w-0">
+            <p className="font-black text-stone-950">{title}</p>
+            <p className="mt-1 text-sm leading-6 text-stone-600">{text}</p>
+          </div>
+        </div>
+        {children && <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">{children}</div>}
+      </div>
+    </div>
+  );
 }

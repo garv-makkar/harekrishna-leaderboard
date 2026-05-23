@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, HeartHandshake, Search, Trophy, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, HeartHandshake, Search, Trophy, UserRoundSearch, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { makeFriendRequest, useChanting } from "../ChantingContext";
 import { leaderboardRange, rankUsersInRange, readableError } from "../domain";
 import { ModerationReportButton } from "../ModerationReportButton";
-import { Avatar, EmptyState, Field, Leaderboard, Panel, PeriodHistoryControls, PeriodTabs } from "../ui";
+import { ActionEmptyState, Avatar, EmptyState, Field, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
 
 export function FriendsPage() {
   const {
@@ -19,9 +19,11 @@ export function FriendsPage() {
     isBusy,
     deleteFriendRequest,
     acceptFriendRequest,
-    ensureFriendsData
+    ensureFriendsData,
+    loadingRemoteSlices
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
+  const searchPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     ensureFriendsData();
@@ -44,11 +46,36 @@ export function FriendsPage() {
     (request) => request.fromUserId === currentUser.id && request.status === "pending"
   );
   const range = leaderboardRange(period, todayKey, periodOffset);
+  const isLoadingFriends = loadingRemoteSlices.friends;
+  const hasFriendData = state.friendRequests.some(
+    (request) => request.fromUserId === currentUser.id || request.toUserId === currentUser.id
+  );
+  const jumpToSearch = () => searchPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
     <div className="space-y-6">
-      <FriendSearch />
-      <div className="grid gap-3 sm:grid-cols-3">
+      {!isLoadingFriends && !hasFriendData && (
+        <ActionEmptyState
+          icon={<UserRoundSearch size={20} />}
+          title="Build your friends leaderboard"
+          text="Search a username, send a request, and accepted friends will get a private leaderboard with you."
+        >
+          <button
+            type="button"
+            className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm"
+            onClick={jumpToSearch}
+          >
+            Search username
+          </button>
+        </ActionEmptyState>
+      )}
+      <div ref={searchPanelRef}>
+        <FriendSearch />
+      </div>
+      {isLoadingFriends && !hasFriendData ? (
+        <MetricSkeletonGrid />
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-saffron-200 bg-white/90 p-4 shadow-soft">
           <p className="text-sm font-bold text-stone-500">Accepted friends</p>
           <p className="mt-1 text-3xl font-black text-saffron-900">{acceptedRequests.length}</p>
@@ -62,9 +89,26 @@ export function FriendsPage() {
           <p className="mt-1 text-3xl font-black text-stone-900">{outgoingRequests.length}</p>
         </div>
       </div>
+      )}
       <Panel title="Friends" icon={<HeartHandshake size={18} />}>
-        {acceptedRequests.length === 0 ? (
-          <EmptyState text="Accepted friends will appear here." />
+        {isLoadingFriends && !hasFriendData ? (
+          <div className="-m-4 sm:-m-5">
+            <PanelSkeleton rows={2} title={false} />
+          </div>
+        ) : acceptedRequests.length === 0 ? (
+          <ActionEmptyState
+            icon={<HeartHandshake size={20} />}
+            title="No accepted friends yet"
+            text="Send a request by username. Once accepted, they will appear here and on your friends leaderboard."
+          >
+            <button
+              type="button"
+              className="rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
+              onClick={jumpToSearch}
+            >
+              Find friends
+            </button>
+          </ActionEmptyState>
         ) : (
           <div className="grid gap-3 xl:grid-cols-2">
             {acceptedRequests.map((request) => {
@@ -79,14 +123,16 @@ export function FriendsPage() {
                       <p className="truncate text-sm text-stone-600">@{friend?.username}</p>
                     </div>
                   </div>
-                  <button
-                    className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
-                    disabled={isBusy}
-                    onClick={() => deleteFriendRequest(request.id, "Friend removed.")}
-                  >
-                    Remove
-                  </button>
-                  {friend && <ModerationReportButton userId={friend.id} username={friend.username} />}
+                  <div className="flex flex-wrap gap-2 sm:justify-end">
+                    <button
+                      className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
+                      disabled={isBusy}
+                      onClick={() => deleteFriendRequest(request.id, "Friend removed.")}
+                    >
+                      Remove
+                    </button>
+                    {friend && <ModerationReportButton userId={friend.id} username={friend.username} />}
+                  </div>
                 </div>
               );
             })}
@@ -94,7 +140,11 @@ export function FriendsPage() {
         )}
       </Panel>
       <Panel title="Incoming requests" icon={<HeartHandshake size={18} />}>
-        {incomingRequests.length === 0 ? (
+        {isLoadingFriends && !hasFriendData ? (
+          <div className="-m-4 sm:-m-5">
+            <PanelSkeleton rows={1} title={false} />
+          </div>
+        ) : incomingRequests.length === 0 ? (
           <EmptyState text="No incoming friend requests." />
         ) : (
           <div className="space-y-3">
@@ -103,7 +153,7 @@ export function FriendsPage() {
               return (
                 <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <p className="font-bold">{sender?.username}</p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       className="flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
                       disabled={isBusy}
@@ -126,7 +176,11 @@ export function FriendsPage() {
         )}
       </Panel>
       <Panel title="Outgoing requests" icon={<Users size={18} />}>
-        {outgoingRequests.length === 0 ? (
+        {isLoadingFriends && !hasFriendData ? (
+          <div className="-m-4 sm:-m-5">
+            <PanelSkeleton rows={1} title={false} />
+          </div>
+        ) : outgoingRequests.length === 0 ? (
           <EmptyState text="Sent friend requests will appear here until accepted." />
         ) : (
           <div className="space-y-3">
@@ -149,16 +203,22 @@ export function FriendsPage() {
         )}
       </Panel>
       <Panel title="Friends leaderboard" icon={<Trophy size={18} />}>
-        <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
-        <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
-        <Leaderboard
-          title=""
-          period={period}
-          periodText={range.label}
-          currentUserId={currentUser.id}
-          emptyText="No friends have added rounds for this period yet."
-          rows={rankUsersInRange(friendUsers, state.chantTotals, range.start, range.end)}
-        />
+        {isLoadingFriends && !hasFriendData ? (
+          <LeaderboardSkeleton />
+        ) : (
+          <>
+            <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
+            <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
+            <Leaderboard
+              title=""
+              period={period}
+              periodText={range.label}
+              currentUserId={currentUser.id}
+              emptyText="No friends have added rounds for this period yet."
+              rows={rankUsersInRange(friendUsers, state.chantTotals, range.start, range.end)}
+            />
+          </>
+        )}
       </Panel>
     </div>
   );
@@ -259,16 +319,16 @@ function FriendSearch() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:justify-end">
-                <button
-                  className={`rounded-md px-3 py-2 text-sm font-bold ${
-                    alreadyRelated ? "bg-stone-100 text-stone-500" : "bg-saffron-500 text-white"
-                  }`}
-                  onClick={() => sendRequest(user.id)}
-                  disabled={isBusy || alreadyRelated}
-                >
-                  {alreadyRelated ? "Added" : "Add"}
-                </button>
-                <ModerationReportButton userId={user.id} username={user.username} />
+                  <button
+                    className={`rounded-md px-3 py-2 text-sm font-bold ${
+                      alreadyRelated ? "bg-stone-100 text-stone-500" : "bg-saffron-500 text-white"
+                    }`}
+                    onClick={() => sendRequest(user.id)}
+                    disabled={isBusy || alreadyRelated}
+                  >
+                    {alreadyRelated ? "Added" : "Add"}
+                  </button>
+                  <ModerationReportButton userId={user.id} username={user.username} />
                 </div>
               </div>
             );

@@ -60,28 +60,30 @@ export function ActivityPage() {
   return (
     <div className="space-y-6">
       <Panel title="Activity summary" icon={<BarChart3 size={18} />}>
-        <div className="mb-5 flex flex-wrap items-center gap-2">
-          {rangeOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`rounded-md px-3 py-2 text-sm font-black ${
-                days === option.value ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700"
-              }`}
-              onClick={() => setDays(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+            {rangeOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                  days === option.value ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+                }`}
+                onClick={() => setDays(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white"
+            className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm"
             onClick={exportHistory}
           >
             <Download size={16} /> Export CSV
           </button>
         </div>
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryTile label="Rounds" value={totalRounds} note={`last ${days} days`} />
           <SummaryTile label="Active days" value={activeDays} note={`${days - activeDays} blank day${days - activeDays === 1 ? "" : "s"}`} />
           <SummaryTile label="Average" value={averageOnActiveDays} note="on active days" />
@@ -90,7 +92,7 @@ export function ActivityPage() {
       </Panel>
 
       <Panel title={`${days}-day history`} icon={<CalendarDays size={18} />}>
-        <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(74px,1fr))]">
+        <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(72px,1fr))]">
           {history.map((item) => {
             const isToday = item.dateKey === todayKey;
             const barHeight = Math.max(8, Math.round((item.rounds / highestRounds) * 76));
@@ -99,7 +101,7 @@ export function ActivityPage() {
                 key={item.dateKey}
                 type="button"
                 className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-3 text-center ${
-                  isToday ? "border-saffron-400 bg-saffron-50" : "border-stone-200 bg-white"
+                  isToday ? "border-saffron-400 bg-saffron-50 shadow-sm" : "border-stone-200 bg-white shadow-sm hover:border-saffron-200"
                 }`}
                 onClick={() => {
                   setSelectedDate(item.dateKey);
@@ -127,7 +129,7 @@ export function ActivityPage() {
         {allEntries.length === 0 ? (
           <EmptyState text="No chanting history yet. Add rounds on Home and your logged days will appear here." />
         ) : (
-          <div className="overflow-hidden rounded-lg border border-stone-200">
+          <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
             {allEntries.slice(0, 60).map((entry) => {
               const previousDate = addDays(entry.localDate, -1);
               const previousRounds = roundsForDate(state.chantTotals, currentUser.id, previousDate);
@@ -159,7 +161,7 @@ export function ActivityPage() {
 
 function SummaryTile({ label, value, note }: { label: string; value: number; note: string }) {
   return (
-    <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
+    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
       <p className="text-sm font-bold text-stone-600">{label}</p>
       <p className="mt-1 text-3xl font-black text-stone-900">{value}</p>
       <p className="text-sm text-stone-600">{note}</p>

@@ -1,13 +1,13 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { ChevronRight, ImageUp, Plus, Search, Settings, Trash2, Trophy, Users } from "lucide-react";
+import { ChevronRight, ImageUp, Plus, Search, Settings, Trash2, Trophy, UserPlus, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import { groupCodeProblem, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, uid } from "../domain";
 import { ModerationReportButton } from "../ModerationReportButton";
-import { Avatar, EmptyState, Field, InlineNotice, Leaderboard, Panel, PeriodHistoryControls, PeriodTabs } from "../ui";
+import { ActionEmptyState, Avatar, EmptyState, Field, InlineNotice, Leaderboard, LeaderboardSkeleton, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
 
 export function GroupsPage() {
   const {
@@ -24,6 +24,7 @@ export function GroupsPage() {
     setPeriod,
     todayKey,
     ensureGroupsData,
+    loadingRemoteSlices,
     isBusy,
     runRemote,
     refreshRemoteState,
@@ -31,6 +32,8 @@ export function GroupsPage() {
     showMessage
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
+  const [actionMode, setActionMode] = useState<"join" | "create">("join");
+  const actionPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     ensureGroupsData();
@@ -42,6 +45,12 @@ export function GroupsPage() {
 
   const selectedRole = selectedGroup ? currentUserGroupRole(selectedGroup.id) : undefined;
   const range = leaderboardRange(period, todayKey, periodOffset);
+  const selectedMemberCount = selectedGroup ? groupMemberCount(selectedGroup.id) : 0;
+  const isLoadingGroups = loadingRemoteSlices.groups;
+  const openActionPanel = (mode: "join" | "create") => {
+    setActionMode(mode);
+    window.requestAnimationFrame(() => actionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const leaveSelectedGroup = async () => {
     if (!selectedGroup || selectedRole === "owner") return;
@@ -72,15 +81,78 @@ export function GroupsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 xl:grid-cols-2">
-        <CreateGroupForm />
-        <JoinGroupForm />
-      </div>
+      <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="p-4 sm:p-5 lg:p-6">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
+              <Users size={16} /> {joinedGroups.length} joined
+            </div>
+            <h2 className="text-2xl font-black tracking-normal text-stone-950">
+              {selectedGroup ? selectedGroup.name : "Your chanting groups"}
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">
+              Select a group to view its leaderboard, copy invites, and manage members. Create or join groups from the action panel.
+            </p>
+            {selectedGroup && (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
+                  {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
+                </span>
+                <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
+                  Your role: {selectedRole}
+                </span>
+                <button
+                  type="button"
+                  className="rounded-md bg-stone-900 px-3 py-2 text-sm font-bold text-white"
+                  onClick={() => copyGroupCode(selectedGroup.code)}
+                >
+                  Copy code {selectedGroup.code}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
+                  onClick={() => copyGroupInvite(selectedGroup)}
+                >
+                  Copy invite
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="grid gap-3 border-t border-saffron-100 bg-saffron-50/70 p-4 sm:grid-cols-2 xl:grid-cols-1 xl:border-l xl:border-t-0">
+            <GroupStat label="Created groups" value={state.groups.filter((group) => group.ownerId === currentUser.id).length} />
+            <GroupStat label="Memberships" value={joinedGroups.length} />
+          </div>
+        </div>
+      </section>
+
       <Panel title="Your groups" icon={<Users size={18} />}>
-        {joinedGroups.length === 0 ? (
-          <EmptyState text="Create or join a group to see its leaderboard." />
+        {isLoadingGroups && joinedGroups.length === 0 ? (
+          <div className="-m-4 sm:-m-5">
+            <PanelSkeleton rows={3} title={false} />
+          </div>
+        ) : joinedGroups.length === 0 ? (
+          <ActionEmptyState
+            icon={<UserPlus size={20} />}
+            title="No groups yet"
+            text="Join with a code from a group owner, or create your own group and share the code with others."
+          >
+            <button
+              type="button"
+              className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white shadow-sm"
+              onClick={() => openActionPanel("join")}
+            >
+              Join by code
+            </button>
+            <button
+              type="button"
+              className="rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
+              onClick={() => openActionPanel("create")}
+            >
+              Create group
+            </button>
+          </ActionEmptyState>
         ) : (
-          <div className="grid gap-3 xl:grid-cols-2">
+          <div className="grid gap-3 xl:grid-cols-3">
             {joinedGroups.map((group) => (
               <div
                 key={group.id}
@@ -128,6 +200,32 @@ export function GroupsPage() {
       </Panel>
       {selectedGroup && (
         <>
+        <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
+          {isLoadingGroups && selectedMemberCount === 0 ? (
+            <LeaderboardSkeleton />
+          ) : (
+            <>
+              <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
+              <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
+              <Leaderboard
+                title=""
+                period={period}
+                periodText={range.label}
+                currentUserId={currentUser.id}
+                emptyText="No one in this group has added rounds for this period yet."
+                rows={rankUsersInRange(
+                  state.groupMembers
+                    .filter((member) => member.groupId === selectedGroup.id)
+                    .map((member) => state.users.find((user) => user.id === member.userId))
+                    .filter(Boolean) as UserProfile[],
+                  state.chantTotals,
+                  range.start,
+                  range.end
+                )}
+              />
+            </>
+          )}
+        </Panel>
         <Panel title={`${selectedGroup.name} controls`} icon={<Settings size={18} />}>
           {selectedRole === "owner" ? (
             <GroupOwnerControls group={selectedGroup} role={selectedRole} />
@@ -150,50 +248,42 @@ export function GroupsPage() {
             </div>
           )}
         </Panel>
-        <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
-          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-            <span className="rounded-md bg-peacock-50 px-3 py-2 font-bold text-peacock-900">
-              {groupMemberCount(selectedGroup.id)} member{groupMemberCount(selectedGroup.id) === 1 ? "" : "s"}
-            </span>
-            <span className="rounded-md bg-saffron-50 px-3 py-2 font-bold text-saffron-900">
-              Your role: {currentUserGroupRole(selectedGroup.id)}
-            </span>
-            <button
-              type="button"
-              className="rounded-md bg-stone-900 px-3 py-2 font-bold text-white"
-              onClick={() => copyGroupCode(selectedGroup.code)}
-            >
-              Copy code {selectedGroup.code}
-            </button>
-            <button
-              type="button"
-              className="rounded-md bg-peacock-600 px-3 py-2 font-bold text-white"
-              onClick={() => copyGroupInvite(selectedGroup)}
-            >
-              Copy invite
-            </button>
-          </div>
-          <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
-          <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
-          <Leaderboard
-            title=""
-            period={period}
-            periodText={range.label}
-            currentUserId={currentUser.id}
-            emptyText="No one in this group has added rounds for this period yet."
-            rows={rankUsersInRange(
-              state.groupMembers
-                .filter((member) => member.groupId === selectedGroup.id)
-                .map((member) => state.users.find((user) => user.id === member.userId))
-                .filter(Boolean) as UserProfile[],
-              state.chantTotals,
-              range.start,
-              range.end
-            )}
-          />
-        </Panel>
         </>
       )}
+      <div ref={actionPanelRef}>
+        <Panel title="Create or join" icon={<Plus size={18} />}>
+          <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+            <button
+              type="button"
+              className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                actionMode === "join" ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+              }`}
+              onClick={() => setActionMode("join")}
+            >
+              Join by code
+            </button>
+            <button
+              type="button"
+              className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                actionMode === "create" ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+              }`}
+              onClick={() => setActionMode("create")}
+            >
+              Create group
+            </button>
+          </div>
+          {actionMode === "join" ? <JoinGroupForm embedded /> : <CreateGroupForm embedded />}
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function GroupStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
+      <p className="mt-1 text-3xl font-black text-stone-950">{value}</p>
     </div>
   );
 }
@@ -584,7 +674,7 @@ function roleBadgeClass(role: GroupRole) {
   return "bg-stone-100 text-stone-700";
 }
 
-function CreateGroupForm() {
+function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
   const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showMessage } = useChanting();
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -656,8 +746,7 @@ function CreateGroupForm() {
     showMessage(`Group created. Share code ${cleanCode} with members.`);
   };
 
-  return (
-    <Panel title="Create group" icon={<Plus size={18} />}>
+  const content = (
       <form className="space-y-3" onSubmit={submit}>
         {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
         <Field label="Group name" value={name} onChange={setName} required />
@@ -674,11 +763,12 @@ function CreateGroupForm() {
           Create group
         </button>
       </form>
-    </Panel>
   );
+  if (embedded) return content;
+  return <Panel title="Create group" icon={<Plus size={18} />}>{content}</Panel>;
 }
 
-function JoinGroupForm() {
+function JoinGroupForm({ embedded = false }: { embedded?: boolean }) {
   const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showMessage } = useChanting();
   const [code, setCode] = useState("");
   const [formError, setFormError] = useState("");
@@ -729,8 +819,7 @@ function JoinGroupForm() {
     showMessage(`Joined ${group.name}.`);
   };
 
-  return (
-    <Panel title="Join group" icon={<Search size={18} />}>
+  const content = (
       <form className="space-y-3" onSubmit={submit}>
         {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
         <Field
@@ -745,6 +834,7 @@ function JoinGroupForm() {
           Join group
         </button>
       </form>
-    </Panel>
   );
+  if (embedded) return content;
+  return <Panel title="Join group" icon={<Search size={18} />}>{content}</Panel>;
 }

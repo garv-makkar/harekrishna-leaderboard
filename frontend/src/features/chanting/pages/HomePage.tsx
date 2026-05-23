@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, CalendarDays, Flame } from "lucide-react";
-import type { LeaderboardPeriod } from "@/lib/types";
+import { Award, CalendarDays, Flame, PlusCircle } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   bestStreak,
@@ -16,7 +15,7 @@ import {
   recentChantingHistory,
   sumRounds
 } from "../domain";
-import { Field, Leaderboard, MetricCard, MilestoneGrid, Panel } from "../ui";
+import { ActionEmptyState, Field, Leaderboard, MetricCard, MilestoneGrid, Panel } from "../ui";
 
 export function HomePage() {
   const {
@@ -45,82 +44,35 @@ export function HomePage() {
   const streakBest = bestStreak(state.chantTotals, currentUser.id);
   const monthDays = daysChantedThisMonth(state.chantTotals, currentUser.id, todayKey);
   const milestones = computeMilestones(state, currentUser, todayKey);
+  const weeklyRounds = sumRounds(state.chantTotals, currentUser.id, "weekly", todayKey);
+  const monthlyRounds = sumRounds(state.chantTotals, currentUser.id, "monthly", todayKey);
+  const allTimeRounds = sumRounds(state.chantTotals, currentUser.id, "allTime", todayKey);
+  const sevenDayRounds = history.reduce((sum, item) => sum + item.rounds, 0);
+  const selectedDateLabel = selectedDate === todayKey ? "Today" : formatDate(selectedDate || todayKey);
+  const hasStartedChanting = allTimeRounds > 0;
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {(["daily", "weekly", "monthly", "allTime"] as LeaderboardPeriod[]).map((item) => (
-          <MetricCard
-            key={item}
-            label={item === "allTime" ? "All time" : item}
-            value={sumRounds(state.chantTotals, currentUser.id, item, todayKey)}
-            note={item === "allTime" ? `Since ${formatDate(currentUser.joinedAt.slice(0, 10))}` : "Rounds"}
-          />
-        ))}
-      </div>
-      <Panel title="Milestones" icon={<Award size={18} />}>
-        <MilestoneGrid milestones={milestones} limit={4} />
-      </Panel>
-      <Panel title="Chanting consistency" icon={<Flame size={18} />}>
-        <div className="grid gap-4 xl:grid-cols-[280px_1fr]">
-          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <div className="rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3 shadow-sm">
-              <p className="text-sm font-bold text-stone-600">Current streak</p>
-              <p className="mt-1 text-3xl font-black text-saffron-900">{streakNow}</p>
-              <p className="text-sm text-stone-600">day{streakNow === 1 ? "" : "s"}</p>
-            </div>
-            <div className="rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 shadow-sm">
-              <p className="text-sm font-bold text-stone-600">Best streak</p>
-              <p className="mt-1 text-3xl font-black text-peacock-900">{streakBest}</p>
-              <p className="text-sm text-stone-600">day{streakBest === 1 ? "" : "s"}</p>
-            </div>
-            <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 shadow-sm">
-              <p className="text-sm font-bold text-stone-600">Days this month</p>
-              <p className="mt-1 text-3xl font-black text-stone-900">{monthDays}</p>
-              <p className="text-sm text-stone-600">with rounds logged</p>
-            </div>
-          </div>
-          <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="p-4 sm:p-5 lg:p-6">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="font-black text-stone-900">Last 7 days</p>
-                <p className="text-sm text-stone-600">Tap an editable date below in the rounds form to update it.</p>
+                <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
+                  <CalendarDays size={16} /> {selectedDateLabel}
+                </div>
+                <h2 className="text-2xl font-black tracking-normal text-stone-950">Add chanting rounds</h2>
+                <p className="mt-1 text-sm leading-6 text-stone-600">
+                  Save the exact total for today or any of the last 7 editable days.
+                </p>
               </div>
-              <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
-                {history.reduce((sum, item) => sum + item.rounds, 0)} rounds
-              </span>
+              <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-5 py-4 text-right shadow-sm">
+                <p className="text-xs font-black uppercase text-stone-500">Saved total</p>
+                <p className="mt-1 text-5xl font-black text-saffron-900">{currentRounds}</p>
+                <p className="text-sm text-stone-600">rounds</p>
+              </div>
             </div>
-            <div className="grid gap-2 [grid-template-columns:repeat(7,minmax(42px,1fr))]">
-              {history.map((item) => {
-                const barHeight = Math.max(10, Math.round((item.rounds / highestHistoryRounds) * 96));
-                const isToday = item.dateKey === todayKey;
-                return (
-                  <div key={item.dateKey} className="flex min-w-0 flex-col items-center gap-2">
-                    <div className="flex h-28 w-full items-end rounded-md bg-stone-50 px-1 py-1">
-                      <div
-                        className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
-                        style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
-                      />
-                    </div>
-                    <p className="text-sm font-black text-stone-900">{item.rounds}</p>
-                    <p className={`truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
-                      {isToday ? "Today" : formatDate(item.dateKey).replace(/,.*$/, "")}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </Panel>
-      <Panel title="Add or edit rounds" icon={<CalendarDays size={18} />}>
-        <div className="grid gap-5 xl:grid-cols-[240px_1fr]">
-          <div className="rounded-lg border border-saffron-200 bg-saffron-50 p-5 shadow-sm">
-            <p className="text-sm font-bold text-stone-600">Saved for selected date</p>
-            <p className="mt-2 text-5xl font-black text-saffron-900">{currentRounds}</p>
-            <p className="mt-2 text-sm text-stone-600">{formatDate(selectedDate || todayKey)}</p>
-          </div>
-          <div className="space-y-4">
+
             <div className="grid gap-4 md:grid-cols-2">
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
@@ -155,17 +107,20 @@ export function HomePage() {
                 type="number"
                 min={0}
                 max={999}
-                helper="This saves the total rounds for the selected date, not an additional amount."
+                helper="This is the full total for the selected date."
               />
             </div>
-            <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {[-1, 1, 4, 8, 16].map((amount) => (
                   <button
                     key={amount}
                     type="button"
                     className={`rounded-md px-3 py-3 font-black ring-1 transition ${
-                      amount < 0 ? "bg-stone-100 text-stone-800 ring-stone-200 hover:bg-stone-200" : "bg-peacock-50 text-peacock-900 ring-peacock-100 hover:bg-peacock-100"
+                      amount < 0
+                        ? "bg-stone-100 text-stone-800 ring-stone-200 hover:bg-stone-200"
+                        : "bg-peacock-50 text-peacock-900 ring-peacock-100 hover:bg-peacock-100"
                     }`}
                     onClick={() => {
                       setPreviousDraft(draftRounds);
@@ -198,25 +153,148 @@ export function HomePage() {
                 }}
                 disabled={isBusy || draftRounds === currentRounds}
               >
-                Save exact total
+                Save total
               </button>
             </div>
-            <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+
+            <div className="mt-4 rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
               Draft total: <b className="text-stone-900">{draftRounds}</b>
               {draftDelta !== 0 && <span> ({draftDelta > 0 ? `+${draftDelta}` : draftDelta} from saved)</span>}
               <span> Daily maximum is {MAX_DAILY_ROUNDS}.</span>
               <span className="block">{localDayBoundaryText(currentUser.timezone)}</span>
             </div>
           </div>
+
+          <aside className="border-t border-saffron-100 bg-saffron-50/70 p-4 sm:p-5 xl:border-l xl:border-t-0">
+            <p className="text-sm font-black uppercase text-stone-500">Today at a glance</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              <DashboardPill label="Today" value={currentRounds} note="saved rounds" tone="saffron" />
+              <DashboardPill label="This week" value={weeklyRounds} note="Monday onward" tone="peacock" />
+              <DashboardPill label="Current streak" value={streakNow} note={`best ${streakBest}`} tone="stone" />
+            </div>
+          </aside>
         </div>
-      </Panel>
+      </section>
+
+      {!hasStartedChanting && (
+        <ActionEmptyState
+          icon={<PlusCircle size={20} />}
+          title="Start your leaderboard with today's first entry"
+          text="Save even 1 round to unlock your streak, milestones, global ranking, and weekly totals."
+        >
+          <button
+            type="button"
+            className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600"
+            disabled={isBusy}
+            onClick={() => {
+              setSelectedDate(todayKey);
+              setRoundInput("1");
+            }}
+          >
+            Set draft to 1
+          </button>
+          <button
+            type="button"
+            className="rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
+            disabled={isBusy}
+            onClick={() => setDailyRounds(todayKey, 1)}
+          >
+            Save 1 round
+          </button>
+        </ActionEmptyState>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Today" value={currentRounds} note="Saved rounds" />
+        <MetricCard label="This week" value={weeklyRounds} note="Weeks start Monday" />
+        <MetricCard label="This month" value={monthlyRounds} note={`${monthDays} active day${monthDays === 1 ? "" : "s"}`} />
+        <MetricCard label="All time" value={allTimeRounds} note={`Since ${formatDate(currentUser.joinedAt.slice(0, 10))}`} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
+        <Panel title="Chanting consistency" icon={<Flame size={18} />}>
+          <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-black text-stone-900">Last 7 days</p>
+                <p className="text-sm text-stone-600">Your recent rhythm and editable day window.</p>
+              </div>
+              <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
+                {sevenDayRounds} rounds
+              </span>
+            </div>
+            <div className="grid gap-2 [grid-template-columns:repeat(7,minmax(42px,1fr))]">
+              {history.map((item) => {
+                const barHeight = Math.max(10, Math.round((item.rounds / highestHistoryRounds) * 104));
+                const isToday = item.dateKey === todayKey;
+                return (
+                  <button
+                    key={item.dateKey}
+                    type="button"
+                    className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-1 py-2 transition ${
+                      isToday ? "border-saffron-300 bg-saffron-50" : "border-transparent hover:border-stone-200 hover:bg-stone-50"
+                    }`}
+                    onClick={() => {
+                      setSelectedDate(item.dateKey);
+                      setPreviousDraft(null);
+                      setRoundInput(String(item.rounds));
+                    }}
+                  >
+                    <div className="flex h-28 w-full items-end rounded-md bg-stone-50 px-1 py-1">
+                      <div
+                        className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
+                        style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
+                      />
+                    </div>
+                    <p className="text-sm font-black text-stone-900">{item.rounds}</p>
+                    <p className={`max-w-full truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
+                      {isToday ? "Today" : formatDate(item.dateKey).replace(/,.*$/, "")}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Panel>
+
+        <Panel title="Milestones" icon={<Award size={18} />}>
+          <MilestoneGrid milestones={milestones} limit={4} />
+        </Panel>
+      </div>
+
       <Leaderboard
         title="Global leaderboard"
         period="daily"
         currentUserId={currentUser.id}
-        emptyText="No global chanting entries for today yet."
+        emptyText="No global chanting entries for today yet. Save your rounds and your row will appear here."
         rows={rankUsers(state.users, state.chantTotals, "daily", todayKey)}
       />
+    </div>
+  );
+}
+
+function DashboardPill({
+  label,
+  value,
+  note,
+  tone
+}: {
+  label: string;
+  value: number;
+  note: string;
+  tone: "saffron" | "peacock" | "stone";
+}) {
+  const toneClass =
+    tone === "saffron"
+      ? "border-saffron-200 bg-white text-saffron-900"
+      : tone === "peacock"
+        ? "border-peacock-100 bg-white text-peacock-900"
+        : "border-stone-200 bg-white text-stone-900";
+  return (
+    <div className={`rounded-lg border px-4 py-3 shadow-sm ${toneClass}`}>
+      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
+      <p className="mt-1 text-3xl font-black">{value}</p>
+      <p className="text-sm text-stone-600">{note}</p>
     </div>
   );
 }

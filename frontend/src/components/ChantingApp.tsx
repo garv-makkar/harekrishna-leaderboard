@@ -35,7 +35,7 @@ import {
   formatDate,
   sumRounds
 } from "@/features/chanting/domain";
-import { Avatar, MilestoneGrid } from "@/features/chanting/ui";
+import { Avatar, MilestoneGrid, SkeletonBlock } from "@/features/chanting/ui";
 import type { TabId } from "@/features/chanting/domain";
 
 const tabs = [
@@ -54,7 +54,7 @@ export default function ChantingApp() {
   const { authMode, currentUser, isLoaded } = useChanting();
 
   if (!isLoaded) {
-    return <main className="grid min-h-screen place-items-center p-6">Loading...</main>;
+    return <LoadingShell />;
   }
 
   if (authMode === "newPassword" || authMode === "checkEmail" || !currentUser) {
@@ -62,6 +62,46 @@ export default function ChantingApp() {
   }
 
   return <AppShell activeTab={activeTab} onTabChange={setActiveTab} />;
+}
+
+function LoadingShell() {
+  return (
+    <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto grid min-h-[calc(100vh-2.5rem)] max-w-[1500px] gap-5 lg:grid-cols-[284px_minmax(0,1fr)]">
+        <aside className="hidden rounded-lg border border-saffron-200 bg-white/90 p-4 shadow-soft lg:block">
+          <BrandLockup />
+          <div className="space-y-2">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-3 rounded-md px-3 py-3">
+                <SkeletonBlock className="h-9 w-9" />
+                <SkeletonBlock className="h-4 w-28" />
+              </div>
+            ))}
+          </div>
+        </aside>
+        <section className="space-y-5">
+          <div className="rounded-lg border border-saffron-200 bg-white/90 p-5 shadow-soft">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="lotus-mark grid h-12 w-12 place-items-center rounded-lg text-lg font-black text-white shadow-soft">
+                HK
+              </div>
+              <div className="min-w-0 flex-1">
+                <SkeletonBlock className="h-5 w-48 max-w-full" />
+                <SkeletonBlock className="mt-2 h-3 w-32" />
+              </div>
+            </div>
+            <SkeletonBlock className="h-10 w-full" />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <SkeletonBlock className="h-36" />
+            <SkeletonBlock className="h-36" />
+            <SkeletonBlock className="h-36" />
+          </div>
+          <SkeletonBlock className="h-64" />
+        </section>
+      </div>
+    </main>
+  );
 }
 
 function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (tab: TabId) => void }) {
