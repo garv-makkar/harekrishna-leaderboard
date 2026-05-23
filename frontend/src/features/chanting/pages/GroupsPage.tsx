@@ -1,11 +1,11 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { ChevronRight, Copy, ImageUp, MessageSquare, Plus, Search, Settings, Trash2, Trophy, UserPlus, Users } from "lucide-react";
+import { ChevronRight, Copy, ImageUp, MessageSquare, Plus, RefreshCw, Search, Settings, Trash2, Trophy, UserPlus, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
-import { groupCodeProblem, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, uid } from "../domain";
+import { groupCodeProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, uid } from "../domain";
 import { ModerationReportButton } from "../ModerationReportButton";
 import { ActionEmptyState, Avatar, EmptyState, Field, InlineNotice, Leaderboard, LeaderboardSkeleton, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
 
@@ -60,6 +60,10 @@ export function GroupsPage({
   const range = leaderboardRange(period, todayKey, periodOffset);
   const selectedMemberCount = selectedGroup ? groupMemberCount(selectedGroup.id) : 0;
   const isLoadingGroups = loadingRemoteSlices.groups;
+  const selectedMemberIds = selectedGroup
+    ? state.groupMembers.filter((member) => member.groupId === selectedGroup.id).map((member) => member.userId)
+    : [];
+  const selectedLastUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, selectedMemberIds, range.start, range.end));
   const openActionPanel = (mode: "join" | "create") => {
     setActionMode(mode);
     window.requestAnimationFrame(() => actionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -220,6 +224,13 @@ export function GroupsPage({
           onCopyCode={() => copyGroupCode(selectedGroup.code)}
           onCopyInvite={() => copyGroupInvite(selectedGroup)}
         />
+        {selectedRole === "owner" && (
+          <GroupOwnerDashboard
+            group={selectedGroup}
+            onCopyInvite={() => copyGroupInvite(selectedGroup)}
+            onRefresh={() => refreshRemoteState(currentUser.id)}
+          />
+        )}
         <GroupTargetPanel group={selectedGroup} />
         <GroupAccountabilityPanel group={selectedGroup} />
         <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
@@ -237,6 +248,9 @@ export function GroupsPage({
                 currentUserId={currentUser.id}
                 emptyText="No one in this group has added rounds for this period yet."
                 visibility={showAllMembers ? "all" : "active"}
+                lastUpdated={selectedLastUpdated}
+                isRefreshing={isBusy || isLoadingGroups}
+                onRefresh={() => refreshRemoteState(currentUser.id)}
                 rows={rankUsersInRange(
                   state.groupMembers
                     .filter((member) => member.groupId === selectedGroup.id)
@@ -431,6 +445,77 @@ function TargetProgress({ label, value, target }: { label: string; value: number
         <div className="h-full bg-peacock-500" style={{ width: `${percent}%` }} />
       </div>
     </div>
+  );
+}
+
+function GroupOwnerDashboard({
+  group,
+  onCopyInvite,
+  onRefresh
+}: {
+  group: Group;
+  onCopyInvite: () => void;
+  onRefresh: () => void | Promise<void>;
+}) {
+  const { state, todayKey, isBusy } = useChanting();
+  const memberIds = state.groupMembers.filter((member) => member.groupId === group.id).map((member) => member.userId);
+  const rows = memberIds.map((userId) => {
+    const user = state.users.find((item) => item.id === userId);
+    const entry = state.chantTotals.find((total) => total.userId === userId && total.localDate === todayKey);
+    return { user, entry };
+  });
+  const updatedToday = rows.filter((row) => row.entry).length;
+  const notUpdatedToday = rows.filter((row) => !row.entry).length;
+  const todayRounds = rows.reduce((sum, row) => sum + (row.entry?.rounds || 0), 0);
+  const targetPercent = group.targetDaily > 0 ? Math.min(100, Math.round((todayRounds / group.targetDaily) * 100)) : 0;
+
+  return (
+    <Panel title="Owner dashboard" icon={<Settings size={18} />}>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+        <div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <GroupStat label="Updated today" value={updatedToday} />
+            <GroupStat label="Not updated" value={notUpdatedToday} />
+            <GroupStat label="Today rounds" value={todayRounds} />
+          </div>
+          {group.targetDaily > 0 && (
+            <div className="mt-4 rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="font-black text-peacock-950">Daily group target</p>
+                <span className="rounded-md bg-white px-2 py-1 text-xs font-black text-peacock-900">{targetPercent}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-white">
+                <div className="h-full bg-peacock-500" style={{ width: `${targetPercent}%` }} />
+              </div>
+              <p className="mt-2 text-sm text-peacock-950">
+                {todayRounds} / {group.targetDaily} rounds from {memberIds.length} member{memberIds.length === 1 ? "" : "s"}.
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+          <p className="font-black text-saffron-950">Owner actions</p>
+          <p className="mt-1 text-sm leading-6 text-stone-700">Quickly refresh the leaderboard or share the current invite.</p>
+          <div className="mt-3 grid gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white disabled:bg-peacock-200"
+              disabled={isBusy}
+              onClick={() => void onRefresh()}
+            >
+              <RefreshCw size={16} /> Refresh group
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-3 text-sm font-black text-white"
+              onClick={onCopyInvite}
+            >
+              <Copy size={16} /> Copy invite
+            </button>
+          </div>
+        </div>
+      </div>
+    </Panel>
   );
 }
 
@@ -965,7 +1050,7 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
         const { data, error } = await client
           .from("groups")
           .insert({ name: name.trim(), code: cleanCode, owner_id: currentUser.id, image_url: imageUrl.trim() })
-          .select("id")
+          .select("id, created_at")
           .single();
         if (error) throw error;
         const { error: memberError } = await client.from("group_members").insert({
@@ -974,11 +1059,31 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
           role: "owner"
         });
         if (memberError) throw memberError;
-        await refreshRemoteState(currentUser.id);
+        const createdAt = data.created_at || new Date().toISOString();
+        const group: Group = {
+          id: data.id,
+          name: name.trim(),
+          code: cleanCode,
+          ownerId: currentUser.id,
+          imageUrl: imageUrl.trim(),
+          announcement: "",
+          targetDaily: 0,
+          targetWeekly: 0,
+          createdAt
+        };
+        saveState({
+          ...state,
+          groups: [group, ...state.groups.filter((item) => item.id !== group.id)],
+          groupMembers: [
+            { groupId: group.id, userId: currentUser.id, role: "owner", joinedAt: createdAt },
+            ...state.groupMembers.filter((member) => !(member.groupId === group.id && member.userId === currentUser.id))
+          ]
+        });
         setSelectedGroupId(data.id);
         setName("");
         setCode("");
         setImageUrl("");
+        void refreshRemoteState(currentUser.id, "groups");
         showActionFeedback({
           title: "Group created",
           body: `${name.trim()} is ready. Share code ${cleanCode} with members to start the group leaderboard.`,
@@ -1083,10 +1188,18 @@ function JoinGroupForm({
           role: "member"
         });
         if (error) throw error;
-        await refreshRemoteState(currentUser.id);
+        const joinedAt = new Date().toISOString();
+        saveState({
+          ...state,
+          groupMembers: [
+            ...state.groupMembers,
+            { groupId: group.id, userId: currentUser.id, role: "member", joinedAt }
+          ]
+        });
         setSelectedGroupId(group.id);
         setCode("");
         onJoined?.();
+        void refreshRemoteState(currentUser.id, "groups");
         showActionFeedback({
           title: "Group joined",
           body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,

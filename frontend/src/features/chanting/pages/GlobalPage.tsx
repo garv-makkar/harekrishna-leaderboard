@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react";
 import { Globe2, Trophy, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
-import { leaderboardRange, rankUsersInRange } from "../domain";
+import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange } from "../domain";
 import { Leaderboard, Panel, PeriodHistoryControls, PeriodTabs } from "../ui";
 
 export function GlobalPage() {
-  const { state, currentUser, period, setPeriod, todayKey } = useChanting();
+  const { state, currentUser, period, setPeriod, todayKey, isBusy, refreshRemoteState } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [showAllUsers, setShowAllUsers] = useState(false);
   useEffect(() => setPeriodOffset(0), [period]);
   if (!currentUser) return null;
   const range = leaderboardRange(period, todayKey, periodOffset);
+  const lastUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, state.users.map((user) => user.id), range.start, range.end));
   const activeUserCount = state.users.filter((user) =>
     state.chantTotals.some((total) => total.userId === user.id && total.localDate >= range.start && total.localDate <= range.end && total.rounds > 0)
   ).length;
@@ -49,6 +50,9 @@ export function GlobalPage() {
           emptyText="No global entries for this period yet."
           visibility={showAllUsers ? "all" : "active"}
           rows={rankUsersInRange(state.users, state.chantTotals, range.start, range.end)}
+          lastUpdated={lastUpdated}
+          isRefreshing={isBusy}
+          onRefresh={() => refreshRemoteState(currentUser.id)}
         />
       </Panel>
     </div>

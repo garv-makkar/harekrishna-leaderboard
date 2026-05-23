@@ -545,6 +545,25 @@ export function roundsForDate(totals: ChantTotal[], userId: string, dateKey: str
   return totals.find((total) => total.userId === userId && total.localDate === dateKey)?.rounds || 0;
 }
 
+export function latestUpdateLabel(updatedAt: string) {
+  if (!updatedAt) return "";
+  return new Date(updatedAt).toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+export function latestChantUpdate(totals: ChantTotal[], userIds: string[], start: string, end: string) {
+  const idSet = new Set(userIds);
+  return totals
+    .filter((total) => idSet.has(total.userId) && inRange(total.localDate, start, end) && total.updatedAt)
+    .map((total) => total.updatedAt)
+    .sort()
+    .at(-1) || "";
+}
+
 export function recentChantingHistory(totals: ChantTotal[], userId: string, todayKey: string, days = 7) {
   return Array.from({ length: days }, (_, index) => {
     const dateKey = addDays(todayKey, -(days - 1 - index));

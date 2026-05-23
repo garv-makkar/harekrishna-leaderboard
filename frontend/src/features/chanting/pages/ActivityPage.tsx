@@ -37,6 +37,9 @@ export function ActivityPage() {
   const allEntries = state.chantTotals
     .filter((total) => total.userId === currentUser.id && total.rounds > 0)
     .sort((a, b) => b.localDate.localeCompare(a.localDate));
+  const feedItems = buildActivityFeed(state, currentUser.id)
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, 12);
   const exportHistory = () => {
     const rows = [
       ["date", "rounds", "updated_at"],
@@ -89,6 +92,26 @@ export function ActivityPage() {
           <SummaryTile label="Average" value={averageOnActiveDays} note="on active days" />
           <SummaryTile label="Current streak" value={currentStreak(state.chantTotals, currentUser.id, todayKey)} note={`best ${bestStreak(state.chantTotals, currentUser.id)}`} />
         </div>
+      </Panel>
+
+      <Panel title="Recent activity" icon={<ListChecks size={18} />}>
+        {feedItems.length === 0 ? (
+          <EmptyState text="No recent app activity yet. Log rounds, join a group, or add a friend and it will appear here." />
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+            {feedItems.map((item) => (
+              <div key={item.id} className="grid gap-2 border-b border-stone-100 px-4 py-3 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div>
+                  <p className="font-black text-stone-900">{item.title}</p>
+                  <p className="text-sm leading-6 text-stone-600">{item.body}</p>
+                </div>
+                <span className="w-fit rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600">
+                  {formatFeedTime(item.at)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </Panel>
 
       <Panel title={`${days}-day history`} icon={<CalendarDays size={18} />}>
@@ -171,6 +194,73 @@ export function ActivityPage() {
       </Panel>
     </div>
   );
+}
+
+function buildActivityFeed(state: ReturnType<typeof useChanting>["state"], currentUserId: string) {
+  const currentUser = state.users.find((user) => user.id === currentUserId);
+  const items: { id: string; title: string; body: string; at: string }[] = [];
+
+  state.chantTotals
+    .filter((total) => total.userId === currentUserId)
+    .forEach((total) => {
+      items.push({
+        id: `rounds-${total.localDate}`,
+        title: `Logged ${total.rounds} round${total.rounds === 1 ? "" : "s"}`,
+        body: `${formatDate(total.localDate)} was updated in your chanting history.`,
+        at: total.updatedAt
+      });
+    });
+
+  state.groupMembers
+    .filter((member) => member.userId === currentUserId)
+    .forEach((member) => {
+      const group = state.groups.find((item) => item.id === member.groupId);
+      items.push({
+        id: `group-member-${member.groupId}`,
+        title: member.role === "owner" ? "Created a group" : "Joined a group",
+        body: `${member.role === "owner" ? "You created" : "You joined"} ${group?.name || "a group"} as ${member.role}.`,
+        at: member.joinedAt
+      });
+    });
+
+  state.friendRequests
+    .filter((request) => request.fromUserId === currentUserId || request.toUserId === currentUserId)
+    .forEach((request) => {
+      const otherUserId = request.fromUserId === currentUserId ? request.toUserId : request.fromUserId;
+      const other = state.users.find((user) => user.id === otherUserId);
+      const outgoing = request.fromUserId === currentUserId;
+      items.push({
+        id: `friend-${request.id}`,
+        title: request.status === "accepted" ? "Friend connected" : outgoing ? "Friend request sent" : "Friend request received",
+        body:
+          request.status === "accepted"
+            ? `You and @${other?.username || "this user"} are now friends.`
+            : outgoing
+              ? `Waiting for @${other?.username || "this user"} to accept your request.`
+              : `@${other?.username || "Someone"} sent you a friend request.`,
+        at: request.createdAt
+      });
+    });
+
+  if (currentUser) {
+    items.push({
+      id: "profile-created",
+      title: "Account created",
+      body: `@${currentUser.username} joined Hare Krishna Leaderboard.`,
+      at: currentUser.joinedAt
+    });
+  }
+
+  return items;
+}
+
+function formatFeedTime(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit"
+  });
 }
 
 function SummaryTile({ label, value, note }: { label: string; value: number; note: string }) {

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, HeartHandshake, Search, Trophy, UserRoundSearch, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { makeFriendRequest, useChanting } from "../ChantingContext";
-import { leaderboardRange, rankUsersInRange, readableError } from "../domain";
+import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange, readableError } from "../domain";
 import { ModerationReportButton } from "../ModerationReportButton";
 import { ActionEmptyState, Avatar, EmptyState, Field, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
 
@@ -20,7 +20,8 @@ export function FriendsPage() {
     deleteFriendRequest,
     acceptFriendRequest,
     ensureFriendsData,
-    loadingRemoteSlices
+    loadingRemoteSlices,
+    refreshRemoteState
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [showAllFriends, setShowAllFriends] = useState(false);
@@ -47,6 +48,7 @@ export function FriendsPage() {
     (request) => request.fromUserId === currentUser.id && request.status === "pending"
   );
   const range = leaderboardRange(period, todayKey, periodOffset);
+  const lastUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, friendUsers.map((user) => user.id), range.start, range.end));
   const isLoadingFriends = loadingRemoteSlices.friends;
   const hasFriendData = state.friendRequests.some(
     (request) => request.fromUserId === currentUser.id || request.toUserId === currentUser.id
@@ -219,6 +221,9 @@ export function FriendsPage() {
               emptyText="No friends have added rounds for this period yet."
               visibility={showAllFriends ? "all" : "active"}
               rows={rankUsersInRange(friendUsers, state.chantTotals, range.start, range.end)}
+              lastUpdated={lastUpdated}
+              isRefreshing={isBusy || isLoadingFriends}
+              onRefresh={() => refreshRemoteState(currentUser.id)}
             />
           </>
         )}

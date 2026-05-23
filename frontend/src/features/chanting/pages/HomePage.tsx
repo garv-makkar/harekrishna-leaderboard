@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, CalendarDays, Download, Flame, Medal, Moon, PlusCircle, Target } from "lucide-react";
+import { Award, CalendarDays, Download, ExternalLink, Flame, Medal, Moon, PlusCircle, Target } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   approximateHinduCalendar,
@@ -10,6 +10,8 @@ import {
   currentStreak,
   daysChantedThisMonth,
   formatDate,
+  latestChantUpdate,
+  latestUpdateLabel,
   localDayBoundaryText,
   MAX_DAILY_ROUNDS,
   rankUsers,
@@ -35,7 +37,8 @@ export function HomePage() {
     adjustDraftRounds,
     setDailyRounds,
     isBusy,
-    updateUserPreferences
+    updateUserPreferences,
+    refreshRemoteState
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState("");
@@ -60,6 +63,9 @@ export function HomePage() {
   const selectedDateLabel = selectedDate === todayKey ? "Today" : formatDate(selectedDate || todayKey);
   const hasStartedChanting = allTimeRounds > 0;
   const hinduDay = approximateHinduCalendar(todayKey);
+  const dailyGoal = currentUser.dailyGoal || 16;
+  const remainingGoalRounds = Math.max(0, dailyGoal - currentRounds);
+  const homeLeaderboardUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, state.users.map((user) => user.id), todayKey, todayKey));
   const nextMilestone = milestones
     .filter((milestone) => !milestone.earned)
     .sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
@@ -294,6 +300,23 @@ export function HomePage() {
         </ActionEmptyState>
       )}
 
+      {remainingGoalRounds > 0 && (
+        <ActionEmptyState
+          icon={<Target size={20} />}
+          title={`${remainingGoalRounds} round${remainingGoalRounds === 1 ? "" : "s"} left for today's goal`}
+          text={`Your current daily goal is ${dailyGoal}. Use quick add or set the draft directly to your goal total.`}
+        >
+          <button
+            type="button"
+            className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white shadow-sm"
+            disabled={isBusy}
+            onClick={() => setPresetTotal(dailyGoal)}
+          >
+            Set draft to goal
+          </button>
+        </ActionEmptyState>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Today" value={currentRounds} note="Saved rounds" />
         <MetricCard label="This week" value={weeklyRounds} note="Weeks start Monday" />
@@ -363,6 +386,14 @@ export function HomePage() {
               <p className="mt-2">
                 Reference to use: {VAISHNAVA_CALENDAR_REFERENCE.name} by {VAISHNAVA_CALENDAR_REFERENCE.provider}.
               </p>
+              <a
+                href={VAISHNAVA_CALENDAR_REFERENCE.url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100"
+              >
+                <ExternalLink size={16} /> Check official Vaishnava calendar
+              </a>
             </div>
           </div>
         </Panel>
@@ -446,6 +477,9 @@ export function HomePage() {
         currentUserId={currentUser.id}
         emptyText="No global chanting entries for today yet. Save your rounds and your row will appear here."
         rows={rankUsers(state.users, state.chantTotals, "daily", todayKey)}
+        lastUpdated={homeLeaderboardUpdated}
+        isRefreshing={isBusy}
+        onRefresh={() => refreshRemoteState(currentUser.id)}
       />
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-saffron-200 bg-white/95 p-3 shadow-soft backdrop-blur md:hidden">
         <div className="grid grid-cols-[1fr_1fr_auto] gap-2">

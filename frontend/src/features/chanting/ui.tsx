@@ -360,7 +360,10 @@ export function Leaderboard({
   periodText,
   currentUserId,
   emptyText,
-  visibility = "logged"
+  visibility = "logged",
+  lastUpdated,
+  isRefreshing = false,
+  onRefresh
 }: {
   title: string;
   rows: RankedUser[];
@@ -369,6 +372,9 @@ export function Leaderboard({
   currentUserId: string;
   emptyText: string;
   visibility?: "active" | "logged" | "all";
+  lastUpdated?: string;
+  isRefreshing?: boolean;
+  onRefresh?: () => void | Promise<void>;
 }) {
   const { setSelectedPublicUserId } = useChanting();
   const currentRowRef = useRef<HTMLDivElement | null>(null);
@@ -396,9 +402,12 @@ export function Leaderboard({
       {title && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-lg font-black text-stone-900">{title}</h3>
-          <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
-            {periodText || periodLabel(period)}
-          </span>
+          <LeaderboardRefreshMeta periodText={periodText || periodLabel(period)} lastUpdated={lastUpdated} isRefreshing={isRefreshing} onRefresh={onRefresh} />
+        </div>
+      )}
+      {!title && (lastUpdated || onRefresh) && (
+        <div className="mb-3 flex justify-end">
+          <LeaderboardRefreshMeta periodText={periodText || periodLabel(period)} lastUpdated={lastUpdated} isRefreshing={isRefreshing} onRefresh={onRefresh} />
         </div>
       )}
       <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50/90 px-4 py-3 text-sm leading-6 text-peacock-900">
@@ -576,6 +585,41 @@ export function Leaderboard({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function LeaderboardRefreshMeta({
+  periodText,
+  lastUpdated,
+  isRefreshing,
+  onRefresh
+}: {
+  periodText: string;
+  lastUpdated?: string;
+  isRefreshing: boolean;
+  onRefresh?: () => void | Promise<void>;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {lastUpdated && (
+        <span className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600">
+          Last update {lastUpdated}
+        </span>
+      )}
+      <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
+        {periodText}
+      </span>
+      {onRefresh && (
+        <button
+          type="button"
+          className="rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm disabled:bg-peacock-200"
+          disabled={isRefreshing}
+          onClick={() => void onRefresh()}
+        >
+          {isRefreshing ? "Refreshing..." : "Refresh"}
+        </button>
+      )}
     </div>
   );
 }
