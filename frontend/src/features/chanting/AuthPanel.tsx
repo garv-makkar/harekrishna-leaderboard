@@ -312,6 +312,9 @@ function SignUpForm() {
       timezone: form.timezone || detectTimezone(),
       displayName: username,
       avatarUrl: "",
+      dailyGoal: 16,
+      reminderEnabled: false,
+      reminderTime: "20:00",
       joinedAt: new Date().toISOString()
     };
     saveState({ ...state, users: [...state.users, user], currentUserId: user.id });

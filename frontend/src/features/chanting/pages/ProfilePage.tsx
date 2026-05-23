@@ -1,7 +1,7 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
-import { Award, CheckCircle2, Circle, Download, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { Award, Bell, CheckCircle2, Circle, Download, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useChanting } from "../ChantingContext";
 import {
@@ -39,11 +39,21 @@ export function ProfilePage() {
     setAuthMode,
     todayKey,
     joinedGroups,
-    friends
+    friends,
+    updateUserPreferences
   } = useChanting();
   const [avatarStatus, setAvatarStatus] = useState("");
   const [avatarError, setAvatarError] = useState("");
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState("20:00");
+  const [reminderStatus, setReminderStatus] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    setReminderEnabled(currentUser.reminderEnabled);
+    setReminderTime(currentUser.reminderTime || "20:00");
+  }, [currentUser?.id, currentUser?.reminderEnabled, currentUser?.reminderTime, currentUser]);
 
   if (!currentUser) return null;
   const profileCompletionItems = [
@@ -148,6 +158,13 @@ export function ProfilePage() {
     showMessage("Account deleted.");
   };
 
+  const saveReminderPreferences = async () => {
+    setReminderStatus("");
+    await updateUserPreferences({ reminderEnabled, reminderTime });
+    setReminderStatus(reminderEnabled ? `Reminder preference saved for ${reminderTime}.` : "Reminder preference saved.");
+    window.setTimeout(() => setReminderStatus(""), 2500);
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const profile = {
@@ -249,6 +266,48 @@ export function ProfilePage() {
       </section>
 
       <ProfileCompletionPanel items={profileCompletionItems} />
+
+      <Panel title="Notification preferences" icon={<Bell size={18} />}>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                className="mt-1 h-5 w-5 rounded border-stone-300 text-saffron-600 focus:ring-saffron-500"
+                checked={reminderEnabled}
+                onChange={(event) => setReminderEnabled(event.target.checked)}
+              />
+              <span>
+                <span className="block font-black text-stone-900">Daily chanting reminder</span>
+                <span className="mt-1 block text-sm leading-6 text-stone-600">
+                  This saves your preferred reminder time now. Actual push/email reminders can be connected later.
+                </span>
+              </span>
+            </label>
+            {reminderStatus && <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{reminderStatus}</p>}
+          </div>
+          <div>
+            <Field
+              label="Reminder time"
+              value={reminderTime}
+              onChange={setReminderTime}
+              type="time"
+              helper={`Saved in your local timezone: ${currentUser.timezone}.`}
+            />
+            <button
+              type="button"
+              className="mt-3 w-full rounded-md bg-peacock-600 px-4 py-3 font-black text-white disabled:bg-peacock-200"
+              disabled={
+                isBusy ||
+                (reminderEnabled === currentUser.reminderEnabled && reminderTime === (currentUser.reminderTime || "20:00"))
+              }
+              onClick={saveReminderPreferences}
+            >
+              Save preferences
+            </button>
+          </div>
+        </div>
+      </Panel>
 
       <form className="space-y-6" onSubmit={submit}>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">

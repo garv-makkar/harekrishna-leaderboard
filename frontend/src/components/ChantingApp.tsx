@@ -34,6 +34,7 @@ import {
   computeMilestones,
   currentStreak,
   formatDate,
+  normalizeGroupCode,
   recentChantingHistory,
   sumRounds
 } from "@/features/chanting/domain";
@@ -124,10 +125,19 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
   } = useChanting();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
 
   useEffect(() => {
     ensureFriendsData();
   }, [ensureFriendsData]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = normalizeGroupCode(params.get("group") || params.get("invite") || "");
+    if (!code) return;
+    setInviteCode(code);
+    onTabChange("groups");
+  }, [onTabChange]);
 
   useEffect(() => {
     setShowMobileNav(false);
@@ -144,6 +154,14 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
   const handleTabChange = (tab: TabId) => {
     onTabChange(tab);
     setShowMobileNav(false);
+  };
+
+  const clearInviteCode = () => {
+    setInviteCode("");
+    const url = new URL(window.location.href);
+    url.searchParams.delete("group");
+    url.searchParams.delete("invite");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
   };
 
   const signOut = async () => {
@@ -341,7 +359,7 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
             />
           )}
           {activeTab === "home" && <HomePage />}
-          {activeTab === "groups" && <GroupsPage />}
+          {activeTab === "groups" && <GroupsPage inviteCode={inviteCode} onInviteHandled={clearInviteCode} />}
           {activeTab === "friends" && <FriendsPage />}
           {activeTab === "global" && <GlobalPage />}
           {activeTab === "activity" && <ActivityPage />}
@@ -686,6 +704,15 @@ function buildNotifications(
           tone: "info" as const,
           title: "Reports submitted",
           body: `${openReports.length} report${openReports.length === 1 ? "" : "s"} waiting for future moderator review.`
+        }]
+      : []),
+    ...(currentUser?.reminderEnabled
+      ? [{
+          id: "daily-reminder",
+          tone: "info" as const,
+          title: "Daily reminder",
+          body: `Reminder preference is set for ${currentUser.reminderTime || "20:00"} in ${currentUser.timezone}.`,
+          action: { type: "open-tab" as const, tab: "profile" as TabId, label: "Edit reminder" }
         }]
       : []),
     {

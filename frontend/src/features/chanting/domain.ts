@@ -70,6 +70,9 @@ export type ProfileRow = {
   country: string;
   timezone: string;
   avatar_url: string;
+  daily_goal?: number;
+  reminder_enabled?: boolean;
+  reminder_time?: string;
   joined_at: string;
 };
 
@@ -86,6 +89,9 @@ export type GroupRow = {
   name: string;
   code: string;
   image_url: string;
+  announcement?: string;
+  target_daily?: number;
+  target_weekly?: number;
   created_at: string;
 };
 
@@ -332,6 +338,12 @@ export function localDayBoundaryText(timezone: string) {
   return `Today is ${formatDate(localDateKey(new Date(), timezone))}. Your chanting day runs from 12:00 AM to 11:59 PM in ${timezone}. Weeks start on Monday.`;
 }
 
+export const VAISHNAVA_CALENDAR_REFERENCE = {
+  name: "Vaisnava Calendar Reminder Services",
+  provider: "ISKCON-approved GCal 11 calculations",
+  url: "https://www.vaisnavacalendar.info/"
+};
+
 export function approximateHinduCalendar(dateKey: string) {
   const tithiNames = [
     "Pratipada",
@@ -367,7 +379,7 @@ export function approximateHinduCalendar(dateKey: string) {
     isEkadashi,
     isDashami: tithiInPaksha === 10,
     isDwadashi: tithiInPaksha === 12,
-    note: "Approximate tithi based on lunar phase. Use your local temple panchang for fasting and festival observance."
+    note: `Approximate tithi based on lunar phase. For fasting and festival observance, confirm with your local temple panchang or ${VAISHNAVA_CALENDAR_REFERENCE.name}.`
   };
 }
 
@@ -424,6 +436,9 @@ export function createSeedState(): AppState {
       timezone: detectTimezone(),
       displayName: "Gauranga Das",
       avatarUrl: "",
+      dailyGoal: 16,
+      reminderEnabled: false,
+      reminderTime: "20:00",
       joinedAt
     },
     {
@@ -436,6 +451,9 @@ export function createSeedState(): AppState {
       timezone: "Asia/Kolkata",
       displayName: "Radha Priya",
       avatarUrl: "",
+      dailyGoal: 16,
+      reminderEnabled: false,
+      reminderTime: "20:00",
       joinedAt
     },
     {
@@ -448,6 +466,9 @@ export function createSeedState(): AppState {
       timezone: "America/New_York",
       displayName: "Madhava 108",
       avatarUrl: "",
+      dailyGoal: 16,
+      reminderEnabled: false,
+      reminderTime: "20:00",
       joinedAt
     }
   ];
@@ -470,6 +491,9 @@ export function createSeedState(): AppState {
         code: "JAPA108",
         ownerId: "user_demo",
         imageUrl: "",
+        announcement: "Remember to update today's rounds after japa.",
+        targetDaily: 64,
+        targetWeekly: 400,
         createdAt: joinedAt
       }
     ],
@@ -655,6 +679,9 @@ export function fromProfileRow(row: ProfileRow): UserProfile {
     timezone: row.timezone,
     displayName: row.display_name || row.username,
     avatarUrl: row.avatar_url || "",
+    dailyGoal: row.daily_goal ?? 16,
+    reminderEnabled: Boolean(row.reminder_enabled),
+    reminderTime: row.reminder_time || "20:00",
     joinedAt: row.joined_at
   };
 }
@@ -675,6 +702,9 @@ export function fromGroupRow(row: GroupRow): Group {
     code: row.code,
     ownerId: row.owner_id,
     imageUrl: row.image_url || "",
+    announcement: row.announcement || "",
+    targetDaily: row.target_daily || 0,
+    targetWeekly: row.target_weekly || 0,
     createdAt: row.created_at
   };
 }

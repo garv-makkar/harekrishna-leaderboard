@@ -11,6 +11,9 @@ export type UserProfile = {
   timezone: string;
   displayName: string;
   avatarUrl: string;
+  dailyGoal: number;
+  reminderEnabled: boolean;
+  reminderTime: string;
   joinedAt: string;
 };
 
@@ -27,6 +30,9 @@ export type Group = {
   code: string;
   ownerId: string;
   imageUrl: string;
+  announcement: string;
+  targetDaily: number;
+  targetWeekly: number;
   createdAt: string;
 };
 

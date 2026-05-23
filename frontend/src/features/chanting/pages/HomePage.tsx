@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Award, CalendarDays, Download, Flame, Medal, Moon, PlusCircle, Target } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
@@ -14,7 +14,8 @@ import {
   MAX_DAILY_ROUNDS,
   rankUsers,
   recentChantingHistory,
-  sumRounds
+  sumRounds,
+  VAISHNAVA_CALENDAR_REFERENCE
 } from "../domain";
 import { ActionEmptyState, Field, Leaderboard, MetricCard, MilestoneGrid, Panel } from "../ui";
 
@@ -33,10 +34,16 @@ export function HomePage() {
     draftDelta,
     adjustDraftRounds,
     setDailyRounds,
-    isBusy
+    isBusy,
+    updateUserPreferences
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState("");
+  const [goalDraft, setGoalDraft] = useState("16");
+
+  useEffect(() => {
+    if (currentUser) setGoalDraft(String(currentUser.dailyGoal || 16));
+  }, [currentUser?.dailyGoal, currentUser]);
 
   if (!currentUser) return null;
 
@@ -61,6 +68,9 @@ export function HomePage() {
   const setPresetTotal = (value: number) => {
     setPreviousDraft(draftRounds);
     setRoundInput(String(Math.max(0, Math.min(MAX_DAILY_ROUNDS, value))));
+  };
+  const saveDailyGoal = async () => {
+    await updateUserPreferences({ dailyGoal: Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(Number(goalDraft) || 0))) });
   };
   const downloadShareCard = () => {
     const canvas = document.createElement("canvas");
@@ -250,6 +260,7 @@ export function HomePage() {
               <DashboardPill label="Today" value={currentRounds} note="saved rounds" tone="saffron" />
               <DashboardPill label="This week" value={weeklyRounds} note="Monday onward" tone="peacock" />
               <DashboardPill label="Current streak" value={streakNow} note={`best ${streakBest}`} tone="stone" />
+              <DashboardPill label="Daily goal" value={currentUser.dailyGoal || 16} note={`${Math.min(100, Math.round((currentRounds / Math.max(1, currentUser.dailyGoal || 16)) * 100))}% today`} tone="peacock" />
             </div>
           </aside>
         </div>
@@ -291,6 +302,46 @@ export function HomePage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Panel title="Daily goal" icon={<Target size={18} />}>
+          <div className="grid gap-4 md:grid-cols-[1fr_260px]">
+            <div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="font-black text-stone-900">
+                  {currentRounds} / {currentUser.dailyGoal || 16} rounds today
+                </p>
+                <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
+                  {Math.min(100, Math.round((currentRounds / Math.max(1, currentUser.dailyGoal || 16)) * 100))}%
+                </span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-stone-100">
+                <div
+                  className="h-full bg-saffron-500"
+                  style={{ width: `${Math.min(100, Math.round((currentRounds / Math.max(1, currentUser.dailyGoal || 16)) * 100))}%` }}
+                />
+              </div>
+              <p className="mt-3 text-sm leading-6 text-stone-600">
+                {currentRounds >= (currentUser.dailyGoal || 16)
+                  ? "Your daily goal is complete."
+                  : `${(currentUser.dailyGoal || 16) - currentRounds} rounds left for today's goal.`}
+              </p>
+            </div>
+            <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+              <Field label="Goal rounds" value={goalDraft} onChange={setGoalDraft} type="number" min={0} max={999} />
+              <button
+                type="button"
+                className="mt-3 w-full rounded-md bg-peacock-600 px-4 py-3 font-black text-white"
+                disabled={isBusy || Number(goalDraft) === (currentUser.dailyGoal || 16)}
+                onClick={saveDailyGoal}
+              >
+                Save goal
+              </button>
+            </div>
+          </div>
+        </Panel>
+        <WeeklySummaryCard history={history} weeklyRounds={weeklyRounds} streakNow={streakNow} />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Panel title="Vaishnava day note" icon={<Moon size={18} />}>
           <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
             <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
@@ -309,6 +360,9 @@ export function HomePage() {
                       : "Panchang reminder"}
               </p>
               <p>{hinduDay.note}</p>
+              <p className="mt-2">
+                Reference to use: {VAISHNAVA_CALENDAR_REFERENCE.name} by {VAISHNAVA_CALENDAR_REFERENCE.provider}.
+              </p>
             </div>
           </div>
         </Panel>
@@ -393,7 +447,59 @@ export function HomePage() {
         emptyText="No global chanting entries for today yet. Save your rounds and your row will appear here."
         rows={rankUsers(state.users, state.chantTotals, "daily", todayKey)}
       />
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-saffron-200 bg-white/95 p-3 shadow-soft backdrop-blur md:hidden">
+        <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+          <button
+            type="button"
+            className="rounded-md bg-peacock-600 px-3 py-3 text-sm font-black text-white"
+            disabled={isBusy}
+            onClick={() => {
+              setPreviousDraft(draftRounds);
+              adjustDraftRounds(1);
+            }}
+          >
+            +1
+          </button>
+          <button
+            type="button"
+            className="rounded-md bg-saffron-500 px-3 py-3 text-sm font-black text-white disabled:bg-saffron-200"
+            disabled={isBusy || draftRounds === currentRounds}
+            onClick={() => {
+              setPreviousDraft(null);
+              setDailyRounds(selectedDate, draftRounds);
+            }}
+          >
+            Save
+          </button>
+          <span className="grid min-w-14 place-items-center rounded-md bg-stone-100 px-3 text-sm font-black text-stone-800">
+            {draftRounds}
+          </span>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function WeeklySummaryCard({
+  history,
+  weeklyRounds,
+  streakNow
+}: {
+  history: { dateKey: string; rounds: number }[];
+  weeklyRounds: number;
+  streakNow: number;
+}) {
+  const activeDays = history.filter((item) => item.rounds > 0).length;
+  const bestDay = history.reduce((best, item) => (item.rounds > best.rounds ? item : best), history[0] || { dateKey: "", rounds: 0 });
+  return (
+    <Panel title="Weekly summary" icon={<Flame size={18} />}>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <DashboardPill label="Weekly total" value={weeklyRounds} note="Monday onward" tone="saffron" />
+        <DashboardPill label="Active days" value={activeDays} note="last 7 days" tone="peacock" />
+        <DashboardPill label="Best day" value={bestDay.rounds} note={bestDay.dateKey ? formatDate(bestDay.dateKey) : "No entries"} tone="stone" />
+        <DashboardPill label="Streak" value={streakNow} note="current days" tone="peacock" />
+      </div>
+    </Panel>
   );
 }
 

@@ -9,7 +9,13 @@ import { groupCodeProblem, leaderboardRange, normalizeGroupCode, rankUsersInRang
 import { ModerationReportButton } from "../ModerationReportButton";
 import { ActionEmptyState, Avatar, EmptyState, Field, InlineNotice, Leaderboard, LeaderboardSkeleton, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
 
-export function GroupsPage() {
+export function GroupsPage({
+  inviteCode = "",
+  onInviteHandled
+}: {
+  inviteCode?: string;
+  onInviteHandled?: () => void;
+}) {
   const {
     state,
     currentUser,
@@ -41,6 +47,12 @@ export function GroupsPage() {
   }, [ensureGroupsData]);
 
   useEffect(() => setPeriodOffset(0), [period, selectedGroup?.id]);
+
+  useEffect(() => {
+    if (!inviteCode) return;
+    setActionMode("join");
+    window.requestAnimationFrame(() => actionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [inviteCode]);
 
   if (!currentUser) return null;
 
@@ -208,6 +220,7 @@ export function GroupsPage() {
           onCopyCode={() => copyGroupCode(selectedGroup.code)}
           onCopyInvite={() => copyGroupInvite(selectedGroup)}
         />
+        <GroupTargetPanel group={selectedGroup} />
         <GroupAccountabilityPanel group={selectedGroup} />
         <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
           {isLoadingGroups && selectedMemberCount === 0 ? (
@@ -283,7 +296,11 @@ export function GroupsPage() {
               Create group
             </button>
           </div>
-          {actionMode === "join" ? <JoinGroupForm embedded /> : <CreateGroupForm embedded />}
+          {actionMode === "join" ? (
+            <JoinGroupForm embedded initialCode={inviteCode} onJoined={onInviteHandled} />
+          ) : (
+            <CreateGroupForm embedded />
+          )}
         </Panel>
       </div>
     </div>
@@ -333,6 +350,12 @@ function GroupInviteCard({
               Owner tip: keep codes memorable but specific. You can change the code in group controls.
             </p>
           )}
+          {group.announcement && (
+            <div className="mt-3 rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2 text-sm text-saffron-950">
+              <p className="font-black">Pinned announcement</p>
+              <p>{group.announcement}</p>
+            </div>
+          )}
         </div>
         <div className="border-t border-peacock-100 bg-white/80 p-4 sm:p-5 lg:border-l lg:border-t-0">
           <p className="text-xs font-black uppercase text-stone-500">Group code</p>
@@ -361,6 +384,53 @@ function GroupInviteCard({
         </div>
       </div>
     </section>
+  );
+}
+
+function GroupTargetPanel({ group }: { group: Group }) {
+  const { state, todayKey } = useChanting();
+  const memberIds = state.groupMembers.filter((member) => member.groupId === group.id).map((member) => member.userId);
+  const week = leaderboardRange("weekly", todayKey, 0);
+  const todayTotal = state.chantTotals
+    .filter((total) => memberIds.includes(total.userId) && total.localDate === todayKey)
+    .reduce((sum, total) => sum + total.rounds, 0);
+  const weekTotal = state.chantTotals
+    .filter((total) => memberIds.includes(total.userId) && total.localDate >= week.start && total.localDate <= week.end)
+    .reduce((sum, total) => sum + total.rounds, 0);
+  if (!group.targetDaily && !group.targetWeekly && !group.announcement) return null;
+  return (
+    <Panel title="Group focus" icon={<Trophy size={18} />}>
+      {group.announcement && (
+        <div className="mb-4 rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3 text-sm leading-6 text-saffron-950">
+          <p className="font-black">Pinned message</p>
+          <p>{group.announcement}</p>
+        </div>
+      )}
+      <div className="grid gap-3 md:grid-cols-2">
+        <TargetProgress label="Daily target" value={todayTotal} target={group.targetDaily} />
+        <TargetProgress label="Weekly target" value={weekTotal} target={group.targetWeekly} />
+      </div>
+    </Panel>
+  );
+}
+
+function TargetProgress({ label, value, target }: { label: string; value: number; target: number }) {
+  const percent = target > 0 ? Math.min(100, Math.round((value / target) * 100)) : 0;
+  return (
+    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="font-black text-stone-900">{label}</p>
+        <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900">
+          {target > 0 ? `${percent}%` : "Not set"}
+        </span>
+      </div>
+      <p className="text-2xl font-black text-stone-950">
+        {value} <span className="text-sm text-stone-500">/ {target || "-"}</span>
+      </p>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100">
+        <div className="h-full bg-peacock-500" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
   );
 }
 
@@ -440,6 +510,9 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
   const [name, setName] = useState(group.name);
   const [code, setCode] = useState(group.code);
   const [imageUrl, setImageUrl] = useState(group.imageUrl);
+  const [announcement, setAnnouncement] = useState(group.announcement);
+  const [targetDaily, setTargetDaily] = useState(String(group.targetDaily || ""));
+  const [targetWeekly, setTargetWeekly] = useState(String(group.targetWeekly || ""));
   const [deleteText, setDeleteText] = useState("");
   const [formError, setFormError] = useState("");
   const members = state.groupMembers
@@ -455,6 +528,9 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
     setName(group.name);
     setCode(group.code);
     setImageUrl(group.imageUrl);
+    setAnnouncement(group.announcement);
+    setTargetDaily(group.targetDaily ? String(group.targetDaily) : "");
+    setTargetWeekly(group.targetWeekly ? String(group.targetWeekly) : "");
     setDeleteText("");
     setFormError("");
   }, [group]);
@@ -486,7 +562,10 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
           .update({
             name: name.trim(),
             code: cleanCode,
-            image_url: imageUrl.trim()
+            image_url: imageUrl.trim(),
+            announcement: announcement.trim(),
+            target_daily: Math.max(0, Math.floor(Number(targetDaily) || 0)),
+            target_weekly: Math.max(0, Math.floor(Number(targetWeekly) || 0))
           })
           .eq("id", group.id);
         if (error) throw error;
@@ -499,7 +578,15 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
       ...state,
       groups: state.groups.map((item) =>
         item.id === group.id
-          ? { ...item, name: name.trim(), code: cleanCode, imageUrl: imageUrl.trim() }
+          ? {
+              ...item,
+              name: name.trim(),
+              code: cleanCode,
+              imageUrl: imageUrl.trim(),
+              announcement: announcement.trim(),
+              targetDaily: Math.max(0, Math.floor(Number(targetDaily) || 0)),
+              targetWeekly: Math.max(0, Math.floor(Number(targetWeekly) || 0))
+            }
           : item
       )
     });
@@ -607,6 +694,32 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
               helper="Changing this affects future joins. Existing members stay in the group."
             />
             <GroupImagePicker imageUrl={imageUrl} setImageUrl={setImageUrl} label={name || group.name} />
+            <Field
+              label="Pinned announcement"
+              value={announcement}
+              onChange={setAnnouncement}
+              helper="Short message shown to all group members."
+            />
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field
+                label="Daily group target"
+                value={targetDaily}
+                onChange={setTargetDaily}
+                type="number"
+                min={0}
+                max={99999}
+                helper="Use 0 or blank to hide the daily target."
+              />
+              <Field
+                label="Weekly group target"
+                value={targetWeekly}
+                onChange={setTargetWeekly}
+                type="number"
+                min={0}
+                max={999999}
+                helper="Weeks start Monday."
+              />
+            </div>
             <button className="rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" disabled={isBusy}>
               Save group
             </button>
@@ -880,6 +993,9 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
       code: cleanCode,
       ownerId: currentUser.id,
       imageUrl: imageUrl.trim(),
+      announcement: "",
+      targetDaily: 0,
+      targetWeekly: 0,
       createdAt: new Date().toISOString()
     };
     saveState({
@@ -923,10 +1039,22 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
   return <Panel title="Create group" icon={<Plus size={18} />}>{content}</Panel>;
 }
 
-function JoinGroupForm({ embedded = false }: { embedded?: boolean }) {
+function JoinGroupForm({
+  embedded = false,
+  initialCode = "",
+  onJoined
+}: {
+  embedded?: boolean;
+  initialCode?: string;
+  onJoined?: () => void;
+}) {
   const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, setSelectedGroupId, showActionFeedback, showMessage } = useChanting();
   const [code, setCode] = useState("");
   const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (initialCode) setCode(normalizeGroupCode(initialCode));
+  }, [initialCode]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -958,6 +1086,7 @@ function JoinGroupForm({ embedded = false }: { embedded?: boolean }) {
         await refreshRemoteState(currentUser.id);
         setSelectedGroupId(group.id);
         setCode("");
+        onJoined?.();
         showActionFeedback({
           title: "Group joined",
           body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,
@@ -975,6 +1104,7 @@ function JoinGroupForm({ embedded = false }: { embedded?: boolean }) {
     });
     setSelectedGroupId(group.id);
     setCode("");
+    onJoined?.();
     showActionFeedback({
       title: "Group joined",
       body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,

@@ -115,6 +115,7 @@ type ChantingContextValue = {
   currentUserGroupRole: (groupId: string) => GroupRole | undefined;
   copyGroupCode: (code: string) => Promise<void>;
   copyGroupInvite: (group: Group) => Promise<void>;
+  updateUserPreferences: (updates: Partial<Pick<UserProfile, "dailyGoal" | "reminderEnabled" | "reminderTime">>) => Promise<void>;
   runRemote: (action: () => Promise<void>) => Promise<void>;
   refreshRemoteState: (currentUserId: string, scope?: RemoteScope) => Promise<void>;
   ensureGroupsData: () => Promise<void>;
@@ -587,6 +588,35 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUserPreferences = async (updates: Partial<Pick<UserProfile, "dailyGoal" | "reminderEnabled" | "reminderTime">>) => {
+    if (!currentUser) return;
+    const cleanUpdates = {
+      ...(typeof updates.dailyGoal === "number" ? { dailyGoal: Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(updates.dailyGoal))) } : {}),
+      ...(typeof updates.reminderEnabled === "boolean" ? { reminderEnabled: updates.reminderEnabled } : {}),
+      ...(typeof updates.reminderTime === "string" ? { reminderTime: updates.reminderTime } : {})
+    };
+    if (supabase) {
+      const client = supabase;
+      await runRemote(async () => {
+        const { error } = await client
+          .from("profiles")
+          .update({
+            ...(typeof cleanUpdates.dailyGoal === "number" ? { daily_goal: cleanUpdates.dailyGoal } : {}),
+            ...(typeof cleanUpdates.reminderEnabled === "boolean" ? { reminder_enabled: cleanUpdates.reminderEnabled } : {}),
+            ...(typeof cleanUpdates.reminderTime === "string" ? { reminder_time: cleanUpdates.reminderTime } : {})
+          })
+          .eq("id", currentUser.id);
+        if (error) throw error;
+        await refreshRemoteState(currentUser.id, "core");
+      }).catch((error: Error) => showMessage(readableError(error, "profile")));
+      return;
+    }
+    saveState({
+      ...state,
+      users: state.users.map((user) => (user.id === currentUser.id ? { ...user, ...cleanUpdates } : user))
+    });
+  };
+
   const submitUserReport = async (reportedUserId: string, reason: string, details: string) => {
     if (!currentUser) return;
     const cleanReason = reason.trim();
@@ -706,6 +736,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     currentUserGroupRole,
     copyGroupCode,
     copyGroupInvite,
+    updateUserPreferences,
     runRemote,
     refreshRemoteState,
     ensureGroupsData,
