@@ -34,7 +34,7 @@ function AuthHeader({ title, body }: { title: string; body: string }) {
   );
 }
 
-export function AuthPanel() {
+export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
   const { authMode, message } = useChanting();
 
   return (
@@ -57,6 +57,7 @@ export function AuthPanel() {
           </div>
         </section>
         <section className="p-5 sm:p-8 lg:p-10">
+          {inviteCode && <SignedOutInviteNotice inviteCode={inviteCode} />}
           <AuthModeTabs />
           {message && (
             <div className="mb-4 rounded-md border border-peacock-200 bg-peacock-50 px-4 py-3 text-sm font-semibold text-peacock-900">
@@ -78,6 +79,44 @@ export function AuthPanel() {
         </section>
       </div>
     </main>
+  );
+}
+
+function SignedOutInviteNotice({ inviteCode }: { inviteCode: string }) {
+  const { setAuthMode } = useChanting();
+  return (
+    <div className="mb-5 rounded-lg border border-peacock-200 bg-peacock-50 p-4 text-peacock-950 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
+            <Users size={16} /> Group invite
+          </div>
+          <p className="text-lg font-black text-stone-950">You were invited to join a chanting group.</p>
+          <p className="mt-1 text-sm leading-6 text-stone-700">
+            Sign in or create an account to continue. The group code will be ready on the Groups page.
+          </p>
+        </div>
+        <div className="shrink-0 rounded-md bg-stone-950 px-4 py-3 text-center text-xl font-black tracking-normal text-white">
+          {inviteCode}
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white"
+          onClick={() => setAuthMode("signup")}
+        >
+          <Plus size={16} /> Create account
+        </button>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-peacock-900 ring-1 ring-peacock-200"
+          onClick={() => setAuthMode("signin")}
+        >
+          <ShieldCheck size={16} /> Sign in
+        </button>
+      </div>
+    </div>
   );
 }
 

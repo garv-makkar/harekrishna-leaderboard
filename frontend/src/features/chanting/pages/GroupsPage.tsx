@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { ChevronRight, Copy, ImageUp, MessageSquare, Plus, RefreshCw, Search, Settings, Trash2, Trophy, UserPlus, Users } from "lucide-react";
+import { CheckCircle2, ChevronRight, Copy, ImageUp, Link, MessageSquare, Plus, RefreshCw, Search, Settings, Share2, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
@@ -41,6 +41,7 @@ export function GroupsPage({
   const [actionMode, setActionMode] = useState<"join" | "create">("join");
   const [showAllMembers, setShowAllMembers] = useState(false);
   const [recentCopy, setRecentCopy] = useState("");
+  const [inviteModalGroup, setInviteModalGroup] = useState<Group | null>(null);
   const actionPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -81,6 +82,31 @@ export function GroupsPage({
     await copyGroupInvite(group);
     rememberCopy(`Invite for ${group.name} copied with join link.`);
   };
+  const copyInviteLink = async (group: Group) => {
+    const inviteUrl = groupInviteUrl(group);
+    await copyText(inviteUrl, `Invite link for ${group.name} copied.`);
+  };
+  const copyShortInviteMessage = async (group: Group) => {
+    const inviteText = groupInviteShortMessage(group);
+    await copyText(inviteText, `Short invite message for ${group.name} copied.`);
+  };
+  const copyText = async (text: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      rememberCopy(successMessage);
+      showMessage(successMessage);
+    } catch {
+      rememberCopy(text);
+      showMessage(text);
+    }
+  };
+  const invitedGroup = inviteCode
+    ? state.groups.find((group) => group.code.toUpperCase() === inviteCode.toUpperCase())
+    : undefined;
+  const invitedOwner = invitedGroup ? state.users.find((user) => user.id === invitedGroup.ownerId) : undefined;
+  const isInvitedMember = invitedGroup
+    ? state.groupMembers.some((member) => member.groupId === invitedGroup.id && member.userId === currentUser.id)
+    : false;
 
   const leaveSelectedGroup = async () => {
     if (!selectedGroup || selectedRole === "owner") return;
@@ -133,17 +159,10 @@ export function GroupsPage({
                 </span>
                 <button
                   type="button"
-                  className="rounded-md bg-stone-900 px-3 py-2 text-sm font-bold text-white"
-                  onClick={() => copyCode(selectedGroup.code)}
+                  className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
+                  onClick={() => setInviteModalGroup(selectedGroup)}
                 >
-                  Copy code {selectedGroup.code}
-                </button>
-                <button
-                  type="button"
-                  className="rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
-                  onClick={() => copyInvite(selectedGroup)}
-                >
-                  Copy invite
+                  <Share2 size={15} /> Invite members
                 </button>
               </div>
             )}
@@ -159,6 +178,25 @@ export function GroupsPage({
           </div>
         </div>
       </section>
+
+      {inviteCode && (
+        <GroupInviteLandingCard
+          code={inviteCode}
+          group={invitedGroup}
+          owner={invitedOwner}
+          memberCount={invitedGroup ? groupMemberCount(invitedGroup.id) : 0}
+          isMember={isInvitedMember}
+          isLoading={isLoadingGroups}
+          isBusy={isBusy}
+          onOpen={() => {
+            if (!invitedGroup) return;
+            setSelectedGroupId(invitedGroup.id);
+            onInviteHandled?.();
+          }}
+          onRefresh={() => refreshRemoteState(currentUser.id, "groups")}
+          onJoined={onInviteHandled}
+        />
+      )}
 
       <Panel title="Your groups" icon={<Users size={18} />}>
         {isLoadingGroups && joinedGroups.length === 0 ? (
@@ -215,17 +253,10 @@ export function GroupsPage({
                   </span>
                   <button
                     type="button"
-                    className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700"
-                    onClick={() => copyCode(group.code)}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900"
+                    onClick={() => setInviteModalGroup(group)}
                   >
-                    Copy code {group.code}
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900"
-                    onClick={() => copyInvite(group)}
-                  >
-                    Copy invite
+                    <Share2 size={13} /> Invite
                   </button>
                 </div>
               </div>
@@ -239,13 +270,12 @@ export function GroupsPage({
           group={selectedGroup}
           role={selectedRole}
           memberCount={selectedMemberCount}
-          onCopyCode={() => copyCode(selectedGroup.code)}
-          onCopyInvite={() => copyInvite(selectedGroup)}
+          onOpenInvite={() => setInviteModalGroup(selectedGroup)}
         />
         {selectedRole === "owner" && (
           <GroupOwnerDashboard
             group={selectedGroup}
-            onCopyInvite={() => copyInvite(selectedGroup)}
+            onOpenInvite={() => setInviteModalGroup(selectedGroup)}
             onRefresh={() => refreshRemoteState(currentUser.id)}
           />
         )}
@@ -331,10 +361,22 @@ export function GroupsPage({
           {actionMode === "join" ? (
             <JoinGroupForm embedded initialCode={inviteCode} onJoined={onInviteHandled} />
           ) : (
-            <CreateGroupForm embedded />
+          <CreateGroupForm embedded />
           )}
         </Panel>
       </div>
+      {inviteModalGroup && (
+        <InviteMembersModal
+          group={inviteModalGroup}
+          owner={state.users.find((user) => user.id === inviteModalGroup.ownerId)}
+          memberCount={groupMemberCount(inviteModalGroup.id)}
+          onClose={() => setInviteModalGroup(null)}
+          onCopyCode={() => copyCode(inviteModalGroup.code)}
+          onCopyLink={() => copyInviteLink(inviteModalGroup)}
+          onCopyMessage={() => copyInvite(inviteModalGroup)}
+          onCopyShortMessage={() => copyShortInviteMessage(inviteModalGroup)}
+        />
+      )}
     </div>
   );
 }
@@ -348,20 +390,251 @@ function GroupStat({ label, value }: { label: string; value: number }) {
   );
 }
 
+function groupInviteUrl(group: Group) {
+  const path = `?group=${encodeURIComponent(group.code)}`;
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
+}
+
+function groupInviteShortMessage(group: Group) {
+  return `Join my Hare Krishna Leaderboard group "${group.name}" using code ${group.code}.`;
+}
+
+function groupInviteMessage(group: Group) {
+  return `${groupInviteShortMessage(group)} Link: ${groupInviteUrl(group)}`;
+}
+
+function InviteMembersModal({
+  group,
+  owner,
+  memberCount,
+  onClose,
+  onCopyCode,
+  onCopyLink,
+  onCopyMessage,
+  onCopyShortMessage
+}: {
+  group: Group;
+  owner: UserProfile | undefined;
+  memberCount: number;
+  onClose: () => void;
+  onCopyCode: () => void;
+  onCopyLink: () => void;
+  onCopyMessage: () => void;
+  onCopyShortMessage: () => void;
+}) {
+  const inviteLink = groupInviteUrl(group);
+  const fullMessage = groupInviteMessage(group);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-stone-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className="mx-auto mt-4 max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-saffron-200 bg-white shadow-soft">
+        <div className="flex items-start justify-between gap-3 border-b border-saffron-100 p-4 sm:p-5">
+          <div className="flex min-w-0 gap-3">
+            <Avatar src={group.imageUrl} label={group.name} />
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase text-peacock-700">Invite members</p>
+              <h2 className="truncate text-xl font-black tracking-normal text-stone-950">{group.name}</h2>
+              <p className="mt-1 text-sm text-stone-600">
+                {memberCount} member{memberCount === 1 ? "" : "s"}
+                {owner ? ` | owner @${owner.username}` : ""}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-stone-100 text-stone-700"
+            onClick={onClose}
+            aria-label="Close invite modal"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="space-y-4 p-4 sm:p-5">
+          <div className="grid gap-3 sm:grid-cols-[1fr_1.2fr]">
+            <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+              <p className="text-xs font-black uppercase text-stone-500">Group code</p>
+              <p className="mt-2 rounded-md bg-stone-950 px-4 py-3 text-center text-2xl font-black tracking-normal text-white">
+                {group.code}
+              </p>
+            </div>
+            <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3">
+              <p className="text-xs font-black uppercase text-peacock-800">Direct invite link</p>
+              <p className="mt-2 break-all rounded-md bg-white px-3 py-2 text-sm font-bold leading-6 text-stone-800 ring-1 ring-peacock-100">
+                {inviteLink}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+            <p className="text-xs font-black uppercase text-saffron-900">Message preview</p>
+            <p className="mt-2 text-sm font-bold leading-6 text-stone-800">{fullMessage}</p>
+          </div>
+
+          {group.announcement && (
+            <div className="rounded-md border border-peacock-100 bg-white px-4 py-3 text-sm leading-6 text-stone-700">
+              <p className="font-black text-stone-950">Pinned group announcement</p>
+              <p>{group.announcement}</p>
+            </div>
+          )}
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-3 text-sm font-black text-white"
+              onClick={onCopyCode}
+            >
+              <Copy size={16} /> Copy code
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white"
+              onClick={onCopyLink}
+            >
+              <Link size={16} /> Copy link
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white"
+              onClick={onCopyMessage}
+            >
+              <MessageSquare size={16} /> Copy full message
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-stone-200"
+              onClick={onCopyShortMessage}
+            >
+              <Share2 size={16} /> Copy short message
+            </button>
+          </div>
+
+          <p className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-xs leading-5 text-stone-600">
+            Anyone with the code can join this group. Existing members stay in the group even if the owner changes the code later.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GroupInviteLandingCard({
+  code,
+  group,
+  owner,
+  memberCount,
+  isMember,
+  isLoading,
+  isBusy,
+  onOpen,
+  onRefresh,
+  onJoined
+}: {
+  code: string;
+  group: Group | undefined;
+  owner: UserProfile | undefined;
+  memberCount: number;
+  isMember: boolean;
+  isLoading: boolean;
+  isBusy: boolean;
+  onOpen: () => void;
+  onRefresh: () => void | Promise<void>;
+  onJoined?: () => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-lg border border-peacock-200 bg-white shadow-soft">
+      <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="p-4 sm:p-5">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
+            <UserPlus size={16} /> Group invite
+          </div>
+          {isLoading && !group ? (
+            <InlineNotice tone="info">Checking invite code {code}...</InlineNotice>
+          ) : group ? (
+            <div className="space-y-4">
+              <div className="flex min-w-0 items-start gap-3">
+                <Avatar src={group.imageUrl} label={group.name} />
+                <div className="min-w-0">
+                  <h2 className="truncate text-2xl font-black tracking-normal text-stone-950">{group.name}</h2>
+                  <p className="mt-1 text-sm leading-6 text-stone-600">
+                    {memberCount} member{memberCount === 1 ? "" : "s"}
+                    {owner ? ` | owned by @${owner.username}` : ""}
+                  </p>
+                </div>
+              </div>
+              {isMember ? (
+                <InlineNotice tone="success">
+                  You are already a member of this group. Open it to view the leaderboard and group controls.
+                </InlineNotice>
+              ) : (
+                <InlineNotice tone="info">
+                  This invite is ready. Join the group and your future round updates will appear on its leaderboards.
+                </InlineNotice>
+              )}
+              {group.announcement && (
+                <div className="rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3 text-sm leading-6 text-saffron-950">
+                  <p className="font-black">Pinned announcement</p>
+                  <p>{group.announcement}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <InlineNotice tone="error">
+                No group was found for code {code}. Check the invite link, or ask the group owner to copy the invite again.
+              </InlineNotice>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-stone-200"
+                disabled={isBusy}
+                onClick={() => void onRefresh()}
+              >
+                <RefreshCw size={16} /> Check again
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="border-t border-peacock-100 bg-peacock-50/75 p-4 sm:p-5 lg:border-l lg:border-t-0">
+          <p className="text-xs font-black uppercase text-stone-500">Invite code</p>
+          <p className="mt-2 rounded-md bg-stone-950 px-4 py-3 text-center text-2xl font-black tracking-normal text-white">
+            {code}
+          </p>
+          <div className="mt-4">
+            {group && isMember ? (
+              <button
+                type="button"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white disabled:bg-saffron-300"
+                disabled={isBusy}
+                onClick={onOpen}
+              >
+                <CheckCircle2 size={16} /> Open group
+              </button>
+            ) : group ? (
+              <JoinGroupForm embedded initialCode={code} onJoined={onJoined} />
+            ) : (
+              <p className="rounded-md bg-white px-3 py-2 text-sm font-bold leading-5 text-stone-700 ring-1 ring-peacock-100">
+                You can still paste a corrected code in the Create or join panel below.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function GroupInviteCard({
   group,
   role,
   memberCount,
-  onCopyCode,
-  onCopyInvite
+  onOpenInvite
 }: {
   group: Group;
   role: GroupRole | undefined;
   memberCount: number;
-  onCopyCode: () => void;
-  onCopyInvite: () => void;
+  onOpenInvite: () => void;
 }) {
-  const inviteText = `Join my Hare Krishna Leaderboard group "${group.name}" with code ${group.code}.`;
+  const inviteText = groupInviteShortMessage(group);
   return (
     <section className="overflow-hidden rounded-lg border border-peacock-100 bg-peacock-50/80 shadow-soft">
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -397,17 +670,10 @@ function GroupInviteCard({
           <div className="mt-3 grid gap-2">
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-3 text-sm font-black text-white"
-              onClick={onCopyCode}
-            >
-              <Copy size={16} /> Copy code
-            </button>
-            <button
-              type="button"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white"
-              onClick={onCopyInvite}
+              onClick={onOpenInvite}
             >
-              <MessageSquare size={16} /> Copy invite
+              <Share2 size={16} /> Invite members
             </button>
           </div>
           <p className="mt-3 text-center text-sm font-bold text-stone-600">
@@ -468,11 +734,11 @@ function TargetProgress({ label, value, target }: { label: string; value: number
 
 function GroupOwnerDashboard({
   group,
-  onCopyInvite,
+  onOpenInvite,
   onRefresh
 }: {
   group: Group;
-  onCopyInvite: () => void;
+  onOpenInvite: () => void;
   onRefresh: () => void | Promise<void>;
 }) {
   const { state, todayKey, isBusy } = useChanting();
@@ -549,9 +815,9 @@ function GroupOwnerDashboard({
             <button
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-3 text-sm font-black text-white"
-              onClick={onCopyInvite}
+              onClick={onOpenInvite}
             >
-              <Copy size={16} /> Copy invite
+              <Share2 size={16} /> Invite members
             </button>
           </div>
         </div>

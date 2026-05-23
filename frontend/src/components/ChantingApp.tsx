@@ -54,17 +54,26 @@ const tabs = [
 
 export default function ChantingApp() {
   const [activeTab, setActiveTab] = useState<TabId>("home");
+  const [pendingInviteCode, setPendingInviteCode] = useState("");
   const { authMode, currentUser, isLoaded } = useChanting();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = normalizeGroupCode(params.get("group") || params.get("invite") || "");
+    if (!code) return;
+    setPendingInviteCode(code);
+    setActiveTab("groups");
+  }, []);
 
   if (!isLoaded) {
     return <LoadingShell />;
   }
 
   if (authMode === "newPassword" || authMode === "checkEmail" || !currentUser) {
-    return <AuthPanel />;
+    return <AuthPanel inviteCode={pendingInviteCode} />;
   }
 
-  return <AppShell activeTab={activeTab} onTabChange={setActiveTab} />;
+  return <AppShell activeTab={activeTab} onTabChange={setActiveTab} initialInviteCode={pendingInviteCode} />;
 }
 
 function LoadingShell() {
@@ -107,7 +116,15 @@ function LoadingShell() {
   );
 }
 
-function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (tab: TabId) => void }) {
+function AppShell({
+  activeTab,
+  onTabChange,
+  initialInviteCode = ""
+}: {
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+  initialInviteCode?: string;
+}) {
   const {
     acceptFriendRequest,
     actionFeedback,
@@ -125,7 +142,7 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
   } = useChanting();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(initialInviteCode);
 
   useEffect(() => {
     ensureFriendsData();
@@ -137,7 +154,7 @@ function AppShell({ activeTab, onTabChange }: { activeTab: TabId; onTabChange: (
     if (!code) return;
     setInviteCode(code);
     onTabChange("groups");
-  }, [onTabChange]);
+  }, [initialInviteCode, onTabChange]);
 
   useEffect(() => {
     setShowMobileNav(false);
