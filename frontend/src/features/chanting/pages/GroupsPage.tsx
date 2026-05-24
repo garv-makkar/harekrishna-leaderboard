@@ -7,7 +7,7 @@ import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import { addDays, currentStreak, formatDate, groupCodeProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
 import { ModerationReportButton } from "../ModerationReportButton";
-import { ActionEmptyState, Avatar, EmptyState, Field, InlineNotice, Leaderboard, LeaderboardSkeleton, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
+import { ActionEmptyState, Avatar, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function GroupsPage({
   inviteCode = "",
@@ -150,47 +150,43 @@ export function GroupsPage({
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="p-3 sm:p-4 lg:p-5">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
-              <Users size={16} /> {joinedGroups.length} joined
-            </div>
-            <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">
-              {selectedGroup ? selectedGroup.name : "Your chanting groups"}
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">
-              Select a group to view its leaderboard, copy invites, and manage members. Create or join groups from the action panel.
-            </p>
-            {selectedGroup && (
-              <div className="mt-5 flex flex-wrap items-center gap-2">
-                <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
-                  {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
-                </span>
-                <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
-                  Your role: {selectedRole}
-                </span>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
-                  onClick={() => setInviteModalGroup(selectedGroup)}
-                >
-                  <Share2 size={15} /> Invite members
-                </button>
-              </div>
-            )}
-            {recentCopy && (
-              <p className="mt-3 inline-flex rounded-md bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
-                {recentCopy}
-              </p>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2 border-t border-saffron-100 bg-saffron-50/70 p-3 sm:gap-3 sm:p-4 xl:grid-cols-1 xl:border-l xl:border-t-0">
-            <GroupStat label="Created groups" value={state.groups.filter((group) => group.ownerId === currentUser.id).length} />
-            <GroupStat label="Memberships" value={joinedGroups.length} />
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow={`${joinedGroups.length} joined`}
+        icon={<Users size={16} />}
+        title={selectedGroup ? selectedGroup.name : "Your chanting groups"}
+        description="Select a group to view its leaderboard, copy invites, and manage members."
+        actions={
+          selectedGroup ? (
+            <>
+              <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
+                {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
+              </span>
+              <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
+                {selectedRole}
+              </span>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
+                onClick={() => setInviteModalGroup(selectedGroup)}
+              >
+                <Share2 size={15} /> Invite
+              </button>
+            </>
+          ) : undefined
+        }
+        stats={
+          <StatGrid columns={2}>
+            <StatCard label="Created groups" value={state.groups.filter((group) => group.ownerId === currentUser.id).length} tone="saffron" />
+            <StatCard label="Memberships" value={joinedGroups.length} tone="peacock" />
+          </StatGrid>
+        }
+      >
+        {recentCopy && (
+          <p className="inline-flex rounded-md bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
+            {recentCopy}
+          </p>
+        )}
+      </PageHeader>
 
       {inviteCode && (
         <GroupInviteLandingCard
@@ -239,7 +235,7 @@ export function GroupsPage({
           </ActionEmptyState>
         ) : (
           <>
-          <div className="mb-4 flex flex-col gap-2 rounded-lg border border-stone-200 bg-stone-50 p-3 sm:flex-row sm:items-end sm:justify-between">
+          <FilterBar meta={`Showing ${visibleJoinedGroups.length} of ${joinedGroups.length}`}>
             <label className="min-w-0 flex-1">
               <span className="mb-1 block text-sm font-bold text-stone-700">Search your groups</span>
               <input
@@ -250,10 +246,7 @@ export function GroupsPage({
                 type="search"
               />
             </label>
-            <span className="rounded-md bg-white px-3 py-2.5 text-sm font-black text-stone-700 ring-1 ring-stone-200">
-              Showing {visibleJoinedGroups.length} of {joinedGroups.length}
-            </span>
-          </div>
+          </FilterBar>
           {visibleJoinedGroups.length === 0 ? (
             <EmptyState text={`No joined groups match "${groupSearch.trim()}".`} />
           ) : (

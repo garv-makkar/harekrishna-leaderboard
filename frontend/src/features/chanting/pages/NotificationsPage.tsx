@@ -5,7 +5,7 @@ import { Bell, CheckCircle2, Circle, Filter, Inbox, ShieldAlert } from "lucide-r
 import type { AppNotification } from "@/lib/types";
 import type { TabId } from "../domain";
 import { useChanting } from "../ChantingContext";
-import { EmptyState, Panel } from "../ui";
+import { EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 type NotificationFilter = "all" | "unread" | "success" | "info" | "warning";
 
@@ -50,40 +50,39 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="p-3 sm:p-4 lg:p-5">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
-              <Bell size={16} /> Notification center
-            </div>
-            <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">Notifications</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">
-              Review saved updates from rounds, milestones, groups, and friends. Read status is kept with your account after the notifications migration is active.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"
-                disabled={unreadCount === 0}
-                onClick={() => void markAllNotificationsRead()}
-              >
-                Mark all read
-              </button>
-            </div>
-          </div>
-          <div className="grid gap-2 border-t border-saffron-100 bg-saffron-50/70 p-3 sm:grid-cols-3 sm:p-4 xl:grid-cols-1 xl:border-l xl:border-t-0">
-            <NotificationMetric label="Total" value={notifications.length} />
-            <NotificationMetric label="Unread" value={unreadCount} />
-            <NotificationMetric label="Warnings" value={warningCount} />
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="Notification center"
+        icon={<Bell size={16} />}
+        title="Notifications"
+        description="Review saved updates from rounds, milestones, groups, and friends."
+        actions={
+          <button
+            type="button"
+            className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"
+            disabled={unreadCount === 0}
+            onClick={() => void markAllNotificationsRead()}
+          >
+            Mark all read
+          </button>
+        }
+        stats={
+          <StatGrid columns={3}>
+            <StatCard label="Total" value={notifications.length} tone="stone" />
+            <StatCard label="Unread" value={unreadCount} tone="peacock" />
+            <StatCard label="Warnings" value={warningCount} tone="saffron" />
+          </StatGrid>
+        }
+      />
 
       <Panel title="Timeline" icon={<Inbox size={18} />}>
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm">
-          <span className="inline-flex items-center gap-2 px-2 text-xs font-black uppercase text-stone-500">
-            <Filter size={14} /> Filter
-          </span>
+        <FilterBar
+          label={
+            <span className="inline-flex items-center gap-2">
+              <Filter size={14} /> Filter
+            </span>
+          }
+          meta={`Showing ${visibleNotifications.length}`}
+        >
           {filters.map((item) => (
             <button
               key={item.id}
@@ -96,10 +95,7 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
               {item.label}
             </button>
           ))}
-          <span className="ml-auto rounded-md bg-stone-50 px-3 py-2 text-sm font-bold text-stone-600">
-            Showing {visibleNotifications.length}
-          </span>
-        </div>
+        </FilterBar>
 
         {notifications.length === 0 ? (
           <EmptyState text="No saved notifications yet. Save rounds, create or join groups, add friends, and unlock milestones to build your notification history." />
@@ -162,15 +158,6 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
           </div>
         )}
       </Panel>
-    </div>
-  );
-}
-
-function NotificationMetric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
-      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-0.5 text-xl font-black text-stone-950 sm:text-2xl">{value}</p>
     </div>
   );
 }

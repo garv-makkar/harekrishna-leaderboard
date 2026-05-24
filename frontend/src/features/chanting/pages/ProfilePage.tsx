@@ -24,7 +24,7 @@ import {
   usernameHelpText,
   usernamePattern
 } from "../domain";
-import { Field, InlineNotice, MilestoneGrid, Panel, PasswordChecklist, TimezoneSelect } from "../ui";
+import { Field, InlineNotice, MilestoneGrid, PageHeader, Panel, PasswordChecklist, StatCard, StatGrid, TimezoneSelect } from "../ui";
 
 export function ProfilePage() {
   const {
@@ -295,38 +295,36 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="flex min-w-0 flex-row items-center gap-3 p-3 sm:gap-4 sm:p-4 lg:p-5">
-            {profileForm.avatarUrl ? (
-              <img
-                src={profileForm.avatarUrl}
-                alt=""
-                className="h-16 w-16 shrink-0 rounded-lg border border-stone-200 object-cover shadow-sm sm:h-20 sm:w-20"
-              />
-            ) : (
-              <div className="lotus-mark grid h-16 w-16 shrink-0 place-items-center rounded-lg text-lg font-black text-white shadow-soft sm:h-20 sm:w-20 sm:text-xl">
-                {(profileForm.displayName || profileForm.username || "HK").slice(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
-                <UserRound size={16} /> @{currentUser.username}
-              </div>
-              <h2 className="truncate text-xl font-black tracking-normal text-stone-950 sm:text-2xl">
-                {currentUser.displayName || currentUser.username}
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-stone-600">
-                Joined {formatDate(currentUser.joinedAt.slice(0, 10))}. Your public profile uses this name, picture, country, and timezone.
-              </p>
+      <PageHeader
+        eyebrow={`@${currentUser.username}`}
+        icon={<UserRound size={16} />}
+        title={currentUser.displayName || currentUser.username}
+        description={`Joined ${formatDate(currentUser.joinedAt.slice(0, 10))}. Your public profile uses this name, picture, country, and timezone.`}
+        stats={
+          <StatGrid columns={2}>
+            <StatCard label="Email status" value={emailVerified ? "Verified" : "Unverified"} tone={emailVerified ? "peacock" : "saffron"} />
+            <StatCard label="Timezone" value={currentUser.timezone} tone="stone" />
+          </StatGrid>
+        }
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          {profileForm.avatarUrl ? (
+            <img
+              src={profileForm.avatarUrl}
+              alt=""
+              className="h-14 w-14 shrink-0 rounded-lg border border-stone-200 object-cover shadow-sm sm:h-16 sm:w-16"
+            />
+          ) : (
+            <div className="lotus-mark grid h-14 w-14 shrink-0 place-items-center rounded-lg text-base font-black text-white shadow-soft sm:h-16 sm:w-16">
+              {(profileForm.displayName || profileForm.username || "HK").slice(0, 2).toUpperCase()}
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 border-t border-saffron-100 bg-saffron-50/70 p-3 sm:gap-3 sm:p-4 lg:grid-cols-1 lg:border-l lg:border-t-0">
-            <ProfileStatusCard label="Email status" value={emailVerified ? "Verified" : "Unverified"} tone={emailVerified ? "peacock" : "saffron"} />
-            <ProfileStatusCard label="Timezone" value={currentUser.timezone} tone="stone" />
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-black text-stone-950">{profileForm.displayName || profileForm.username}</p>
+            <p className="truncate text-sm text-stone-600">{profileForm.country} | {profileForm.timezone}</p>
           </div>
         </div>
-      </section>
+      </PageHeader>
 
       <ProfileCompletionPanel items={profileCompletionItems} />
 

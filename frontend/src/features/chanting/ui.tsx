@@ -147,6 +147,109 @@ export function Panel({ title, icon, children }: { title: string; icon: React.Re
   );
 }
 
+export function PageHeader({
+  eyebrow,
+  icon,
+  title,
+  description,
+  actions,
+  stats,
+  children
+}: {
+  eyebrow?: string;
+  icon?: React.ReactNode;
+  title: string;
+  description?: string;
+  actions?: React.ReactNode;
+  stats?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
+      <div className={stats ? "grid gap-0 xl:grid-cols-[minmax(0,1fr)_280px]" : ""}>
+        <div className="p-4 sm:p-5">
+          {(eyebrow || icon) && (
+            <div className="mb-3 inline-flex max-w-full items-center gap-2 rounded-md bg-saffron-50 px-3 py-1.5 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
+              {icon}
+              {eyebrow && <span className="truncate">{eyebrow}</span>}
+            </div>
+          )}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">{title}</h2>
+              {description && <p className="mt-1 max-w-3xl text-sm leading-6 text-stone-600">{description}</p>}
+            </div>
+            {actions && <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">{actions}</div>}
+          </div>
+          {children && <div className="mt-4">{children}</div>}
+        </div>
+        {stats && (
+          <aside className="border-t border-saffron-100 bg-saffron-50/70 p-3 sm:p-4 xl:border-l xl:border-t-0">
+            {stats}
+          </aside>
+        )}
+      </div>
+    </section>
+  );
+}
+
+export function StatGrid({ children, columns = 3 }: { children: React.ReactNode; columns?: 2 | 3 | 4 }) {
+  const columnClass =
+    columns === 4 ? "sm:grid-cols-2 xl:grid-cols-4" : columns === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3";
+  return <div className={`grid gap-2 sm:gap-3 ${columnClass}`}>{children}</div>;
+}
+
+export function StatCard({
+  label,
+  value,
+  note,
+  icon,
+  tone = "stone"
+}: {
+  label: string;
+  value: React.ReactNode;
+  note?: string;
+  icon?: React.ReactNode;
+  tone?: "saffron" | "peacock" | "stone" | "emerald";
+}) {
+  const toneClass =
+    tone === "saffron"
+      ? "border-saffron-200 bg-saffron-50/80 text-saffron-900"
+      : tone === "peacock"
+        ? "border-peacock-100 bg-peacock-50/80 text-peacock-900"
+        : tone === "emerald"
+          ? "border-emerald-100 bg-emerald-50/80 text-emerald-800"
+          : "border-stone-200 bg-white text-stone-900";
+  return (
+    <div className={`rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${toneClass}`}>
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <p className="truncate text-xs font-black uppercase text-stone-500">{label}</p>
+        {icon && <span className="shrink-0 text-stone-500">{icon}</span>}
+      </div>
+      <p className="mt-0.5 truncate text-xl font-black sm:text-2xl">{value}</p>
+      {note && <p className="text-xs leading-5 text-stone-600 sm:text-sm">{note}</p>}
+    </div>
+  );
+}
+
+export function FilterBar({
+  label,
+  children,
+  meta
+}: {
+  label?: React.ReactNode;
+  children: React.ReactNode;
+  meta?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm sm:mb-4">
+      {label && <span className="shrink-0 px-1 text-xs font-black uppercase text-stone-500">{label}</span>}
+      {children}
+      {meta && <span className="ml-auto rounded-md bg-stone-50 px-3 py-1.5 text-sm font-bold text-stone-600">{meta}</span>}
+    </div>
+  );
+}
+
 export function SkeletonBlock({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-stone-200/80 ${className}`} />;
 }

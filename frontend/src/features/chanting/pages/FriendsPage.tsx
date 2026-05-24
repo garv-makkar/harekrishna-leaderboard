@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { makeFriendRequest, useChanting } from "../ChantingContext";
 import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange, readableError } from "../domain";
 import { ModerationReportButton } from "../ModerationReportButton";
-import { ActionEmptyState, Avatar, EmptyState, Field, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
+import { ActionEmptyState, Avatar, EmptyState, Field, FilterBar, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function FriendsPage() {
   const {
@@ -93,20 +93,19 @@ export function FriendsPage() {
       {isLoadingFriends && !hasFriendData ? (
         <MetricSkeletonGrid />
       ) : (
-        <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
-        <div className="rounded-lg border border-saffron-200 bg-white/90 p-3 shadow-soft sm:p-4">
-          <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Friends</span><span className="hidden sm:inline">Accepted friends</span></p>
-          <p className="mt-0.5 text-xl font-black text-saffron-900 sm:text-2xl">{acceptedRequests.length}</p>
-        </div>
-        <div className="rounded-lg border border-peacock-100 bg-peacock-50 p-3 shadow-soft sm:p-4">
-          <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Incoming</span><span className="hidden sm:inline">Incoming requests</span></p>
-          <p className="mt-0.5 text-xl font-black text-peacock-900 sm:text-2xl">{incomingRequests.length}</p>
-        </div>
-        <div className="rounded-lg border border-stone-200 bg-white/90 p-3 shadow-soft sm:p-4">
-          <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Outgoing</span><span className="hidden sm:inline">Outgoing requests</span></p>
-          <p className="mt-0.5 text-xl font-black text-stone-900 sm:text-2xl">{outgoingRequests.length}</p>
-        </div>
-      </div>
+        <PageHeader
+          eyebrow="Friend circle"
+          icon={<HeartHandshake size={16} />}
+          title="Friends"
+          description="Manage requests and compare chanting progress with accepted friends."
+          stats={
+            <StatGrid columns={3}>
+              <StatCard label="Accepted" value={acceptedRequests.length} tone="saffron" />
+              <StatCard label="Incoming" value={incomingRequests.length} tone="peacock" />
+              <StatCard label="Outgoing" value={outgoingRequests.length} tone="stone" />
+            </StatGrid>
+          }
+        />
       )}
       <Panel title="Friends" icon={<HeartHandshake size={18} />}>
         {isLoadingFriends && !hasFriendData ? (
@@ -129,18 +128,17 @@ export function FriendsPage() {
           </ActionEmptyState>
         ) : (
           <>
-          <div className="mb-4 flex flex-col gap-2 rounded-lg border border-stone-200 bg-stone-50 p-3 sm:flex-row sm:items-end sm:justify-between">
-            <Field
-              label="Search friends"
-              value={friendSearch}
-              onChange={setFriendSearch}
-              placeholder="username, name, or country"
-              inputMode="search"
-            />
-            <span className="rounded-md bg-white px-3 py-2.5 text-sm font-black text-stone-700 ring-1 ring-stone-200">
-              Showing {visibleAcceptedRequests.length} of {acceptedRequests.length}
-            </span>
-          </div>
+          <FilterBar meta={`Showing ${visibleAcceptedRequests.length} of ${acceptedRequests.length}`}>
+            <div className="min-w-[220px] flex-1">
+              <Field
+                label="Search friends"
+                value={friendSearch}
+                onChange={setFriendSearch}
+                placeholder="username, name, or country"
+                inputMode="search"
+              />
+            </div>
+          </FilterBar>
           {visibleAcceptedRequests.length === 0 ? (
             <EmptyState text={`No accepted friends match "${friendSearch.trim()}".`} />
           ) : (

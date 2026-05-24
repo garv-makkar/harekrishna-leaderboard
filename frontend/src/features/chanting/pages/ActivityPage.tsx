@@ -13,7 +13,7 @@ import {
   roundsForDate
 } from "../domain";
 import type { ActivityFeedItem } from "../domain";
-import { EmptyState, Panel } from "../ui";
+import { EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 const rangeOptions = [
   { label: "7 days", value: 7 },
@@ -101,9 +101,32 @@ export function ActivityPage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <Panel title="Activity summary" icon={<BarChart3 size={18} />}>
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+      <PageHeader
+        eyebrow={`${days}-day view`}
+        icon={<BarChart3 size={16} />}
+        title="Activity summary"
+        description="Review your chanting history, recent app activity, and editable day window."
+        actions={
+          <>
+            <button
+              type="button"
+              className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm"
+              onClick={exportHistory}
+            >
+              <Download size={16} /> Export CSV
+            </button>
+            <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={importHistory} />
+            <button
+              type="button"
+              className="inline-flex w-fit items-center gap-2 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white shadow-sm"
+              onClick={() => importInputRef.current?.click()}
+            >
+              <FileUp size={16} /> Import CSV
+            </button>
+          </>
+        }
+      >
+        <FilterBar label="Range">
             {rangeOptions.map((option) => (
               <button
                 key={option.value}
@@ -116,35 +139,19 @@ export function ActivityPage() {
                 {option.label}
               </button>
             ))}
-          </div>
-          <button
-            type="button"
-            className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm"
-            onClick={exportHistory}
-          >
-            <Download size={16} /> Export CSV
-          </button>
-          <input ref={importInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={importHistory} />
-          <button
-            type="button"
-            className="inline-flex w-fit items-center gap-2 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white shadow-sm"
-            onClick={() => importInputRef.current?.click()}
-          >
-            <FileUp size={16} /> Import CSV
-          </button>
-        </div>
+        </FilterBar>
         {importStatus && (
           <div className="mb-4 rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-sm font-bold text-saffron-900 sm:px-4">
             {importStatus}
           </div>
         )}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryTile label="Rounds" value={totalRounds} note={`last ${days} days`} />
-          <SummaryTile label="Active days" value={activeDays} note={`${days - activeDays} blank day${days - activeDays === 1 ? "" : "s"}`} />
-          <SummaryTile label="Average" value={averageOnActiveDays} note="on active days" />
-          <SummaryTile label="Current streak" value={currentStreak(state.chantTotals, currentUser.id, todayKey)} note={`best ${bestStreak(state.chantTotals, currentUser.id)}`} />
-        </div>
-      </Panel>
+        <StatGrid columns={4}>
+          <StatCard label="Rounds" value={totalRounds} note={`last ${days} days`} tone="saffron" />
+          <StatCard label="Active days" value={activeDays} note={`${days - activeDays} blank day${days - activeDays === 1 ? "" : "s"}`} tone="peacock" />
+          <StatCard label="Average" value={averageOnActiveDays} note="on active days" tone="stone" />
+          <StatCard label="Current streak" value={currentStreak(state.chantTotals, currentUser.id, todayKey)} note={`best ${bestStreak(state.chantTotals, currentUser.id)}`} tone="peacock" />
+        </StatGrid>
+      </PageHeader>
 
       <Panel title="Recent activity" icon={<ListChecks size={18} />}>
         {feedItems.length === 0 ? (

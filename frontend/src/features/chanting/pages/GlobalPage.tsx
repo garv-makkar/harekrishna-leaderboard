@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Globe2, Trophy, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange } from "../domain";
-import { Leaderboard, Panel, PeriodHistoryControls, PeriodTabs } from "../ui";
+import { Leaderboard, PageHeader, Panel, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function GlobalPage() {
   const { state, currentUser, period, setPeriod, todayKey, isBusy, refreshRemoteState } = useChanting();
@@ -27,21 +27,18 @@ export function GlobalPage() {
   ).length;
   return (
     <div className="space-y-4 sm:space-y-5">
-      <section className="rounded-lg border border-saffron-200/80 bg-white/92 p-3 shadow-soft sm:p-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
-              <Globe2 size={16} /> {range.label}
-            </div>
-            <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">Global leaderboard</h2>
-            <p className="mt-1 text-sm leading-6 text-stone-600">See how the wider chanting community is doing for the selected period.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:w-[360px]">
-            <GlobalMetric icon={<Users size={17} />} label="Active users" value={activeUserCount} />
-            <GlobalMetric icon={<Trophy size={17} />} label="Total users" value={state.users.length} />
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow={range.label}
+        icon={<Globe2 size={16} />}
+        title="Global leaderboard"
+        description="See how the wider chanting community is doing for the selected period."
+        stats={
+          <StatGrid columns={2}>
+            <StatCard icon={<Users size={17} />} label="Active users" value={activeUserCount} tone="peacock" />
+            <StatCard icon={<Trophy size={17} />} label="Total users" value={state.users.length} tone="saffron" />
+          </StatGrid>
+        }
+      />
       <Panel title="Rankings" icon={<Globe2 size={18} />}>
         <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
         <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
@@ -92,18 +89,6 @@ function LeaderboardVisibilityToggle({
       >
         {allLabel}
       </button>
-    </div>
-  );
-}
-
-function GlobalMetric({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
-      <div className="mb-2 flex items-center gap-2 text-stone-500">
-        {icon}
-        <p className="text-xs font-black uppercase">{label}</p>
-      </div>
-      <p className="text-xl font-black text-stone-950 sm:text-2xl">{value}</p>
     </div>
   );
 }

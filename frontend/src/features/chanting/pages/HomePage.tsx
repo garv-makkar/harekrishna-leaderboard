@@ -19,7 +19,7 @@ import {
   sumRounds,
   VAISHNAVA_CALENDAR_REFERENCE
 } from "../domain";
-import { ActionEmptyState, Field, MetricCard, MilestoneGrid, Panel } from "../ui";
+import { ActionEmptyState, Field, MetricCard, MilestoneGrid, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 export function HomePage() {
   const {
@@ -260,29 +260,24 @@ export function HomePage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="p-3 sm:p-4 lg:p-5">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
-                  <CalendarDays size={16} /> {selectedDateLabel}
-                </div>
-                <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">Add chanting rounds</h2>
-                <p className="mt-1 text-sm leading-6 text-stone-600">
-                  Save the exact total for today or any of the last 7 editable days.
-                </p>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-left shadow-sm sm:block sm:min-w-36 sm:text-right">
-                <p className="text-xs font-black uppercase text-stone-500">Saved total</p>
-                <div className="text-right">
-                  <p className="text-3xl font-black text-saffron-900 sm:mt-1 sm:text-4xl">{currentRounds}</p>
-                  <p className="text-sm text-stone-600">rounds</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
+      <PageHeader
+        eyebrow={selectedDateLabel}
+        icon={<CalendarDays size={16} />}
+        title="Add chanting rounds"
+        description="Save the exact total for today or any of the last 7 editable days."
+        stats={
+          <>
+            <p className="mb-3 text-sm font-black uppercase text-stone-500">Today at a glance</p>
+            <StatGrid columns={2}>
+              <StatCard label="Today" value={currentRounds} note="saved rounds" tone="saffron" />
+              <StatCard label="This week" value={weeklyRounds} note="Monday onward" tone="peacock" />
+              <StatCard label="Streak" value={streakNow} note={`best ${streakBest}`} tone="stone" />
+              <StatCard label="Goal" value={currentUser.dailyGoal || 16} note={`${Math.min(100, Math.round((currentRounds / Math.max(1, currentUser.dailyGoal || 16)) * 100))}% today`} tone="peacock" />
+            </StatGrid>
+          </>
+        }
+      >
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_150px]">
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
                 <select
@@ -312,6 +307,7 @@ export function HomePage() {
                 max={999}
                 helper="This is the full total for the selected date."
               />
+              <StatCard label="Saved total" value={currentRounds} note="rounds" tone="saffron" />
             </div>
 
             <div className="mt-4">
@@ -417,19 +413,7 @@ export function HomePage() {
                 onChange={setHighRoundConfirmed}
               />
             )}
-          </div>
-
-          <aside className="border-t border-saffron-100 bg-saffron-50/70 p-3 sm:p-4 xl:border-l xl:border-t-0">
-            <p className="text-sm font-black uppercase text-stone-500">Today at a glance</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-1">
-              <DashboardPill label="Today" value={currentRounds} note="saved rounds" tone="saffron" />
-              <DashboardPill label="This week" value={weeklyRounds} note="Monday onward" tone="peacock" />
-              <DashboardPill label="Current streak" value={streakNow} note={`best ${streakBest}`} tone="stone" />
-              <DashboardPill label="Daily goal" value={currentUser.dailyGoal || 16} note={`${Math.min(100, Math.round((currentRounds / Math.max(1, currentUser.dailyGoal || 16)) * 100))}% today`} tone="peacock" />
-            </div>
-          </aside>
-        </div>
-      </section>
+      </PageHeader>
 
       {!hasStartedChanting && (
         <ActionEmptyState
