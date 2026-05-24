@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Check, HeartHandshake, Search, Trophy, UserRoundSearch, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -40,17 +40,29 @@ export function FriendsPage() {
 
   if (!currentUser) return null;
 
-  const friendUsers = state.users.filter((user) => friends.includes(user.id) || user.id === currentUser.id);
-  const acceptedRequests = state.friendRequests.filter(
-    (request) =>
-      request.status === "accepted" &&
-      (request.fromUserId === currentUser.id || request.toUserId === currentUser.id)
+  const friendUsers = useMemo(
+    () => state.users.filter((user) => friends.includes(user.id) || user.id === currentUser.id),
+    [currentUser.id, friends, state.users]
   );
-  const incomingRequests = state.friendRequests.filter(
-    (request) => request.toUserId === currentUser.id && request.status === "pending"
+  const acceptedRequests = useMemo(
+    () => state.friendRequests.filter(
+      (request) =>
+        request.status === "accepted" &&
+        (request.fromUserId === currentUser.id || request.toUserId === currentUser.id)
+    ),
+    [currentUser.id, state.friendRequests]
   );
-  const outgoingRequests = state.friendRequests.filter(
-    (request) => request.fromUserId === currentUser.id && request.status === "pending"
+  const incomingRequests = useMemo(
+    () => state.friendRequests.filter(
+      (request) => request.toUserId === currentUser.id && request.status === "pending"
+    ),
+    [currentUser.id, state.friendRequests]
+  );
+  const outgoingRequests = useMemo(
+    () => state.friendRequests.filter(
+      (request) => request.fromUserId === currentUser.id && request.status === "pending"
+    ),
+    [currentUser.id, state.friendRequests]
   );
   const cleanFriendSearch = friendSearch.trim().toLowerCase();
   const visibleAcceptedRequests = acceptedRequests.filter((request) => {
@@ -116,7 +128,7 @@ export function FriendsPage() {
                 <PanelSkeleton rows={1} title={false} />
               </div>
             ) : incomingRequests.length === 0 ? (
-              <EmptyState text="No incoming friend requests." />
+              <EmptyState text="No incoming friend requests. When someone searches your username and sends a request, it will appear here." />
             ) : (
               <div className="space-y-2">
                 {incomingRequests.map((request) => {
@@ -157,7 +169,7 @@ export function FriendsPage() {
                 <PanelSkeleton rows={1} title={false} />
               </div>
             ) : outgoingRequests.length === 0 ? (
-              <EmptyState text="Sent friend requests will appear here until accepted." />
+              <EmptyState text="No outgoing requests. Search a username to send one; pending requests stay here until accepted or canceled." />
             ) : (
               <div className="space-y-2">
                 {outgoingRequests.map((request) => {

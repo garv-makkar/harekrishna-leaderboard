@@ -85,7 +85,7 @@ export function MilestonesPage() {
           Only earned milestones can be featured. Select up to 3; they appear on your profile and public profile.
         </p>
         {earned.length === 0 ? (
-          <EmptyState text="No earned milestones yet." />
+          <EmptyState text="No earned milestones yet. Log rounds, build streaks, join groups, and add friends to unlock your first milestone." />
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {earned.map((milestone) => {

@@ -69,7 +69,7 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff7ed,transparent_32%),linear-gradient(135deg,#fffaf0,#f5fffb_48%,#fff7ed)] px-4 py-5 text-stone-900 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-4xl">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/"
@@ -105,33 +105,35 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
 
         {payload && (
           <div className="space-y-4 sm:space-y-5">
-            <section className="overflow-hidden rounded-lg border border-saffron-200 bg-white/92 shadow-soft">
-              <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div className="p-4 sm:p-5">
-                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
-                    <Avatar src={payload.group.imageUrl} label={payload.group.name} />
-                    <div className="min-w-0">
-                      <p className="mb-2 inline-flex rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
-                        Code {payload.group.code}
-                      </p>
-                      <h1 className="truncate text-2xl font-black tracking-normal text-stone-950 sm:text-3xl">{payload.group.name}</h1>
-                      <p className="mt-2 text-sm leading-6 text-stone-600">
-                        Invited by {payload.owner.displayName || payload.owner.username}. Created {formatDate(payload.group.createdAt.slice(0, 10))}.
-                      </p>
-                    </div>
-                  </div>
-                  {payload.group.announcement && (
-                    <div className="mt-4 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-950 sm:px-4 sm:py-3">
-                      <p className="font-black">Pinned announcement</p>
-                      <p>{payload.group.announcement}</p>
+            <section className="overflow-hidden rounded-lg border border-saffron-200 bg-white/94 text-center shadow-soft">
+              <div className="border-b border-saffron-100 bg-saffron-50/80 px-4 py-5 sm:px-6">
+                <div className="mx-auto mb-3 h-20 w-20 overflow-hidden rounded-lg ring-1 ring-saffron-200">
+                  {payload.group.imageUrl ? (
+                    <img src={payload.group.imageUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="lotus-mark grid h-full w-full place-items-center text-xl font-black text-white">
+                      {payload.group.name.slice(0, 2).toUpperCase()}
                     </div>
                   )}
                 </div>
-                <div className="border-t border-saffron-100 bg-saffron-50/80 p-4 lg:border-l lg:border-t-0">
-                  <p className="text-sm font-black uppercase text-stone-500">Members</p>
-                  <p className="mt-1 text-4xl font-black text-saffron-900 sm:text-5xl">{payload.memberCount}</p>
-                  <p className="text-sm font-bold text-stone-600">currently joined</p>
-                </div>
+                <p className="mx-auto mb-3 inline-flex rounded-md bg-white px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
+                  Code {payload.group.code}
+                </p>
+                <h1 className="text-2xl font-black tracking-normal text-stone-950 sm:text-3xl">{payload.group.name}</h1>
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-stone-600">
+                  Invited by {payload.owner.displayName || payload.owner.username}. Created {formatDate(payload.group.createdAt.slice(0, 10))}.
+                </p>
+                <Link
+                  href={continueHref}
+                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-5 py-3 text-sm font-black text-white shadow-sm"
+                >
+                  <ExternalLink size={17} /> Continue to join
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-0">
+                <InviteHeroMetric label="Members" value={payload.memberCount} />
+                <InviteHeroMetric label="Daily target" value={payload.group.targetDaily || 0} />
+                <InviteHeroMetric label="Weekly target" value={payload.group.targetWeekly || 0} />
               </div>
             </section>
 
@@ -140,6 +142,10 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
                 <p className="text-sm leading-6 text-stone-600">
                   Sign in or create an account to join this group. After login, the invite code will be ready on the Groups page.
                 </p>
+                <div className="mt-4 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-950 sm:px-4">
+                  <p className="font-black">What happens after joining</p>
+                  <p>Your saved daily rounds will appear in this group&apos;s daily, weekly, and monthly leaderboards.</p>
+                </div>
                 <Link
                   href={continueHref}
                   className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm"
@@ -148,23 +154,22 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
                 </Link>
               </Panel>
 
-              <Panel title="Group targets" icon={<Target size={18} />}>
-                <div className="grid gap-3">
-                  <InviteMetric label="Daily target" value={payload.group.targetDaily || 0} note={payload.group.targetDaily ? "rounds per day" : "not set"} />
-                  <InviteMetric label="Weekly target" value={payload.group.targetWeekly || 0} note={payload.group.targetWeekly ? "rounds per week" : "not set"} />
+              <Panel title="Owner" icon={<CalendarDays size={18} />}>
+                <div className="flex min-w-0 items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
+                  <Avatar src={payload.owner.avatarUrl} label={payload.owner.displayName || payload.owner.username} />
+                  <div className="min-w-0 text-left">
+                    <p className="truncate font-black text-stone-950">{payload.owner.displayName || payload.owner.username}</p>
+                    <p className="truncate text-sm text-stone-600">@{payload.owner.username}</p>
+                  </div>
                 </div>
               </Panel>
             </div>
 
-            <Panel title="Owner" icon={<CalendarDays size={18} />}>
-              <div className="flex min-w-0 items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
-                <Avatar src={payload.owner.avatarUrl} label={payload.owner.displayName || payload.owner.username} />
-                <div className="min-w-0">
-                  <p className="truncate font-black text-stone-950">{payload.owner.displayName || payload.owner.username}</p>
-                  <p className="truncate text-sm text-stone-600">@{payload.owner.username}</p>
-                </div>
-              </div>
-            </Panel>
+            {payload.group.announcement && (
+              <Panel title="Pinned announcement" icon={<Target size={18} />}>
+                <p className="text-sm font-bold leading-6 text-stone-700">{payload.group.announcement}</p>
+              </Panel>
+            )}
           </div>
         )}
       </div>
@@ -203,12 +208,11 @@ function loadDemoInvite(code: string) {
   } satisfies PublicGroupInvitePayload;
 }
 
-function InviteMetric({ label, value, note }: { label: string; value: number; note: string }) {
+function InviteHeroMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
-      <p className="text-sm font-bold text-stone-600">{label}</p>
-      <p className="mt-0.5 text-xl font-black text-saffron-900 sm:text-2xl">{value || "-"}</p>
-      <p className="text-sm text-stone-600">{note}</p>
+    <div className="border-r border-t border-saffron-100 px-3 py-3 last:border-r-0">
+      <p className="text-2xl font-black text-saffron-900 sm:text-3xl">{value || "-"}</p>
+      <p className="mt-0.5 text-xs font-black uppercase text-stone-500">{label}</p>
     </div>
   );
 }

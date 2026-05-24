@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckCircle2, ChevronRight, Clock3, Copy, ImageUp, Link, MessageSquare, Plus, RefreshCw, Search, Settings, Share2, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -66,9 +66,12 @@ export function GroupsPage({
   const range = leaderboardRange(period, todayKey, periodOffset);
   const selectedMemberCount = selectedGroup ? groupMemberCount(selectedGroup.id) : 0;
   const isLoadingGroups = loadingRemoteSlices.groups;
-  const selectedMemberIds = selectedGroup
-    ? state.groupMembers.filter((member) => member.groupId === selectedGroup.id).map((member) => member.userId)
-    : [];
+  const selectedMemberIds = useMemo(
+    () => selectedGroup
+      ? state.groupMembers.filter((member) => member.groupId === selectedGroup.id).map((member) => member.userId)
+      : [],
+    [selectedGroup?.id, state.groupMembers]
+  );
   const selectedLastUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, selectedMemberIds, range.start, range.end));
   const selectedTodayTotal = selectedMemberIds.reduce(
     (sum, userId) => sum + sumRounds(state.chantTotals, userId, "daily", todayKey),
@@ -117,14 +120,14 @@ export function GroupsPage({
     ? state.groupMembers.some((member) => member.groupId === invitedGroup.id && member.userId === currentUser.id)
     : false;
   const cleanGroupSearch = groupSearch.trim().toLowerCase();
-  const visibleJoinedGroups = joinedGroups.filter((group) => {
+  const visibleJoinedGroups = useMemo(() => joinedGroups.filter((group) => {
     if (!cleanGroupSearch) return true;
     return (
       group.name.toLowerCase().includes(cleanGroupSearch) ||
       group.code.toLowerCase().includes(cleanGroupSearch) ||
       (currentUserGroupRole(group.id) || "").includes(cleanGroupSearch)
     );
-  });
+  }), [cleanGroupSearch, currentUserGroupRole, joinedGroups]);
 
   const leaveSelectedGroup = async () => {
     if (!selectedGroup || selectedRole === "owner") return;
@@ -253,7 +256,7 @@ export function GroupsPage({
             </label>
           </FilterBar>
           {visibleJoinedGroups.length === 0 ? (
-            <EmptyState text={`No joined groups match "${groupSearch.trim()}".`} />
+            <EmptyState text={`No joined groups match "${groupSearch.trim()}". Clear the search, join by code, or create a new group below.`} />
           ) : (
           <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
             {visibleJoinedGroups.map((group) => {
@@ -334,7 +337,7 @@ export function GroupsPage({
                   period={period}
                   periodText={range.label}
                   currentUserId={currentUser.id}
-                  emptyText="No one in this group has added rounds for this period yet."
+                  emptyText="No group entries for this period yet. Save rounds on Home, or switch to All members to see members with no entry."
                   visibility={showAllMembers ? "all" : "active"}
                   lastUpdated={selectedLastUpdated}
                   isRefreshing={isBusy || isLoadingGroups}
@@ -1587,16 +1590,18 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
     <div className="space-y-5">
       {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
       {canEditGroup ? (
-        <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
-          <form className="space-y-3" onSubmit={updateGroup}>
-            <Field label="Group name" value={name} onChange={setName} required />
-            <Field
-              label="Group code"
-              value={code}
-              onChange={(value) => setCode(normalizeGroupCode(value))}
-              required
-              helper="Changing this affects future joins. Existing members stay in the group."
-            />
+        <form className="space-y-4" onSubmit={updateGroup}>
+          <GroupOwnerControlSection title="Basic info" description="Name, join code, picture, and announcement.">
+            <div className="grid gap-3 lg:grid-cols-2">
+              <Field label="Group name" value={name} onChange={setName} required />
+              <Field
+                label="Group code"
+                value={code}
+                onChange={(value) => setCode(normalizeGroupCode(value))}
+                required
+                helper="Changing this affects future joins. Existing members stay in the group."
+              />
+            </div>
             <GroupImagePicker imageUrl={imageUrl} setImageUrl={setImageUrl} label={name || group.name} />
             <Field
               label="Pinned announcement"
@@ -1604,6 +1609,8 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
               onChange={setAnnouncement}
               helper="Short message shown to all group members."
             />
+          </GroupOwnerControlSection>
+          <GroupOwnerControlSection title="Targets" description="Optional group goals shown in group info and invite pages.">
             <div className="grid gap-3 md:grid-cols-2">
               <Field
                 label="Daily group target"
@@ -1624,52 +1631,25 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
                 helper="Weeks start Monday."
               />
             </div>
-            <button className="rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" disabled={isBusy}>
-              Save group
-            </button>
-          </form>
-          <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-            <div className="flex items-center gap-2">
-              <Trash2 size={18} />
-              <p className="font-black">Delete group</p>
-            </div>
-            <p>This removes the group and its memberships. User chanting history is not deleted.</p>
-            <Field
-              label="Type group code"
-              value={deleteText}
-              onChange={(value) => setDeleteText(normalizeGroupCode(value))}
-              placeholder={group.code}
-              helper={`Type ${group.code} exactly to enable deletion.`}
-            />
-            <button
-              type="button"
-              className="rounded-md bg-red-700 px-4 py-3 font-bold text-white disabled:bg-red-300"
-              disabled={isBusy || deleteText !== group.code}
-              onClick={deleteGroup}
-            >
-              Delete group
-            </button>
-          </div>
-        </div>
+          </GroupOwnerControlSection>
+          <button className="rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" disabled={isBusy}>
+            Save group settings
+          </button>
+        </form>
       ) : (
         <InlineNotice tone="info">
           Moderators can remove regular members. Only owners can edit group details, change codes, promote moderators, or delete the group.
         </InlineNotice>
       )}
-      <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="font-black text-stone-900">Members</p>
-            <p className="text-sm text-stone-600">
-              {role === "owner"
-                ? "Owners can promote moderators, demote moderators, and remove members or moderators."
-                : "Moderators can remove regular members. Owner and moderator roles are protected."}
-            </p>
-          </div>
-          <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900">
-            {members.length} member{members.length === 1 ? "" : "s"}
-          </span>
-        </div>
+      <GroupOwnerControlSection
+        title="Members"
+        description={
+          role === "owner"
+            ? "Promote moderators, demote moderators, and remove members."
+            : "Remove regular members. Owner and moderator roles are protected."
+        }
+        meta={`${members.length} member${members.length === 1 ? "" : "s"}`}
+      >
         <div className="mb-3">
           <Field
             label="Search members"
@@ -1730,8 +1710,58 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
             </div>
           ))}
         </div>
-      </div>
+      </GroupOwnerControlSection>
+      {canEditGroup && (
+        <GroupOwnerControlSection title="Delete group" description="Permanent group removal. User chanting history is not deleted." danger>
+          <Field
+            label="Type group code"
+            value={deleteText}
+            onChange={(value) => setDeleteText(normalizeGroupCode(value))}
+            placeholder={group.code}
+            helper={`Type ${group.code} exactly to enable deletion.`}
+          />
+          <button
+            type="button"
+            className="rounded-md bg-red-700 px-4 py-3 font-bold text-white disabled:bg-red-300"
+            disabled={isBusy || deleteText !== group.code}
+            onClick={deleteGroup}
+          >
+            Delete group
+          </button>
+        </GroupOwnerControlSection>
+      )}
     </div>
+  );
+}
+
+function GroupOwnerControlSection({
+  title,
+  description,
+  meta,
+  danger = false,
+  children
+}: {
+  title: string;
+  description: string;
+  meta?: string;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section className={`rounded-lg border p-3 shadow-sm sm:p-4 ${danger ? "border-red-200 bg-red-50 text-red-900" : "border-stone-200 bg-white"}`}>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <p className={`font-black ${danger ? "text-red-950" : "text-stone-900"}`}>{title}</p>
+          <p className={`mt-1 text-sm leading-6 ${danger ? "text-red-900" : "text-stone-600"}`}>{description}</p>
+        </div>
+        {meta && (
+          <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900">
+            {meta}
+          </span>
+        )}
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
   );
 }
 
@@ -1907,7 +1937,7 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
         setName("");
         setCode("");
         setImageUrl("");
-        void refreshRemoteState(currentUser.id, "groups");
+        await refreshRemoteState(currentUser.id, "groups");
         await addNotification({
           title: "Group created",
           body: `${group.name} is ready. Share code ${cleanCode} with members.`,
@@ -2039,7 +2069,7 @@ function JoinGroupForm({
         setSelectedGroupId(group.id);
         setCode("");
         onJoined?.();
-        void refreshRemoteState(currentUser.id, "groups");
+        await refreshRemoteState(currentUser.id, "groups");
         await addNotification({
           title: "Group joined",
           body: `You joined ${group.name}. Your rounds now count on this group leaderboard.`,
