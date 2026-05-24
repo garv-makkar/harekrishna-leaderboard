@@ -72,6 +72,15 @@ export function ProfilePage() {
     { label: "Added a friend", done: friends.length > 0 },
     { label: "Logged rounds", done: state.chantTotals.some((total) => total.userId === currentUser.id && total.rounds > 0) }
   ];
+  const normalizedProfilePhone = normalizePhone(profileForm.phone, profileForm.country);
+  const profileDirty =
+    profileForm.username.trim().toLowerCase() !== currentUser.username ||
+    profileForm.displayName.trim() !== currentUser.displayName ||
+    profileForm.email.trim().toLowerCase() !== currentUser.email ||
+    normalizedProfilePhone !== currentUser.phone ||
+    profileForm.country !== currentUser.country ||
+    profileForm.timezone !== currentUser.timezone ||
+    profileForm.avatarUrl !== currentUser.avatarUrl;
 
   const uploadAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -367,6 +376,12 @@ export function ProfilePage() {
       </Panel>
 
       <form className="space-y-6" onSubmit={submit}>
+        {profileDirty && (
+          <div className="rounded-lg border border-saffron-300 bg-saffron-50 px-4 py-3 text-sm leading-6 text-saffron-950 shadow-sm">
+            <p className="font-black">Unsaved profile changes</p>
+            <p>Review your public profile, contact, and timezone fields, then save them together.</p>
+          </div>
+        )}
         <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <Panel title="Public profile" icon={<UserRound size={18} />}>
             <div className="space-y-4">
@@ -479,8 +494,8 @@ export function ProfilePage() {
               <Mail size={16} />
               <span>Profile, contact, and timezone changes save together.</span>
             </div>
-            <button className="rounded-md bg-saffron-500 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-saffron-600" disabled={isBusy}>
-              Save profile
+            <button className="rounded-md bg-saffron-500 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200" disabled={isBusy || !profileDirty}>
+              {profileDirty ? "Save profile" : "Profile saved"}
             </button>
           </div>
         </div>

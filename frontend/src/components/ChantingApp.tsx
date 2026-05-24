@@ -31,6 +31,7 @@ import { HomePage } from "@/features/chanting/pages/HomePage";
 import { ProfilePage } from "@/features/chanting/pages/ProfilePage";
 import { ActivityPage } from "@/features/chanting/pages/ActivityPage";
 import { AdminPage } from "@/features/chanting/pages/AdminPage";
+import { NotificationsPage } from "@/features/chanting/pages/NotificationsPage";
 import {
   bestStreak,
   computeMilestones,
@@ -50,6 +51,7 @@ const tabs = [
   { id: "friends", label: "Friends", icon: HeartHandshake },
   { id: "global", label: "Global", icon: Globe2 },
   { id: "activity", label: "Activity", icon: LineChart },
+  { id: "notifications", label: "Notifications", icon: Bell },
   { id: "profile", label: "Profile", icon: Settings },
   { id: "admin", label: "Admin", icon: ShieldCheck, adminOnly: true },
   { id: "about", label: "About", icon: Sparkles }
@@ -237,6 +239,7 @@ function AppShell({
               friendsCount={friends.length}
               incomingRequestCount={incomingRequestCount}
               isAdmin={isAdmin}
+              unreadNotificationCount={urgentNotificationCount}
               onTabChange={handleTabChange}
             />
             <div className="mt-auto border-t border-saffron-100 p-4">
@@ -262,6 +265,7 @@ function AppShell({
               friendsCount={friends.length}
               incomingRequestCount={incomingRequestCount}
               isAdmin={isAdmin}
+              unreadNotificationCount={urgentNotificationCount}
               onTabChange={handleTabChange}
             />
             <div className="mt-auto space-y-3">
@@ -341,6 +345,16 @@ function AppShell({
                             onClick={() => void markAllNotificationsRead()}
                           >
                             Mark all read
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-md bg-white px-2 py-1 text-xs font-black text-stone-800 ring-1 ring-stone-200"
+                            onClick={() => {
+                              handleTabChange("notifications");
+                              setShowNotifications(false);
+                            }}
+                          >
+                            View all
                           </button>
                           <button
                             type="button"
@@ -440,6 +454,7 @@ function AppShell({
           {activeTab === "friends" && <FriendsPage />}
           {activeTab === "global" && <GlobalPage />}
           {activeTab === "activity" && <ActivityPage />}
+          {activeTab === "notifications" && <NotificationsPage onOpenTab={handleTabChange} />}
           {activeTab === "profile" && <ProfilePage />}
           {activeTab === "admin" && <AdminPage />}
           {activeTab === "about" && <AboutPage />}
@@ -543,6 +558,7 @@ function NavigationList({
   friendsCount,
   incomingRequestCount,
   isAdmin,
+  unreadNotificationCount,
   onTabChange
 }: {
   activeTab: TabId;
@@ -550,13 +566,19 @@ function NavigationList({
   friendsCount: number;
   incomingRequestCount: number;
   isAdmin: boolean;
+  unreadNotificationCount: number;
   onTabChange: (tab: TabId) => void;
 }) {
   return (
     <nav className="mt-4 space-y-1 overflow-y-auto px-4 pb-4 lg:mt-0 lg:px-0">
       {tabs.filter((tab) => !("adminOnly" in tab) || isAdmin).map((tab) => {
         const Icon = tab.icon;
-        const badgeValue = tab.id === "friends" ? incomingRequestCount || friendsCount : 0;
+        const badgeValue =
+          tab.id === "friends"
+            ? incomingRequestCount || friendsCount
+            : tab.id === "notifications"
+              ? unreadNotificationCount
+              : 0;
         return (
           <button
             key={tab.id}

@@ -84,6 +84,22 @@ export function HomePage() {
   const yesterdayKey = addDays(todayKey, -1);
   const yesterdayRounds = state.chantTotals.find((item) => item.userId === currentUser.id && item.localDate === yesterdayKey)?.rounds || 0;
   const canEditYesterday = editableDates.includes(yesterdayKey);
+  const hasUnsavedDraft = draftRounds !== currentRounds;
+  const changeEditableDate = (nextDate: string, knownRounds?: number) => {
+    if (nextDate !== selectedDate && hasUnsavedDraft) {
+      const shouldDiscard = window.confirm(
+        `You have an unsaved total of ${draftRounds} rounds for ${selectedDateLabel}. Switch dates and discard this draft?`
+      );
+      if (!shouldDiscard) return;
+    }
+    setSelectedDate(nextDate);
+    setPreviousDraft(null);
+    const total =
+      typeof knownRounds === "number"
+        ? knownRounds
+        : state.chantTotals.find((item) => item.userId === currentUser.id && item.localDate === nextDate)?.rounds || 0;
+    setRoundInput(String(total));
+  };
   const activeGroupCards = joinedGroups.slice(0, 4).map((group) => {
     const memberIds = state.groupMembers.filter((member) => member.groupId === group.id).map((member) => member.userId);
     const todayTotal = state.chantTotals
@@ -105,7 +121,7 @@ export function HomePage() {
       complete: allTimeRounds > 0,
       action: "Set draft to 1",
       onClick: () => {
-        setSelectedDate(todayKey);
+        changeEditableDate(todayKey, todayKey === selectedDate ? draftRounds : 1);
         setRoundInput("1");
       }
     },
@@ -270,13 +286,7 @@ export function HomePage() {
                   value={selectedDate}
                   onChange={(event) => {
                     const nextDate = event.target.value;
-                    setSelectedDate(nextDate);
-                    setPreviousDraft(null);
-                    const total =
-                      state.chantTotals.find(
-                        (item) => item.userId === currentUser.id && item.localDate === nextDate
-                      )?.rounds || 0;
-                    setRoundInput(String(total));
+                    changeEditableDate(nextDate);
                   }}
                 >
                   {editableDates.map((dateKey) => (
@@ -372,6 +382,28 @@ export function HomePage() {
               <span className="block">{localDayBoundaryText(currentUser.timezone)}</span>
             </div>
 
+            {hasUnsavedDraft && (
+              <div className="mt-3 flex flex-col gap-3 rounded-lg border border-saffron-300 bg-saffron-50 px-4 py-3 text-sm text-saffron-950 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 gap-3">
+                  <AlertTriangle className="mt-0.5 shrink-0" size={18} />
+                  <div>
+                    <p className="font-black">Unsaved changes</p>
+                    <p className="leading-6">
+                      You changed {selectedDateLabel} from {currentRounds} to {draftRounds}. Save before switching dates or leaving this entry.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm disabled:bg-saffron-200"
+                  disabled={!canSaveDraft}
+                  onClick={saveDraftRounds}
+                >
+                  Save now
+                </button>
+              </div>
+            )}
+
             {isLargeRoundEntry && (
               <HighRoundGuardrail
                 confirmed={highRoundConfirmed}
@@ -406,7 +438,7 @@ export function HomePage() {
             className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600"
             disabled={isBusy}
             onClick={() => {
-              setSelectedDate(todayKey);
+              changeEditableDate(todayKey, 1);
               setRoundInput("1");
             }}
           >
@@ -463,9 +495,7 @@ export function HomePage() {
                 className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-stone-200"
                 disabled={isBusy}
                 onClick={() => {
-                  setSelectedDate(yesterdayKey);
-                  setPreviousDraft(null);
-                  setRoundInput(String(yesterdayRounds));
+                  changeEditableDate(yesterdayKey, yesterdayRounds);
                 }}
               >
                 <History size={16} /> Edit yesterday
@@ -724,9 +754,7 @@ export function HomePage() {
                       isToday ? "border-saffron-300 bg-saffron-50" : "border-transparent hover:border-stone-200 hover:bg-stone-50"
                     }`}
                     onClick={() => {
-                      setSelectedDate(item.dateKey);
-                      setPreviousDraft(null);
-                      setRoundInput(String(item.rounds));
+                      changeEditableDate(item.dateKey, item.rounds);
                     }}
                   >
                     <div className="flex h-28 w-full items-end rounded-md bg-stone-50 px-1 py-1">
@@ -789,9 +817,12 @@ export function HomePage() {
             Save
           </button>
           <span className="grid min-w-14 place-items-center rounded-md bg-stone-100 px-3 text-sm font-black text-stone-800">
-            {draftRounds}
+            {hasUnsavedDraft ? `${draftRounds}*` : draftRounds}
           </span>
         </div>
+        {hasUnsavedDraft && (
+          <p className="mt-2 text-center text-xs font-bold text-saffron-900">Unsaved draft for {selectedDateLabel}</p>
+        )}
       </div>
     </div>
   );

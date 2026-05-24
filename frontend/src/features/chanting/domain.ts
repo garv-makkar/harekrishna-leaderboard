@@ -69,7 +69,7 @@ export type ActivityFeedItem = {
 };
 
 export type AuthMode = "signin" | "signup" | "forgot" | "otp" | "newPassword" | "checkEmail";
-export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "profile" | "admin" | "about";
+export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "notifications" | "profile" | "admin" | "about";
 
 export type ProfileRow = {
   id: string;

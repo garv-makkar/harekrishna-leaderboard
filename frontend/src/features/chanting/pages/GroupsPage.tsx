@@ -42,6 +42,7 @@ export function GroupsPage({
   const [showAllMembers, setShowAllMembers] = useState(false);
   const [recentCopy, setRecentCopy] = useState("");
   const [inviteModalGroup, setInviteModalGroup] = useState<Group | null>(null);
+  const [groupSearch, setGroupSearch] = useState("");
   const actionPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -107,6 +108,15 @@ export function GroupsPage({
   const isInvitedMember = invitedGroup
     ? state.groupMembers.some((member) => member.groupId === invitedGroup.id && member.userId === currentUser.id)
     : false;
+  const cleanGroupSearch = groupSearch.trim().toLowerCase();
+  const visibleJoinedGroups = joinedGroups.filter((group) => {
+    if (!cleanGroupSearch) return true;
+    return (
+      group.name.toLowerCase().includes(cleanGroupSearch) ||
+      group.code.toLowerCase().includes(cleanGroupSearch) ||
+      (currentUserGroupRole(group.id) || "").includes(cleanGroupSearch)
+    );
+  });
 
   const leaveSelectedGroup = async () => {
     if (!selectedGroup || selectedRole === "owner") return;
@@ -225,8 +235,34 @@ export function GroupsPage({
             </button>
           </ActionEmptyState>
         ) : (
+          <>
+          <div className="mb-4 flex flex-col gap-2 rounded-lg border border-stone-200 bg-stone-50 p-3 sm:flex-row sm:items-end sm:justify-between">
+            <label className="min-w-0 flex-1">
+              <span className="mb-1 block text-sm font-bold text-stone-700">Search your groups</span>
+              <input
+                className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                value={groupSearch}
+                onChange={(event) => setGroupSearch(event.target.value)}
+                placeholder="name, code, or role"
+                type="search"
+              />
+            </label>
+            <span className="rounded-md bg-white px-3 py-3 text-sm font-black text-stone-700 ring-1 ring-stone-200">
+              Showing {visibleJoinedGroups.length} of {joinedGroups.length}
+            </span>
+          </div>
+          {visibleJoinedGroups.length === 0 ? (
+            <EmptyState text={`No joined groups match "${groupSearch.trim()}".`} />
+          ) : (
           <div className="grid gap-3 xl:grid-cols-3">
-            {joinedGroups.map((group) => (
+            {visibleJoinedGroups.map((group) => {
+              const groupMembers = state.groupMembers.filter((member) => member.groupId === group.id);
+              const todayTotal = groupMembers.reduce(
+                (sum, member) => sum + sumRounds(state.chantTotals, member.userId, "daily", todayKey),
+                0
+              );
+              const activeToday = groupMembers.filter((member) => sumRounds(state.chantTotals, member.userId, "daily", todayKey) > 0).length;
+              return (
               <div
                 key={group.id}
                 className={`rounded-lg border p-4 shadow-sm ${
@@ -251,6 +287,12 @@ export function GroupsPage({
                   <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black uppercase text-peacock-900">
                     {currentUserGroupRole(group.id)}
                   </span>
+                  <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-black text-saffron-900">
+                    {todayTotal} today
+                  </span>
+                  <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
+                    {activeToday}/{groupMembers.length} active
+                  </span>
                   <button
                     type="button"
                     className="inline-flex items-center gap-1.5 rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900"
@@ -260,8 +302,10 @@ export function GroupsPage({
                   </button>
                 </div>
               </div>
-            ))}
+            );})}
           </div>
+          )}
+          </>
         )}
       </Panel>
       {selectedGroup && (
@@ -1163,6 +1207,16 @@ function GroupMemberRoster({ group }: { group: Group }) {
                     <p className="mt-2 text-xs font-bold text-stone-500">
                       {row.latestUpdate ? `Last updated ${latestUpdateLabel(row.latestUpdate)}` : "No rounds logged yet"}
                     </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className={`rounded-md px-2 py-1 text-xs font-black ${memberActivityBadgeClass(row.todayRounds, row.weekRounds)}`}>
+                        {memberActivityText(row.todayRounds, row.weekRounds)}
+                      </span>
+                      {row.streak > 1 && (
+                        <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-black text-saffron-900">
+                          {row.streak} day streak
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <button
@@ -1193,6 +1247,18 @@ function MemberRosterStat({ label, value }: { label: string; value: number }) {
       <p className="mt-1 text-xl font-black text-stone-950">{value}</p>
     </div>
   );
+}
+
+function memberActivityText(todayRounds: number, weekRounds: number) {
+  if (todayRounds > 0) return "Active today";
+  if (weekRounds > 0) return "Active this week";
+  return "Inactive this week";
+}
+
+function memberActivityBadgeClass(todayRounds: number, weekRounds: number) {
+  if (todayRounds > 0) return "bg-peacock-50 text-peacock-900 ring-1 ring-peacock-100";
+  if (weekRounds > 0) return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100";
+  return "bg-stone-100 text-stone-600 ring-1 ring-stone-200";
 }
 
 function OwnerDigestTile({ label, value, note }: { label: string; value: string; note: string }) {

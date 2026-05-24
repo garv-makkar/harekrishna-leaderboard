@@ -381,8 +381,10 @@ export function Leaderboard({
   const [onlyUpdatedToday, setOnlyUpdatedToday] = useState(false);
   const [showZeroEntries, setShowZeroEntries] = useState(false);
   const [showAllRows, setShowAllRows] = useState(false);
+  const [searchText, setSearchText] = useState("");
   const todayText = new Date().toDateString();
   const currentRow = rows.find((row) => row.user.id === currentUserId);
+  const cleanSearch = searchText.trim().toLowerCase();
   const baseRows = rows.filter((row) => {
     if (row.user.id === currentUserId) return true;
     if (visibility === "all") return true;
@@ -391,13 +393,19 @@ export function Leaderboard({
     return row.rounds > 0 || row.hasEntry;
   });
   const filteredRows = baseRows.filter((row) => {
+    const matchesSearch =
+      !cleanSearch ||
+      row.user.username.toLowerCase().includes(cleanSearch) ||
+      (row.user.displayName || "").toLowerCase().includes(cleanSearch) ||
+      String(row.rounds).includes(cleanSearch);
+    if (!matchesSearch) return false;
     if (!onlyUpdatedToday) return true;
     if (!row.lastUpdatedAt) return false;
     return new Date(row.lastUpdatedAt).toDateString() === todayText;
   });
   const limitedRows = showAllRows ? filteredRows : filteredRows.slice(0, 10);
   const visibleRows =
-    !showAllRows && currentRow && !limitedRows.some((row) => row.user.id === currentUserId) && filteredRows.some((row) => row.user.id === currentUserId)
+    !cleanSearch && !showAllRows && currentRow && !limitedRows.some((row) => row.user.id === currentUserId) && filteredRows.some((row) => row.user.id === currentUserId)
       ? [...limitedRows, currentRow]
       : limitedRows;
   if (baseRows.length === 0) return <EmptyState text={emptyText} />;
@@ -434,6 +442,16 @@ export function Leaderboard({
         </div>
       )}
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm">
+        <label className="min-w-[220px] flex-1">
+          <span className="sr-only">Search leaderboard</span>
+          <input
+            className="w-full rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-bold text-stone-900 outline-none transition focus:border-saffron-500 focus:bg-white focus:ring-2 focus:ring-saffron-100"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder="Search name, username, or rounds"
+            type="search"
+          />
+        </label>
         <button
           type="button"
           className={`rounded-md px-3 py-2 text-sm font-black transition ${onlyUpdatedToday ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
@@ -458,10 +476,24 @@ export function Leaderboard({
         <span className="ml-auto rounded-md bg-stone-50 px-3 py-2 text-sm font-bold text-stone-600">
           Showing {visibleRows.length} of {filteredRows.length}
         </span>
+        {(searchText || onlyUpdatedToday || showZeroEntries || showAllRows) && (
+          <button
+            type="button"
+            className="rounded-md bg-white px-3 py-2 text-sm font-black text-stone-800 ring-1 ring-stone-200"
+            onClick={() => {
+              setSearchText("");
+              setOnlyUpdatedToday(false);
+              setShowZeroEntries(false);
+              setShowAllRows(false);
+            }}
+          >
+            Clear
+          </button>
+        )}
       </div>
       {filteredRows.length === 0 && (
         <div className="mb-4">
-          <EmptyState text="No rows match the current leaderboard filters." />
+          <EmptyState text={cleanSearch ? `No rows match "${searchText.trim()}".` : "No rows match the current leaderboard filters."} />
         </div>
       )}
       {leaderRows.length > 0 && (
@@ -568,7 +600,10 @@ export function Leaderboard({
       <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
         {visibleRows.map((row) => {
           const isCurrent = row.user.id === currentUserId;
-          const isTied = row.rounds > 0 && activeRows.some((other) => other.user.id !== row.user.id && other.rank === row.rank && other.rounds === row.rounds);
+          const rowTieCount = row.rounds > 0
+            ? activeRows.filter((other) => other.user.id !== row.user.id && other.rank === row.rank && other.rounds === row.rounds).length
+            : 0;
+          const isTied = rowTieCount > 0;
           const isTopRank = row.rounds > 0 && row.rank <= 3;
           return (
             <div
@@ -586,7 +621,7 @@ export function Leaderboard({
                 <p className={`inline-flex min-w-11 justify-center rounded-md px-2 py-1 text-lg font-black ${rankBadgeClass(row.rank)}`}>
                   {rankLabel(row.rank)}
                 </p>
-                {isTied && <p className="mt-1 text-xs font-bold text-peacock-700">Tied rank</p>}
+                {isTied && <p className="mt-1 text-xs font-bold text-peacock-700">Tied with {rowTieCount}</p>}
               </div>
               <div className="flex min-w-0 items-center gap-3">
                 <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
@@ -615,6 +650,11 @@ export function Leaderboard({
                     <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-bold text-saffron-900">
                       Self-entered
                     </span>
+                    {isTied && (
+                      <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900">
+                        Same rank
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

@@ -25,6 +25,7 @@ export function FriendsPage() {
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [showAllFriends, setShowAllFriends] = useState(false);
+  const [friendSearch, setFriendSearch] = useState("");
   const searchPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -47,6 +48,17 @@ export function FriendsPage() {
   const outgoingRequests = state.friendRequests.filter(
     (request) => request.fromUserId === currentUser.id && request.status === "pending"
   );
+  const cleanFriendSearch = friendSearch.trim().toLowerCase();
+  const visibleAcceptedRequests = acceptedRequests.filter((request) => {
+    if (!cleanFriendSearch) return true;
+    const friendId = request.fromUserId === currentUser.id ? request.toUserId : request.fromUserId;
+    const friend = state.users.find((user) => user.id === friendId);
+    return (
+      friend?.username.toLowerCase().includes(cleanFriendSearch) ||
+      (friend?.displayName || "").toLowerCase().includes(cleanFriendSearch) ||
+      friend?.country.toLowerCase().includes(cleanFriendSearch)
+    );
+  });
   const range = leaderboardRange(period, todayKey, periodOffset);
   const lastUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, friendUsers.map((user) => user.id), range.start, range.end));
   const isLoadingFriends = loadingRemoteSlices.friends;
@@ -113,10 +125,31 @@ export function FriendsPage() {
             </button>
           </ActionEmptyState>
         ) : (
+          <>
+          <div className="mb-4 flex flex-col gap-2 rounded-lg border border-stone-200 bg-stone-50 p-3 sm:flex-row sm:items-end sm:justify-between">
+            <Field
+              label="Search friends"
+              value={friendSearch}
+              onChange={setFriendSearch}
+              placeholder="username, name, or country"
+              inputMode="search"
+            />
+            <span className="rounded-md bg-white px-3 py-3 text-sm font-black text-stone-700 ring-1 ring-stone-200">
+              Showing {visibleAcceptedRequests.length} of {acceptedRequests.length}
+            </span>
+          </div>
+          {visibleAcceptedRequests.length === 0 ? (
+            <EmptyState text={`No accepted friends match "${friendSearch.trim()}".`} />
+          ) : (
           <div className="grid gap-3 xl:grid-cols-2">
-            {acceptedRequests.map((request) => {
+            {visibleAcceptedRequests.map((request) => {
               const friendId = request.fromUserId === currentUser.id ? request.toUserId : request.fromUserId;
               const friend = state.users.find((user) => user.id === friendId);
+              const friendToday = friend
+                ? state.chantTotals
+                    .filter((total) => total.userId === friend.id && total.localDate === todayKey)
+                    .reduce((sum, total) => sum + total.rounds, 0)
+                : 0;
               return (
                 <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
@@ -124,6 +157,14 @@ export function FriendsPage() {
                     <div className="min-w-0">
                       <p className="truncate font-bold">{friend?.displayName || friend?.username}</p>
                       <p className="truncate text-sm text-stone-600">@{friend?.username}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900">
+                          {friendToday} today
+                        </span>
+                        <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
+                          Friends since {new Date(request.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 sm:justify-end">
@@ -140,6 +181,8 @@ export function FriendsPage() {
               );
             })}
           </div>
+          )}
+          </>
         )}
       </Panel>
       <Panel title="Incoming requests" icon={<HeartHandshake size={18} />}>
@@ -155,7 +198,13 @@ export function FriendsPage() {
               const sender = state.users.find((user) => user.id === request.fromUserId);
               return (
                 <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                  <p className="font-bold">{sender?.username}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar src={sender?.avatarUrl || ""} label={sender?.displayName || sender?.username || "User"} />
+                    <div className="min-w-0">
+                      <p className="truncate font-bold">{sender?.displayName || sender?.username}</p>
+                      <p className="truncate text-sm text-stone-600">@{sender?.username}</p>
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       className="flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
@@ -191,7 +240,13 @@ export function FriendsPage() {
               const receiver = state.users.find((user) => user.id === request.toUserId);
               return (
                 <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                  <p className="font-bold">@{receiver?.username}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar src={receiver?.avatarUrl || ""} label={receiver?.displayName || receiver?.username || "User"} />
+                    <div className="min-w-0">
+                      <p className="truncate font-bold">{receiver?.displayName || receiver?.username}</p>
+                      <p className="truncate text-sm text-stone-600">@{receiver?.username}</p>
+                    </div>
+                  </div>
                   <button
                     className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
                     disabled={isBusy}
@@ -269,7 +324,8 @@ function FriendSearch() {
     .filter(
       (user) =>
         user.id !== currentUser.id &&
-        user.username.toLowerCase().includes(cleanQuery) &&
+        (user.username.toLowerCase().includes(cleanQuery) ||
+          (user.displayName || "").toLowerCase().includes(cleanQuery)) &&
         cleanQuery.length > 1
     )
     .sort((a, b) => {
@@ -355,7 +411,7 @@ function FriendSearch() {
                   <Avatar src={user.avatarUrl} label={user.displayName || user.username} />
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate font-bold">{user.username}</p>
+                      <p className="truncate font-bold">{user.displayName || user.username}</p>
                       {isExact && (
                         <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900">
                           Exact
@@ -367,7 +423,7 @@ function FriendSearch() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-stone-600">{user.country}</p>
+                    <p className="truncate text-sm text-stone-600">@{user.username} | {user.country}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:justify-end">
