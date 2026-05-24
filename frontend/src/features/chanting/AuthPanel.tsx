@@ -253,7 +253,7 @@ function SignInForm() {
       } catch (error) {
         const messageText = error instanceof Error ? error.message : "Signin failed.";
         if (isAccountNotFoundError(messageText)) {
-          setFormError("No account found for this username, email, or phone. Please create an account first.");
+          setFormError("No account found for this username or email. Please create an account first.");
           setAuthMode("signup");
           showMessage("Create your account first.");
           return;
@@ -267,8 +267,7 @@ function SignInForm() {
     const user = state.users.find(
       (item) =>
         item.username.toLowerCase() === target ||
-        item.email.toLowerCase() === target ||
-        item.phone.toLowerCase() === target
+        item.email.toLowerCase() === target
     );
     if (!user || user.passwordHash !== hashPassword(password)) {
       setFormError("No matching account found, or the password is incorrect. Please create an account if you are new.");
@@ -286,7 +285,7 @@ function SignInForm() {
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">
         <form className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 shadow-sm" onSubmit={submit}>
           <p className="text-sm font-black text-stone-900">Password</p>
-          <CompactField label="Username, email, or phone" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
+          <CompactField label="Username or email" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
           <CompactField label="Password" name="signin-password" value={password} onChange={setPassword} type="password" required autoComplete="current-password" />
           <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white" disabled={localBusy}>
             <ShieldCheck size={16} /> Sign in with password

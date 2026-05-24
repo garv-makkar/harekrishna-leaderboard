@@ -37,6 +37,7 @@ import {
   computeMilestones,
   readableError,
   uid,
+  usernamePattern,
   urlAuthError,
   urlLooksLikePasswordRecovery
 } from "./domain";
@@ -397,11 +398,12 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   const resolveLoginEmail = async (identifier: string) => {
     if (!supabase) return identifier;
     if (identifier.includes("@")) return identifier;
+    if (!usernamePattern.test(identifier)) throw new Error("No account found for that username or email address.");
     const { data, error } = await supabase.rpc("resolve_login_identifier", {
       login_identifier: identifier
     });
     if (error) throw error;
-    if (!data) throw new Error("No account found for that username, email, or phone number.");
+    if (!data) throw new Error("No account found for that username or email address.");
     return String(data);
   };
 
