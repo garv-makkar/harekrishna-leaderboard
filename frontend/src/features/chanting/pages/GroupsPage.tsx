@@ -307,35 +307,6 @@ export function GroupsPage({
       {selectedGroup && (
         <>
         <GroupSectionJumpBar />
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
-          <div className="space-y-4">
-            <div id="group-invite">
-              <GroupInviteCard
-                group={selectedGroup}
-                role={selectedRole}
-                memberCount={selectedMemberCount}
-                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-              />
-            </div>
-            {selectedRole === "owner" && (
-              <GroupOwnerDashboard
-                group={selectedGroup}
-                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-                onRefresh={() => refreshRemoteState(currentUser.id)}
-              />
-            )}
-            <GroupTargetPanel group={selectedGroup} />
-          </div>
-          <div className="space-y-4">
-            <div id="group-activity">
-              <GroupActivityFeed group={selectedGroup} />
-            </div>
-            <div id="group-members">
-              <GroupMemberRoster group={selectedGroup} />
-            </div>
-          </div>
-        </div>
-        <GroupAccountabilityPanel group={selectedGroup} />
         <div id="group-leaderboard">
           <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
             {isLoadingGroups && selectedMemberCount === 0 ? (
@@ -368,6 +339,35 @@ export function GroupsPage({
               </>
             )}
           </Panel>
+        </div>
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
+          <div className="space-y-4">
+            <div id="group-invite">
+              <GroupInviteCard
+                group={selectedGroup}
+                role={selectedRole}
+                memberCount={selectedMemberCount}
+                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+              />
+            </div>
+            {selectedRole === "owner" && (
+              <GroupOwnerDashboard
+                group={selectedGroup}
+                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+                onRefresh={() => refreshRemoteState(currentUser.id)}
+              />
+            )}
+            <GroupTargetPanel group={selectedGroup} />
+          </div>
+          <div className="space-y-4">
+            <div id="group-activity">
+              <GroupActivityFeed group={selectedGroup} />
+            </div>
+            <div id="group-members">
+              <GroupMemberRoster group={selectedGroup} />
+            </div>
+            <GroupAccountabilityPanel group={selectedGroup} />
+          </div>
         </div>
         <div id="group-controls">
           <Panel title={`${selectedGroup.name} controls`} icon={<Settings size={18} />}>

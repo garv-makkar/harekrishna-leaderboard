@@ -153,64 +153,66 @@ export function ActivityPage() {
         </StatGrid>
       </PageHeader>
 
-      <Panel title="Recent activity" icon={<ListChecks size={18} />}>
-        {feedItems.length === 0 ? (
-          <EmptyState text="No recent app activity yet. Log rounds, join a group, or add a friend and it will appear here." />
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
-            {feedItems.map((item) => (
-              <div key={item.id} className="grid gap-2 border-b border-stone-100 px-3 py-2.5 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center sm:px-4 sm:py-3">
-                <div className="flex min-w-0 gap-3">
-                  <span className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-md ${feedIconClass(item.tone)}`}>
-                    {feedIcon(item)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-black text-stone-900">{item.title}</p>
-                    <p className="text-sm leading-6 text-stone-600">{item.body}</p>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
+        <Panel title={`${days}-day history`} icon={<CalendarDays size={18} />}>
+          <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(62px,1fr))]">
+            {history.map((item) => {
+              const isToday = item.dateKey === todayKey;
+              const barHeight = Math.max(8, Math.round((item.rounds / highestRounds) * 76));
+              return (
+                <button
+                  key={item.dateKey}
+                  type="button"
+                  className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-2 text-center ${
+                    isToday ? "border-saffron-400 bg-saffron-50 shadow-sm" : "border-stone-200 bg-white shadow-sm hover:border-saffron-200"
+                  }`}
+                  onClick={() => {
+                    setSelectedDate(item.dateKey);
+                    showMessage(`Selected ${formatDate(item.dateKey)} in the rounds editor.`);
+                  }}
+                  title={`${formatDate(item.dateKey)}: ${item.rounds} rounds`}
+                >
+                  <div className="flex h-16 w-full items-end rounded bg-stone-50 px-1 py-1 sm:h-20">
+                    <div
+                      className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
+                      style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
+                    />
                   </div>
-                </div>
-                <span className="w-fit rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600">
-                  {formatFeedTime(item.at)}
-                </span>
-              </div>
-            ))}
+                  <span className="text-sm font-black text-stone-900">{item.rounds}</span>
+                  <span className={`truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
+                    {isToday ? "Today" : shortDate(item.dateKey)}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </Panel>
+        </Panel>
 
-      <Panel title={`${days}-day history`} icon={<CalendarDays size={18} />}>
-        <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(68px,1fr))]">
-          {history.map((item) => {
-            const isToday = item.dateKey === todayKey;
-            const barHeight = Math.max(8, Math.round((item.rounds / highestRounds) * 76));
-            return (
-              <button
-                key={item.dateKey}
-                type="button"
-                className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-2.5 text-center ${
-                  isToday ? "border-saffron-400 bg-saffron-50 shadow-sm" : "border-stone-200 bg-white shadow-sm hover:border-saffron-200"
-                }`}
-                onClick={() => {
-                  setSelectedDate(item.dateKey);
-                  showMessage(`Selected ${formatDate(item.dateKey)} in the rounds editor.`);
-                }}
-                title={`${formatDate(item.dateKey)}: ${item.rounds} rounds`}
-              >
-                <div className="flex h-16 w-full items-end rounded bg-stone-50 px-1 py-1 sm:h-20">
-                  <div
-                    className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
-                    style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
-                  />
+        <Panel title="Recent activity" icon={<ListChecks size={18} />}>
+          {feedItems.length === 0 ? (
+            <EmptyState text="No recent app activity yet. Log rounds, join a group, or add a friend and it will appear here." />
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+              {feedItems.slice(0, 8).map((item) => (
+                <div key={item.id} className="grid gap-2 border-b border-stone-100 px-3 py-2.5 last:border-b-0">
+                  <div className="flex min-w-0 gap-3">
+                    <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md ${feedIconClass(item.tone)}`}>
+                      {feedIcon(item)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-black text-stone-900">{item.title}</p>
+                      <p className="text-sm leading-5 text-stone-600">{item.body}</p>
+                    </div>
+                  </div>
+                  <span className="w-fit rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600">
+                    {formatFeedTime(item.at)}
+                  </span>
                 </div>
-                <span className="text-sm font-black text-stone-900">{item.rounds}</span>
-                <span className={`truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
-                  {isToday ? "Today" : shortDate(item.dateKey)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </Panel>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
 
       <Panel title="Logged days" icon={<ListChecks size={18} />}>
         <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:px-4">
@@ -282,16 +284,6 @@ function feedIconClass(tone: ActivityFeedItem["tone"]) {
   if (tone === "saffron") return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100";
   if (tone === "peacock") return "bg-peacock-50 text-peacock-900 ring-1 ring-peacock-100";
   return "bg-stone-100 text-stone-600 ring-1 ring-stone-200";
-}
-
-function SummaryTile({ label, value, note }: { label: string; value: number; note: string }) {
-  return (
-    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
-      <p className="text-sm font-bold text-stone-600">{label}</p>
-      <p className="mt-0.5 text-xl font-black text-stone-900 sm:text-2xl">{value}</p>
-      <p className="text-sm text-stone-600">{note}</p>
-    </div>
-  );
 }
 
 function ConfidenceBadge({ tone, text }: { tone: "peacock" | "saffron" | "emerald" | "stone"; text: string }) {

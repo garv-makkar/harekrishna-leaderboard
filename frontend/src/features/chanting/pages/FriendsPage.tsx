@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Check, HeartHandshake, Search, Trophy, UserRoundSearch, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { makeFriendRequest, useChanting } from "../ChantingContext";
@@ -72,24 +73,6 @@ export function FriendsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {!isLoadingFriends && !hasFriendData && (
-        <ActionEmptyState
-          icon={<UserRoundSearch size={20} />}
-          title="Build your friends leaderboard"
-          text="Search a username, send a request, and accepted friends will get a private leaderboard with you."
-        >
-          <button
-            type="button"
-            className="rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm"
-            onClick={jumpToSearch}
-          >
-            Search username
-          </button>
-        </ActionEmptyState>
-      )}
-      <div ref={searchPanelRef}>
-        <FriendSearch />
-      </div>
       {isLoadingFriends && !hasFriendData ? (
         <MetricSkeletonGrid />
       ) : (
@@ -107,6 +90,101 @@ export function FriendsPage() {
           }
         />
       )}
+      {!isLoadingFriends && !hasFriendData && (
+        <ActionEmptyState
+          icon={<UserRoundSearch size={20} />}
+          title="Build your friends leaderboard"
+          text="Search a username, send a request, and accepted friends will get a private leaderboard with you."
+        >
+          <button
+            type="button"
+            className="rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm"
+            onClick={jumpToSearch}
+          >
+            Search username
+          </button>
+        </ActionEmptyState>
+      )}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
+        <div ref={searchPanelRef}>
+          <FriendSearch />
+        </div>
+        <div className="space-y-4">
+          <Panel title="Incoming requests" icon={<HeartHandshake size={18} />}>
+            {isLoadingFriends && !hasFriendData ? (
+              <div className="-m-4 sm:-m-5">
+                <PanelSkeleton rows={1} title={false} />
+              </div>
+            ) : incomingRequests.length === 0 ? (
+              <EmptyState text="No incoming friend requests." />
+            ) : (
+              <div className="space-y-2">
+                {incomingRequests.map((request) => {
+                  const sender = state.users.find((user) => user.id === request.fromUserId);
+                  return (
+                    <FriendRequestRow
+                      key={request.id}
+                      avatar={sender?.avatarUrl || ""}
+                      title={sender?.displayName || sender?.username || "User"}
+                      subtitle={sender?.username ? `@${sender.username}` : "User not loaded"}
+                      actions={
+                        <>
+                          <button
+                            className="flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
+                            disabled={isBusy}
+                            onClick={() => acceptFriendRequest(request.id)}
+                          >
+                            <Check size={16} /> Accept
+                          </button>
+                          <button
+                            className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
+                            disabled={isBusy}
+                            onClick={() => deleteFriendRequest(request.id, "Friend request declined.")}
+                          >
+                            Decline
+                          </button>
+                        </>
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+          <Panel title="Outgoing requests" icon={<Users size={18} />}>
+            {isLoadingFriends && !hasFriendData ? (
+              <div className="-m-4 sm:-m-5">
+                <PanelSkeleton rows={1} title={false} />
+              </div>
+            ) : outgoingRequests.length === 0 ? (
+              <EmptyState text="Sent friend requests will appear here until accepted." />
+            ) : (
+              <div className="space-y-2">
+                {outgoingRequests.map((request) => {
+                  const receiver = state.users.find((user) => user.id === request.toUserId);
+                  return (
+                    <FriendRequestRow
+                      key={request.id}
+                      avatar={receiver?.avatarUrl || ""}
+                      title={receiver?.displayName || receiver?.username || "User"}
+                      subtitle={receiver?.username ? `@${receiver.username}` : "User not loaded"}
+                      actions={
+                        <button
+                          className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
+                          disabled={isBusy}
+                          onClick={() => deleteFriendRequest(request.id, "Friend request canceled.")}
+                        >
+                          Cancel request
+                        </button>
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+        </div>
+      </div>
       <Panel title="Friends" icon={<HeartHandshake size={18} />}>
         {isLoadingFriends && !hasFriendData ? (
           <div className="-m-4 sm:-m-5">
@@ -186,81 +264,6 @@ export function FriendsPage() {
           </>
         )}
       </Panel>
-      <Panel title="Incoming requests" icon={<HeartHandshake size={18} />}>
-        {isLoadingFriends && !hasFriendData ? (
-          <div className="-m-4 sm:-m-5">
-            <PanelSkeleton rows={1} title={false} />
-          </div>
-        ) : incomingRequests.length === 0 ? (
-          <EmptyState text="No incoming friend requests." />
-        ) : (
-          <div className="space-y-3">
-            {incomingRequests.map((request) => {
-              const sender = state.users.find((user) => user.id === request.fromUserId);
-              return (
-                <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar src={sender?.avatarUrl || ""} label={sender?.displayName || sender?.username || "User"} />
-                    <div className="min-w-0">
-                      <p className="truncate font-bold">{sender?.displayName || sender?.username}</p>
-                      <p className="truncate text-sm text-stone-600">@{sender?.username}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      className="flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
-                      disabled={isBusy}
-                      onClick={() => acceptFriendRequest(request.id)}
-                    >
-                      <Check size={16} /> Accept
-                    </button>
-                    <button
-                      className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
-                      disabled={isBusy}
-                      onClick={() => deleteFriendRequest(request.id, "Friend request declined.")}
-                    >
-                      Decline
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Panel>
-      <Panel title="Outgoing requests" icon={<Users size={18} />}>
-        {isLoadingFriends && !hasFriendData ? (
-          <div className="-m-4 sm:-m-5">
-            <PanelSkeleton rows={1} title={false} />
-          </div>
-        ) : outgoingRequests.length === 0 ? (
-          <EmptyState text="Sent friend requests will appear here until accepted." />
-        ) : (
-          <div className="space-y-3">
-            {outgoingRequests.map((request) => {
-              const receiver = state.users.find((user) => user.id === request.toUserId);
-              return (
-                <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar src={receiver?.avatarUrl || ""} label={receiver?.displayName || receiver?.username || "User"} />
-                    <div className="min-w-0">
-                      <p className="truncate font-bold">{receiver?.displayName || receiver?.username}</p>
-                      <p className="truncate text-sm text-stone-600">@{receiver?.username}</p>
-                    </div>
-                  </div>
-                  <button
-                    className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
-                    disabled={isBusy}
-                    onClick={() => deleteFriendRequest(request.id, "Friend request canceled.")}
-                  >
-                    Cancel request
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Panel>
       <Panel title="Friends leaderboard" icon={<Trophy size={18} />}>
         {isLoadingFriends && !hasFriendData ? (
           <LeaderboardSkeleton />
@@ -284,6 +287,31 @@ export function FriendsPage() {
           </>
         )}
       </Panel>
+    </div>
+  );
+}
+
+function FriendRequestRow({
+  avatar,
+  title,
+  subtitle,
+  actions
+}: {
+  avatar: string;
+  title: string;
+  subtitle: string;
+  actions: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-3">
+        <Avatar src={avatar} label={title} />
+        <div className="min-w-0">
+          <p className="truncate font-bold">{title}</p>
+          <p className="truncate text-sm text-stone-600">{subtitle}</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 sm:justify-end">{actions}</div>
     </div>
   );
 }

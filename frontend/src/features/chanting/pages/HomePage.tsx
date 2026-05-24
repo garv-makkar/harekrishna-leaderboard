@@ -19,7 +19,7 @@ import {
   sumRounds,
   VAISHNAVA_CALENDAR_REFERENCE
 } from "../domain";
-import { ActionEmptyState, Card, Field, MilestoneGrid, PageHeader, Panel, SectionHeading, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Card, Field, MilestoneGrid, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 export function HomePage() {
   const {
@@ -267,12 +267,12 @@ export function HomePage() {
         description="Save the exact total for today or any of the last 7 editable days."
         stats={
           <>
-            <p className="mb-3 text-sm font-black uppercase text-stone-500">Today at a glance</p>
+            <p className="mb-3 text-sm font-black uppercase text-stone-500">Practice totals</p>
             <StatGrid columns={2}>
               <StatCard label="Today" value={currentRounds} note="saved rounds" tone="saffron" />
               <StatCard label="This week" value={weeklyRounds} note="Monday onward" tone="peacock" />
-              <StatCard label="Streak" value={streakNow} note={`best ${streakBest}`} tone="stone" />
-              <StatCard label="Goal" value={currentUser.dailyGoal || 16} note={`${Math.min(100, Math.round((currentRounds / Math.max(1, currentUser.dailyGoal || 16)) * 100))}% today`} tone="peacock" />
+              <StatCard label="This month" value={monthlyRounds} note={`${monthDays} active day${monthDays === 1 ? "" : "s"}`} tone="stone" />
+              <StatCard label="All time" value={allTimeRounds} note={`Since ${formatDate(currentUser.joinedAt.slice(0, 10))}`} tone="saffron" />
             </StatGrid>
           </>
         }
@@ -445,12 +445,12 @@ export function HomePage() {
 
       <OnboardingChecklist items={onboardingItems} />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <Panel title="Daily focus" icon={<Target size={18} />}>
-          <div className="grid gap-3 lg:grid-cols-[180px_minmax(0,1fr)]">
+          <div className="grid gap-3 lg:grid-cols-[160px_minmax(0,1fr)]">
             <Card level="primary" className="text-center">
               <p className="text-xs font-black uppercase text-stone-500">Goal progress</p>
-              <p className="mt-2 text-3xl font-black text-saffron-900">{goalPercent}%</p>
+              <p className="mt-1 text-2xl font-black text-saffron-900 sm:text-3xl">{goalPercent}%</p>
               <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
                 <div className="h-full bg-saffron-500" style={{ width: `${goalPercent}%` }} />
               </div>
@@ -489,6 +489,25 @@ export function HomePage() {
               </button>
             )}
           </div>
+          <div id="daily-goal-panel" className="mt-4 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto] sm:items-end">
+              <div>
+                <p className="font-black text-stone-900">Daily goal</p>
+                <p className="mt-1 text-sm leading-6 text-stone-600">
+                  {currentRounds >= dailyGoal ? "Goal complete today." : `${remainingGoalRounds} rounds left today.`}
+                </p>
+              </div>
+              <Field label="Goal rounds" value={goalDraft} onChange={setGoalDraft} type="number" min={0} max={999} />
+              <button
+                type="button"
+                className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"
+                disabled={isBusy || Number(goalDraft) === dailyGoal}
+                onClick={saveDailyGoal}
+              >
+                Save
+              </button>
+            </div>
+          </div>
         </Panel>
 
         <Panel title="Active groups" icon={<Users size={18} />}>
@@ -513,7 +532,7 @@ export function HomePage() {
               </button>
             </ActionEmptyState>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
               {activeGroupCards.map(({ group, memberCount, todayTotal, latestUpdate }) => (
                 <button
                   key={group.id}
@@ -535,7 +554,7 @@ export function HomePage() {
                     </div>
                     <ChevronRight size={18} className="shrink-0 text-stone-400" />
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     <DailyFocusTile label="Today total" value={todayTotal} note="group rounds" compact />
                     <div className="rounded-md border border-stone-100 bg-stone-50 px-3 py-2">
                       <p className="text-xs font-black uppercase text-stone-500">Last update</p>
@@ -591,125 +610,7 @@ export function HomePage() {
         </Panel>
       )}
 
-      {remainingGoalRounds > 0 && (
-        <ActionEmptyState
-          icon={<Target size={20} />}
-          title={`${remainingGoalRounds} round${remainingGoalRounds === 1 ? "" : "s"} left for today's goal`}
-          text={`Your current daily goal is ${dailyGoal}. Use quick add or set the draft directly to your goal total.`}
-        >
-          <button
-            type="button"
-            className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white shadow-sm"
-            disabled={isBusy}
-            onClick={() => setPresetTotal(dailyGoal)}
-          >
-            Set draft to goal
-          </button>
-        </ActionEmptyState>
-      )}
-
-      <Panel title="Practice totals" icon={<Flame size={18} />}>
-        <StatGrid columns={4}>
-          <StatCard label="Today" value={currentRounds} note="Saved rounds" tone="saffron" />
-          <StatCard label="This week" value={weeklyRounds} note="Weeks start Monday" tone="peacock" />
-          <StatCard label="This month" value={monthlyRounds} note={`${monthDays} active day${monthDays === 1 ? "" : "s"}`} tone="stone" />
-          <StatCard label="All time" value={allTimeRounds} note={`Since ${formatDate(currentUser.joinedAt.slice(0, 10))}`} tone="saffron" />
-        </StatGrid>
-      </Panel>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div id="daily-goal-panel">
-        <Panel title="Daily goal" icon={<Target size={18} />}>
-          <div className="grid gap-3 md:grid-cols-[1fr_240px]">
-            <div>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <p className="font-black text-stone-900">
-                  {currentRounds} / {currentUser.dailyGoal || 16} rounds today
-                </p>
-                <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
-                  {Math.min(100, Math.round((currentRounds / Math.max(1, currentUser.dailyGoal || 16)) * 100))}%
-                </span>
-              </div>
-              <div className="h-3 overflow-hidden rounded-full bg-stone-100">
-                <div
-                  className="h-full bg-saffron-500"
-                  style={{ width: `${Math.min(100, Math.round((currentRounds / Math.max(1, currentUser.dailyGoal || 16)) * 100))}%` }}
-                />
-              </div>
-              <p className="mt-3 text-sm leading-6 text-stone-600">
-                {currentRounds >= (currentUser.dailyGoal || 16)
-                  ? "Your daily goal is complete."
-                  : `${(currentUser.dailyGoal || 16) - currentRounds} rounds left for today's goal.`}
-              </p>
-            </div>
-            <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
-              <Field label="Goal rounds" value={goalDraft} onChange={setGoalDraft} type="number" min={0} max={999} />
-              <button
-                type="button"
-                className="mt-3 w-full rounded-md bg-peacock-600 px-4 py-2.5 font-black text-white"
-                disabled={isBusy || Number(goalDraft) === (currentUser.dailyGoal || 16)}
-                onClick={saveDailyGoal}
-              >
-                Save goal
-              </button>
-            </div>
-          </div>
-        </Panel>
-        </div>
-        <WeeklySummaryCard history={history} weeklyRounds={weeklyRounds} streakNow={streakNow} />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <Panel title="Vaishnava day note" icon={<Moon size={18} />}>
-          <div className="grid gap-3 md:grid-cols-[190px_minmax(0,1fr)]">
-            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
-              <p className="text-xs font-black uppercase text-stone-500">Approximate tithi</p>
-              <p className="mt-1 text-2xl font-black text-saffron-900">{hinduDay.name}</p>
-              <p className="text-sm font-bold text-stone-700">{hinduDay.paksha}</p>
-            </div>
-            <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-950">
-              <p className="font-black">
-                {hinduDay.isEkadashi
-                  ? "Approximate Ekadashi today"
-                  : hinduDay.isDashami
-                    ? "Dashami: Ekadashi may be near"
-                    : hinduDay.isDwadashi
-                      ? "Dwadashi: check parana timings locally"
-                      : "Panchang reminder"}
-              </p>
-              <p>{hinduDay.note}</p>
-              <p className="mt-2">
-                Reference to use: {VAISHNAVA_CALENDAR_REFERENCE.name} by {VAISHNAVA_CALENDAR_REFERENCE.provider}.
-              </p>
-              <a
-                href={VAISHNAVA_CALENDAR_REFERENCE.url}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100"
-              >
-                <ExternalLink size={16} /> Check official Vaishnava calendar
-              </a>
-            </div>
-          </div>
-        </Panel>
-        <Panel title="Share progress" icon={<Download size={18} />}>
-          <div className="space-y-3">
-            <p className="text-sm leading-6 text-stone-600">
-              Download a simple image card with today&apos;s rounds, streak, and weekly total.
-            </p>
-            {shareStatus && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{shareStatus}</p>}
-            <button
-              type="button"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-black text-white"
-              onClick={downloadShareCard}
-            >
-              <Download size={18} /> Download share card
-            </button>
-          </div>
-        </Panel>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.78fr)_minmax(0,1.22fr)]">
         <Panel title="Chanting consistency" icon={<Flame size={18} />}>
           <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -760,9 +661,53 @@ export function HomePage() {
             latestEarned={latestEarnedMilestone}
             nextMilestone={nextMilestone}
           />
-          <MilestoneGrid milestones={milestones} limit={4} />
+          <MilestoneGrid milestones={milestones} limit={6} />
         </Panel>
       </div>
+
+      <Panel title="Extras" icon={<Moon size={18} />}>
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
+            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5">
+              <p className="text-xs font-black uppercase text-stone-500">Approximate tithi</p>
+              <p className="mt-1 text-xl font-black text-saffron-900">{hinduDay.name}</p>
+              <p className="text-sm font-bold text-stone-700">{hinduDay.paksha}</p>
+            </div>
+            <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-950">
+              <p className="font-black">
+                {hinduDay.isEkadashi
+                  ? "Approximate Ekadashi today"
+                  : hinduDay.isDashami
+                    ? "Dashami: Ekadashi may be near"
+                    : hinduDay.isDwadashi
+                      ? "Dwadashi: check parana timings locally"
+                      : "Panchang reminder"}
+              </p>
+              <p>{hinduDay.note}</p>
+              <a
+                href={VAISHNAVA_CALENDAR_REFERENCE.url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100"
+              >
+                <ExternalLink size={16} /> Official calendar
+              </a>
+            </div>
+          </div>
+          <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
+            <p className="font-black text-stone-900">Share progress</p>
+            <p className="mt-1 text-sm leading-6 text-stone-600">Download today&apos;s simple progress card.</p>
+            {shareStatus && <p className="mt-2 rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{shareStatus}</p>}
+            <button
+              type="button"
+              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-black text-white"
+              onClick={downloadShareCard}
+            >
+              <Download size={18} /> Download
+            </button>
+          </div>
+        </div>
+      </Panel>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-saffron-200 bg-white/95 p-3 shadow-soft backdrop-blur md:hidden">
         <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
@@ -856,31 +801,20 @@ function HighRoundGuardrail({
 function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
   const completed = items.filter((item) => item.complete).length;
   const total = items.length;
+  const remainingItems = items.filter((item) => !item.complete);
   const allComplete = completed === total;
   const progress = Math.round((completed / Math.max(1, total)) * 100);
 
   if (allComplete) {
-    return (
-      <Panel title="Setup complete" icon={<CheckCircle2 size={18} />}>
-        <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-          <div>
-            <p className="font-black text-emerald-900">Your account setup checklist is complete.</p>
-            <p className="mt-1 text-sm leading-6 text-stone-700">You have logged rounds, prepared your profile, and connected socially.</p>
-          </div>
-          <span className="rounded-md bg-white px-3 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
-            {completed}/{total}
-          </span>
-        </div>
-      </Panel>
-    );
+    return null;
   }
 
   return (
     <Panel title="Setup checklist" icon={<CheckCircle2 size={18} />}>
-      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+      <div className="mb-3 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
         <div>
           <p className="font-black text-stone-950">{completed}/{total} complete</p>
-          <p className="mt-1 text-sm leading-6 text-stone-700">Finish these quick steps to get the full leaderboard experience.</p>
+          <p className="mt-1 text-sm leading-6 text-stone-700">Only unfinished setup steps are shown here.</p>
         </div>
         <div className="min-w-[180px]">
           <div className="h-3 overflow-hidden rounded-full bg-white">
@@ -889,72 +823,30 @@ function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
           <p className="mt-1 text-right text-xs font-black text-saffron-900">{progress}%</p>
         </div>
       </div>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {items.map((item) => (
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        {remainingItems.map((item) => (
           <div
             key={item.id}
-            className={`rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${
-              item.complete ? "border-emerald-100 bg-emerald-50/70" : "border-stone-200 bg-white"
-            }`}
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <span
-                className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md ${
-                  item.complete ? "bg-emerald-100 text-emerald-800" : "bg-stone-100 text-stone-500"
-                }`}
-              >
-                {item.complete ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-stone-100 text-stone-500">
+                <Circle size={18} />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="font-black text-stone-950">{item.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-stone-600">{item.text}</p>
-                  </div>
-                  <span
-                    className={`shrink-0 rounded-md px-2 py-1 text-xs font-black uppercase ${
-                      item.complete ? "bg-white text-emerald-800 ring-1 ring-emerald-100" : "bg-saffron-50 text-saffron-900"
-                    }`}
-                  >
-                    {item.complete ? "Done" : "Open"}
-                  </span>
-                </div>
-                {!item.complete && (
-                  <button
-                    type="button"
-                    className="mt-3 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white"
-                    onClick={item.onClick}
-                  >
-                    {item.action}
-                  </button>
-                )}
+                <p className="font-black text-stone-950">{item.title}</p>
+                <p className="mt-1 text-sm leading-6 text-stone-600">{item.text}</p>
+                <button
+                  type="button"
+                  className="mt-3 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white"
+                  onClick={item.onClick}
+                >
+                  {item.action}
+                </button>
               </div>
             </div>
           </div>
         ))}
-      </div>
-    </Panel>
-  );
-}
-
-function WeeklySummaryCard({
-  history,
-  weeklyRounds,
-  streakNow
-}: {
-  history: { dateKey: string; rounds: number }[];
-  weeklyRounds: number;
-  streakNow: number;
-}) {
-  const activeDays = history.filter((item) => item.rounds > 0).length;
-  const bestDay = history.reduce((best, item) => (item.rounds > best.rounds ? item : best), history[0] || { dateKey: "", rounds: 0 });
-  return (
-    <Panel title="Weekly summary" icon={<Flame size={18} />}>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <DashboardPill label="Weekly total" value={weeklyRounds} note="Monday onward" tone="saffron" />
-        <DashboardPill label="Active days" value={activeDays} note="last 7 days" tone="peacock" />
-        <DashboardPill label="Best day" value={bestDay.rounds} note={bestDay.dateKey ? formatDate(bestDay.dateKey) : "No entries"} tone="stone" />
-        <DashboardPill label="Streak" value={streakNow} note="current days" tone="peacock" />
       </div>
     </Panel>
   );
@@ -1052,32 +944,6 @@ function AchievementSpotlight({
           <p className="text-sm leading-6 text-stone-700">Beautiful. You have completed every milestone currently available.</p>
         )}
       </div>
-    </div>
-  );
-}
-
-function DashboardPill({
-  label,
-  value,
-  note,
-  tone
-}: {
-  label: string;
-  value: number;
-  note: string;
-  tone: "saffron" | "peacock" | "stone";
-}) {
-  const toneClass =
-    tone === "saffron"
-      ? "border-saffron-200 bg-white text-saffron-900"
-      : tone === "peacock"
-        ? "border-peacock-100 bg-white text-peacock-900"
-        : "border-stone-200 bg-white text-stone-900";
-  return (
-    <div className={`rounded-lg border px-3 py-2.5 shadow-sm ${toneClass}`}>
-      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-0.5 text-xl font-black sm:text-2xl">{value}</p>
-      <p className="text-xs leading-5 text-stone-600 sm:text-sm">{note}</p>
     </div>
   );
 }

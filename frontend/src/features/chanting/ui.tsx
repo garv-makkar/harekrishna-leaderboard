@@ -136,11 +136,11 @@ export function PasswordChecklist({
 export function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-lg border border-saffron-200/80 bg-white/92 p-3 shadow-soft sm:p-4">
-      <div className="mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100 sm:h-9 sm:w-9">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100">
           {icon}
         </span>
-        <h2 className="min-w-0 truncate text-base font-black tracking-normal text-stone-900 sm:text-lg">{title}</h2>
+        <h2 className="min-w-0 truncate text-base font-black tracking-normal text-stone-900">{title}</h2>
       </div>
       {children}
     </section>
@@ -204,7 +204,7 @@ export function PageHeader({
 }) {
   return (
     <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
-      <div className={stats ? "grid gap-0 xl:grid-cols-[minmax(0,1fr)_280px]" : ""}>
+      <div className={stats ? "grid gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(310px,360px)]" : ""}>
         <div className="p-4 sm:p-5">
           {(eyebrow || icon) && (
             <div className="mb-3 inline-flex max-w-full items-center gap-2 rounded-md bg-saffron-50 px-3 py-1.5 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
@@ -259,12 +259,12 @@ export function StatCard({
           ? "border-emerald-100 bg-emerald-50/80 text-emerald-800"
           : "border-stone-200 bg-white text-stone-900";
   return (
-    <div className={`rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${toneClass}`}>
+    <div className={`rounded-lg border px-3 py-2.5 shadow-sm ${toneClass}`}>
       <div className="flex min-w-0 items-center justify-between gap-3">
         <p className="truncate text-xs font-black uppercase text-stone-500">{label}</p>
         {icon && <span className="shrink-0 text-stone-500">{icon}</span>}
       </div>
-      <p className="mt-0.5 truncate text-xl font-black sm:text-2xl">{value}</p>
+      <p className="mt-0.5 truncate text-xl font-black">{value}</p>
       {note && <p className="text-xs leading-5 text-stone-600 sm:text-sm">{note}</p>}
     </div>
   );
@@ -385,7 +385,7 @@ export function MilestoneGrid({ milestones, limit }: { milestones: Milestone[]; 
           {Math.round((earnedCount / Math.max(1, milestones.length)) * 100)}%
         </span>
       </div>
-      <div className="grid gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2 sm:gap-3 md:grid-cols-2">
         {visible.map((milestone) => {
           const percent = Math.round((milestone.progress / Math.max(1, milestone.target)) * 100);
           return (

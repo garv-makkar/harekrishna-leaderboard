@@ -423,7 +423,7 @@ export function ProfilePage() {
           />
           <PublicProfilePreview />
           <Panel title="Milestones" icon={<Award size={18} />}>
-            <MilestoneGrid milestones={computeMilestones(state, currentUser, todayKey)} />
+            <MilestoneGrid milestones={computeMilestones(state, currentUser, todayKey)} limit={6} />
           </Panel>
         </>
       )}
@@ -894,21 +894,6 @@ function PrivacyVisibilityPill({ label, visible }: { label: string; visible: boo
     }`}>
       {label}: {visible ? "Visible" : "Hidden"}
     </span>
-  );
-}
-
-function ProfileStatusCard({ label, value, tone }: { label: string; value: string; tone: "saffron" | "peacock" | "stone" }) {
-  const toneClass =
-    tone === "peacock"
-      ? "border-peacock-100 bg-white text-peacock-900"
-      : tone === "saffron"
-        ? "border-saffron-200 bg-white text-saffron-900"
-        : "border-stone-200 bg-white text-stone-900";
-  return (
-    <div className={`min-w-0 rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${toneClass}`}>
-      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-1 truncate font-black">{value}</p>
-    </div>
   );
 }
 
