@@ -76,6 +76,8 @@ type ChantingContextValue = {
   isBusy: boolean;
   loadedRemoteSlices: RemoteSliceStatus;
   loadingRemoteSlices: RemoteSliceStatus;
+  lastRemoteRefresh: RemoteRefreshStatus;
+  remoteRefreshErrors: RemoteRefreshStatus;
   authMode: AuthMode;
   setAuthMode: (mode: AuthMode) => void;
   pendingAuthNotice: PendingAuthNotice;
@@ -142,9 +144,12 @@ type NewNotification = {
 type RemoteScope = "core" | "groups" | "friends" | "all";
 
 type RemoteSliceStatus = {
+  core: boolean;
   groups: boolean;
   friends: boolean;
 };
+
+type RemoteRefreshStatus = Record<keyof RemoteSliceStatus, string>;
 
 const ChantingContext = createContext<ChantingContextValue | null>(null);
 
@@ -175,13 +180,25 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   const [selectedPublicUserId, setSelectedPublicUserId] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
-  const [loadedRemoteSlices, setLoadedRemoteSlices] = useState({
+  const [loadedRemoteSlices, setLoadedRemoteSlices] = useState<RemoteSliceStatus>({
+    core: false,
     groups: false,
     friends: false
   });
-  const [loadingRemoteSlices, setLoadingRemoteSlices] = useState({
+  const [loadingRemoteSlices, setLoadingRemoteSlices] = useState<RemoteSliceStatus>({
+    core: false,
     groups: false,
     friends: false
+  });
+  const [lastRemoteRefresh, setLastRemoteRefresh] = useState<RemoteRefreshStatus>({
+    core: "",
+    groups: "",
+    friends: ""
+  });
+  const [remoteRefreshErrors, setRemoteRefreshErrors] = useState<RemoteRefreshStatus>({
+    core: "",
+    groups: "",
+    friends: ""
   });
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     username: "",
@@ -252,8 +269,10 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       if (event === "SIGNED_IN" && session?.user) refreshRemoteState(session.user.id, "core");
       if (event === "SIGNED_OUT") {
         setState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [], notifications: [] });
-        setLoadedRemoteSlices({ groups: false, friends: false });
-        setLoadingRemoteSlices({ groups: false, friends: false });
+        setLoadedRemoteSlices({ core: false, groups: false, friends: false });
+        setLoadingRemoteSlices({ core: false, groups: false, friends: false });
+        setLastRemoteRefresh({ core: "", groups: "", friends: "" });
+        setRemoteRefreshErrors({ core: "", groups: "", friends: "" });
       }
     });
     return () => subscription.unsubscribe();
@@ -304,66 +323,111 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     const shouldLoadProfiles = shouldLoadCore || shouldLoadGroups || shouldLoadFriends;
     const shouldLoadTotals = shouldLoadCore || shouldLoadGroups || shouldLoadFriends;
     const shouldLoadGroupTables = shouldLoadGroups;
-
-    const [publicProfilesResult, currentProfileResult, totalsResult, groupsResult, membersResult, requestsResult, notificationsResult] = await Promise.all([
-      shouldLoadProfiles ? supabase.from("app_public_profiles").select("*").order("username") : Promise.resolve({ data: null, error: null }),
-      shouldLoadProfiles ? supabase.rpc("get_current_profile") : Promise.resolve({ data: null, error: null }),
-      shouldLoadTotals ? supabase.from("chant_totals").select("*") : Promise.resolve({ data: null, error: null }),
-      shouldLoadGroupTables ? supabase.from("groups").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
-      shouldLoadGroupTables ? supabase.from("group_members").select("*") : Promise.resolve({ data: null, error: null }),
-      shouldLoadFriends ? supabase.from("friend_requests").select("*") : Promise.resolve({ data: null, error: null }),
-      shouldLoadCore ? supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at", { ascending: false }).limit(80) : Promise.resolve({ data: null, error: null })
-    ]);
-
-    let profileRows = (publicProfilesResult.data || []) as ProfileRow[];
-    let profileError = publicProfilesResult.error || currentProfileResult.error;
-    if (shouldLoadProfiles && profileError) {
-      const fallbackProfiles = await supabase.from("profiles").select("*").order("username");
-      profileRows = (fallbackProfiles.data || []) as ProfileRow[];
-      profileError = fallbackProfiles.error;
-    } else if (shouldLoadProfiles && currentProfileResult.data) {
-      const privateProfile = currentProfileResult.data as ProfileRow;
-      profileRows = [
-        ...profileRows.filter((profile) => profile.id !== privateProfile.id),
-        privateProfile
-      ].sort((a, b) => a.username.localeCompare(b.username));
-    }
-
-    const error = profileError || totalsResult.error || groupsResult.error || membersResult.error || requestsResult.error;
-
-    if (error) {
-      showMessage(readableError(error));
-      return;
-    }
-
-    const nextState: AppState = {
-      currentUserId,
-      users: shouldLoadProfiles ? profileRows.map(fromProfileRow) : state.users,
-      chantTotals: shouldLoadTotals ? ((totalsResult.data || []) as ChantTotalRow[]).map(fromChantTotalRow) : state.chantTotals,
-      groups: shouldLoadGroupTables ? ((groupsResult.data || []) as GroupRow[]).map(fromGroupRow) : state.groups,
-      groupMembers: shouldLoadGroupTables
-        ? ((membersResult.data || []) as GroupMemberRow[]).map((row) => ({
-            groupId: row.group_id,
-            userId: row.user_id,
-            role: row.role,
-            joinedAt: row.joined_at
-          }))
-        : state.groupMembers,
-      friendRequests: shouldLoadFriends ? ((requestsResult.data || []) as FriendRequestRow[]).map(fromFriendRequestRow) : state.friendRequests,
-      notifications:
-        shouldLoadCore && !notificationsResult.error
-          ? ((notificationsResult.data || []) as NotificationRow[]).map(fromNotificationRow)
-          : state.notifications || []
+    const requestedSlices = {
+      core: shouldLoadCore,
+      groups: shouldLoadGroups,
+      friends: shouldLoadFriends
     };
-    setState(nextState);
-    setLoadedRemoteSlices((current) => ({
-      groups: current.groups || shouldLoadGroups,
-      friends: current.friends || shouldLoadFriends
+
+    setLoadingRemoteSlices((current) => ({
+      core: current.core || requestedSlices.core,
+      groups: current.groups || requestedSlices.groups,
+      friends: current.friends || requestedSlices.friends
     }));
-    const { data: authData } = await supabase.auth.getUser();
-    setEmailVerified(Boolean(authData.user?.email_confirmed_at));
-    const current = nextState.users.find((user) => user.id === currentUserId);
-    setSelectedDate(localDateKey(new Date(), current?.timezone || detectTimezone()));
+    setRemoteRefreshErrors((current) => ({
+      core: requestedSlices.core ? "" : current.core,
+      groups: requestedSlices.groups ? "" : current.groups,
+      friends: requestedSlices.friends ? "" : current.friends
+    }));
+
+    try {
+      const [publicProfilesResult, currentProfileResult, totalsResult, groupsResult, membersResult, requestsResult, notificationsResult] = await Promise.all([
+        shouldLoadProfiles ? supabase.from("app_public_profiles").select("*").order("username") : Promise.resolve({ data: null, error: null }),
+        shouldLoadProfiles ? supabase.rpc("get_current_profile") : Promise.resolve({ data: null, error: null }),
+        shouldLoadTotals ? supabase.from("chant_totals").select("*") : Promise.resolve({ data: null, error: null }),
+        shouldLoadGroupTables ? supabase.from("groups").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
+        shouldLoadGroupTables ? supabase.from("group_members").select("*") : Promise.resolve({ data: null, error: null }),
+        shouldLoadFriends ? supabase.from("friend_requests").select("*") : Promise.resolve({ data: null, error: null }),
+        shouldLoadCore ? supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at", { ascending: false }).limit(80) : Promise.resolve({ data: null, error: null })
+      ]);
+
+      let profileRows = (publicProfilesResult.data || []) as ProfileRow[];
+      let profileError = publicProfilesResult.error || currentProfileResult.error;
+      if (shouldLoadProfiles && profileError) {
+        const fallbackProfiles = await supabase.from("profiles").select("*").order("username");
+        profileRows = (fallbackProfiles.data || []) as ProfileRow[];
+        profileError = fallbackProfiles.error;
+      } else if (shouldLoadProfiles && currentProfileResult.data) {
+        const privateProfile = currentProfileResult.data as ProfileRow;
+        profileRows = [
+          ...profileRows.filter((profile) => profile.id !== privateProfile.id),
+          privateProfile
+        ].sort((a, b) => a.username.localeCompare(b.username));
+      }
+
+      const error = profileError || totalsResult.error || groupsResult.error || membersResult.error || requestsResult.error || notificationsResult.error;
+
+      if (error) {
+        const message = readableError(error);
+        setRemoteRefreshErrors((current) => ({
+          core: requestedSlices.core ? message : current.core,
+          groups: requestedSlices.groups ? message : current.groups,
+          friends: requestedSlices.friends ? message : current.friends
+        }));
+        showMessage(message);
+        return;
+      }
+
+      const nextState: AppState = {
+        currentUserId,
+        users: shouldLoadProfiles ? profileRows.map(fromProfileRow) : state.users,
+        chantTotals: shouldLoadTotals ? ((totalsResult.data || []) as ChantTotalRow[]).map(fromChantTotalRow) : state.chantTotals,
+        groups: shouldLoadGroupTables ? ((groupsResult.data || []) as GroupRow[]).map(fromGroupRow) : state.groups,
+        groupMembers: shouldLoadGroupTables
+          ? ((membersResult.data || []) as GroupMemberRow[]).map((row) => ({
+              groupId: row.group_id,
+              userId: row.user_id,
+              role: row.role,
+              joinedAt: row.joined_at
+            }))
+          : state.groupMembers,
+        friendRequests: shouldLoadFriends ? ((requestsResult.data || []) as FriendRequestRow[]).map(fromFriendRequestRow) : state.friendRequests,
+        notifications:
+          shouldLoadCore && !notificationsResult.error
+            ? ((notificationsResult.data || []) as NotificationRow[]).map(fromNotificationRow)
+            : state.notifications || []
+      };
+      setState(nextState);
+      setLoadedRemoteSlices((current) => ({
+        core: current.core || shouldLoadCore,
+        groups: current.groups || shouldLoadGroups,
+        friends: current.friends || shouldLoadFriends
+      }));
+      const refreshedAt = new Date().toISOString();
+      setLastRemoteRefresh((current) => ({
+        core: requestedSlices.core ? refreshedAt : current.core,
+        groups: requestedSlices.groups ? refreshedAt : current.groups,
+        friends: requestedSlices.friends ? refreshedAt : current.friends
+      }));
+      const { data: authData } = await supabase.auth.getUser();
+      setEmailVerified(Boolean(authData.user?.email_confirmed_at));
+      const current = nextState.users.find((user) => user.id === currentUserId);
+      setSelectedDate(localDateKey(new Date(), current?.timezone || detectTimezone()));
+    } catch (error) {
+      const message = readableError(error);
+      setRemoteRefreshErrors((current) => ({
+        core: requestedSlices.core ? message : current.core,
+        groups: requestedSlices.groups ? message : current.groups,
+        friends: requestedSlices.friends ? message : current.friends
+      }));
+      showMessage(message);
+    } finally {
+      setLoadingRemoteSlices((current) => ({
+        core: requestedSlices.core ? false : current.core,
+        groups: requestedSlices.groups ? false : current.groups,
+        friends: requestedSlices.friends ? false : current.friends
+      }));
+    }
   }, [state.chantTotals, state.friendRequests, state.groupMembers, state.groups, state.notifications, state.users]);
 
   const ensureGroupsData = useCallback(async (force = false) => {
@@ -815,6 +879,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     isBusy,
     loadedRemoteSlices,
     loadingRemoteSlices,
+    lastRemoteRefresh,
+    remoteRefreshErrors,
     authMode,
     setAuthMode,
     pendingAuthNotice,

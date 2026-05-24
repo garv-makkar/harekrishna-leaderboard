@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { Bell, CheckCircle2, Circle, Copy, Download, ExternalLink, ImageUp, KeyRound, Mail, MapPin, RefreshCw, ShieldCheck, Star, Trash2, UserRound } from "lucide-react";
+import { Bell, CheckCircle2, Circle, Copy, Download, ExternalLink, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Star, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { ProfilePrivacy } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
@@ -26,7 +26,7 @@ import {
   usernameHelpText,
   usernamePattern
 } from "../domain";
-import { EmptyState, Field, InlineNotice, PageHeader, Panel, PasswordChecklist, PrivacyVisibilitySummary, PublicUserCard, StatCard, StatGrid, TimezoneSelect } from "../ui";
+import { DataFreshness, EmptyState, Field, InlineNotice, PageHeader, Panel, PasswordChecklist, PrivacyVisibilitySummary, PublicUserCard, StatCard, StatGrid, TimezoneSelect } from "../ui";
 
 type ProfileSection = "public" | "account" | "privacy" | "security" | "danger";
 
@@ -49,7 +49,10 @@ export function ProfilePage() {
     todayKey,
     joinedGroups,
     friends,
-    updateUserPreferences
+    updateUserPreferences,
+    loadingRemoteSlices,
+    lastRemoteRefresh,
+    remoteRefreshErrors
   } = useChanting();
   const [avatarStatus, setAvatarStatus] = useState("");
   const [avatarError, setAvatarError] = useState("");
@@ -343,14 +346,13 @@ export function ProfilePage() {
         title={currentUser.displayName || currentUser.username}
         description={`Joined ${formatDate(currentUser.joinedAt.slice(0, 10))}. Manage what people see, how your account works, and your data.`}
         actions={
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm disabled:bg-peacock-200"
-            disabled={isBusy}
-            onClick={() => void refreshProfile()}
-          >
-            <RefreshCw size={16} /> Refresh
-          </button>
+          <DataFreshness
+            label="Profile"
+            lastUpdatedAt={lastRemoteRefresh.core}
+            error={remoteRefreshErrors.core}
+            isRefreshing={loadingRemoteSlices.core}
+            onRefresh={refreshProfile}
+          />
         }
         stats={
           <StatGrid columns={2}>

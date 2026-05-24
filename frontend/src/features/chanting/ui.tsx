@@ -288,6 +288,43 @@ export function FilterBar({
   );
 }
 
+export function DataFreshness({
+  label = "Data",
+  lastUpdatedAt,
+  error,
+  isRefreshing = false,
+  onRefresh
+}: {
+  label?: string;
+  lastUpdatedAt?: string;
+  error?: string;
+  isRefreshing?: boolean;
+  onRefresh?: () => void | Promise<void>;
+}) {
+  const updatedText = lastUpdatedAt
+    ? new Date(lastUpdatedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    : "not refreshed yet";
+  return (
+    <div className={`flex flex-col gap-2 rounded-lg border px-3 py-2 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between ${
+      error ? "border-red-200 bg-red-50 text-red-800" : "border-peacock-100 bg-peacock-50 text-peacock-900"
+    }`}>
+      <span className="font-bold">
+        {error ? `${label} refresh failed` : `${label} ${isRefreshing ? "refreshing..." : `updated ${updatedText}`}`}
+      </span>
+      {onRefresh && (
+        <button
+          type="button"
+          className="rounded-md bg-white px-3 py-1.5 text-xs font-black text-stone-800 ring-1 ring-stone-200 disabled:text-stone-400"
+          disabled={isRefreshing}
+          onClick={() => void onRefresh()}
+        >
+          {isRefreshing ? "Refreshing..." : error ? "Retry" : "Refresh"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function SkeletonBlock({ className = "" }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-stone-200/80 ${className}`} />;
 }

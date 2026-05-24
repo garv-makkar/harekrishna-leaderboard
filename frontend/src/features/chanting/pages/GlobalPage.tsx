@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { Globe2, Trophy, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange } from "../domain";
-import { Leaderboard, PageHeader, Panel, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
+import { DataFreshness, Leaderboard, PageHeader, Panel, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function GlobalPage() {
-  const { state, currentUser, period, setPeriod, todayKey, isBusy, refreshRemoteState } = useChanting();
+  const { state, currentUser, period, setPeriod, todayKey, isBusy, refreshRemoteState, loadingRemoteSlices, lastRemoteRefresh, remoteRefreshErrors } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [showAllUsers, setShowAllUsers] = useState(false);
   const refreshedUserRef = useRef("");
@@ -32,6 +32,15 @@ export function GlobalPage() {
         icon={<Globe2 size={16} />}
         title="Global leaderboard"
         description="Daily, weekly, and monthly community rankings."
+        actions={
+          <DataFreshness
+            label="Global"
+            lastUpdatedAt={lastRemoteRefresh.core}
+            error={remoteRefreshErrors.core}
+            isRefreshing={loadingRemoteSlices.core}
+            onRefresh={() => refreshRemoteState(currentUser.id, "core")}
+          />
+        }
         stats={
           <StatGrid columns={2}>
             <StatCard icon={<Users size={17} />} label="Active users" value={activeUserCount} tone="peacock" />
@@ -56,8 +65,8 @@ export function GlobalPage() {
           visibility={showAllUsers ? "all" : "active"}
           rows={rankUsersInRange(state.users, state.chantTotals, range.start, range.end)}
           lastUpdated={lastUpdated}
-          isRefreshing={isBusy}
-          onRefresh={() => refreshRemoteState(currentUser.id)}
+          isRefreshing={isBusy || loadingRemoteSlices.core}
+          onRefresh={() => refreshRemoteState(currentUser.id, "core")}
         />
       </Panel>
     </div>

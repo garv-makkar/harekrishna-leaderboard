@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Award, BarChart3, CalendarDays, CheckCircle2, Download, Flame, ListChecks, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import { Award, BarChart3, CalendarDays, CheckCircle2, Download, Flame, ListChecks, ShieldCheck, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   addDays,
@@ -13,7 +13,7 @@ import {
   roundsForDate
 } from "../domain";
 import type { ActivityFeedItem } from "../domain";
-import { EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { DataFreshness, EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 const rangeOptions = [
   { label: "7 days", value: 7 },
@@ -22,7 +22,7 @@ const rangeOptions = [
 ];
 
 export function ActivityPage() {
-  const { state, currentUser, todayKey, editableDates, setSelectedDate, showMessage, refreshRemoteState, isBusy } = useChanting();
+  const { state, currentUser, todayKey, editableDates, setSelectedDate, showMessage, refreshRemoteState, isBusy, loadingRemoteSlices, lastRemoteRefresh, remoteRefreshErrors } = useChanting();
   const [days, setDays] = useState(30);
   const refreshedUserRef = useRef("");
 
@@ -75,14 +75,13 @@ export function ActivityPage() {
         description="History, recent activity, and CSV export."
         actions={
           <>
-            <button
-              type="button"
-              className="inline-flex w-fit items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100 disabled:text-stone-400"
-              disabled={isBusy}
-              onClick={() => void refreshRemoteState(currentUser.id, "core").then(() => showMessage("Activity refreshed."))}
-            >
-              <RefreshCw size={16} /> Refresh
-            </button>
+            <DataFreshness
+              label="Activity"
+              lastUpdatedAt={lastRemoteRefresh.core}
+              error={remoteRefreshErrors.core}
+              isRefreshing={loadingRemoteSlices.core}
+              onRefresh={() => refreshRemoteState(currentUser.id, "core")}
+            />
             <button
               type="button"
               className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm"

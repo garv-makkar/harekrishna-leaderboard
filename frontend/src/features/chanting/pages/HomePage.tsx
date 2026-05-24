@@ -19,7 +19,7 @@ import {
   sumRounds,
   VAISHNAVA_CALENDAR_REFERENCE
 } from "../domain";
-import { ActionEmptyState, Card, Field, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Card, DataFreshness, Field, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 export function HomePage() {
   const {
@@ -47,7 +47,9 @@ export function HomePage() {
     refreshRemoteState,
     ensureFriendsData,
     ensureGroupsData,
-    loadingRemoteSlices
+    loadingRemoteSlices,
+    lastRemoteRefresh,
+    remoteRefreshErrors
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState("");
@@ -278,6 +280,15 @@ export function HomePage() {
         icon={<CalendarDays size={16} />}
         title="Today's rounds"
         description="Set the total once, then use quick adjustments through the day."
+        actions={
+          <DataFreshness
+            label="Home"
+            lastUpdatedAt={lastRemoteRefresh.core}
+            error={remoteRefreshErrors.core}
+            isRefreshing={loadingRemoteSlices.core}
+            onRefresh={() => refreshRemoteState(currentUser.id, "core")}
+          />
+        }
         stats={
           <>
             <p className="mb-2 text-xs font-black uppercase text-stone-500 sm:mb-3 sm:text-sm">Practice totals</p>

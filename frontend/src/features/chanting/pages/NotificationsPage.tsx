@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, CheckCircle2, Circle, Filter, Inbox, RefreshCw, ShieldAlert } from "lucide-react";
+import { Bell, CheckCircle2, Circle, Filter, Inbox, ShieldAlert } from "lucide-react";
 import type { AppNotification } from "@/lib/types";
 import type { TabId } from "../domain";
 import { useChanting } from "../ChantingContext";
-import { EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { DataFreshness, EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 type NotificationFilter = "all" | "unread" | "success" | "info" | "warning";
 
@@ -18,7 +18,7 @@ const filters: { id: NotificationFilter; label: string }[] = [
 ];
 
 export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => void }) {
-  const { state, currentUser, markNotificationRead, markAllNotificationsRead, refreshRemoteState, isBusy } = useChanting();
+  const { state, currentUser, markNotificationRead, markAllNotificationsRead, refreshRemoteState, isBusy, loadingRemoteSlices, lastRemoteRefresh, remoteRefreshErrors } = useChanting();
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const refreshedUserRef = useRef("");
 
@@ -57,14 +57,16 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
         description="Review saved updates from rounds, milestones, groups, and friends."
         actions={
           <>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100 disabled:text-stone-400"
-              disabled={isBusy}
-              onClick={() => void refreshRemoteState(currentUser?.id || "", "core")}
-            >
-              <RefreshCw size={16} /> Refresh
-            </button>
+            <DataFreshness
+              label="Notifications"
+              lastUpdatedAt={lastRemoteRefresh.core}
+              error={remoteRefreshErrors.core}
+              isRefreshing={loadingRemoteSlices.core}
+              onRefresh={() => {
+                if (!currentUser) return;
+                return refreshRemoteState(currentUser.id, "core");
+              }}
+            />
             <button
               type="button"
               className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"
