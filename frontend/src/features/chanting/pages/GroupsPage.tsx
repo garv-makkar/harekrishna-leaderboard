@@ -1145,6 +1145,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] = useState<GroupRole | "all">("all");
   const [activityFilter, setActivityFilter] = useState<"all" | "today" | "week" | "inactive-week">("all");
+  const [sortMode, setSortMode] = useState<"role" | "today" | "week" | "name">("role");
   const members = state.groupMembers
     .filter((member) => member.groupId === group.id)
     .map((membership) => ({
@@ -1166,6 +1167,9 @@ function GroupMemberRoster({ group }: { group: Group }) {
       };
     })
     .sort((a, b) => {
+      if (sortMode === "today") return b.todayRounds - a.todayRounds || a.user.username.localeCompare(b.user.username);
+      if (sortMode === "week") return b.weekRounds - a.weekRounds || a.user.username.localeCompare(b.user.username);
+      if (sortMode === "name") return a.user.username.localeCompare(b.user.username);
       const roleOrder = { owner: 0, moderator: 1, member: 2 };
       const roleDiff = roleOrder[a.membership.role] - roleOrder[b.membership.role];
       if (roleDiff !== 0) return roleDiff;
@@ -1199,7 +1203,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
         <GroupStat label="Active week" value={activeThisWeek} />
       </div>
       <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 p-3">
-        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_220px]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_220px_180px]">
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-stone-700">Search members</span>
             <div className="relative">
@@ -1239,12 +1243,25 @@ function GroupMemberRoster({ group }: { group: Group }) {
               <option value="inactive-week">Inactive this week</option>
             </select>
           </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-bold text-stone-700">Sort</span>
+            <select
+              className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+              value={sortMode}
+              onChange={(event) => setSortMode(event.target.value as typeof sortMode)}
+            >
+              <option value="role">Role, then today</option>
+              <option value="today">Most today</option>
+              <option value="week">Most this week</option>
+              <option value="name">Username A-Z</option>
+            </select>
+          </label>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-stone-600 ring-1 ring-stone-200">
             Showing {visibleRows.length} of {rows.length}
           </span>
-          {(searchText || roleFilter !== "all" || activityFilter !== "all") && (
+          {(searchText || roleFilter !== "all" || activityFilter !== "all" || sortMode !== "role") && (
             <button
               type="button"
               className="rounded-md bg-white px-3 py-2 text-sm font-black text-stone-800 ring-1 ring-stone-200"
@@ -1252,6 +1269,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
                 setSearchText("");
                 setRoleFilter("all");
                 setActivityFilter("all");
+                setSortMode("role");
               }}
             >
               Clear filters

@@ -63,6 +63,7 @@ backend/supabase/migrations/014_public_group_invite_rpc.sql
 backend/supabase/migrations/015_notifications.sql
 backend/supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
 backend/supabase/migrations/017_featured_milestones.sql
+backend/supabase/migrations/018_security_hardening.sql
 ```
 
 Quick checks in Supabase after running SQL:
@@ -71,6 +72,8 @@ Quick checks in Supabase after running SQL:
 - `moderation_reports` and `app_admins` do not exist after migration `016`.
 - Storage buckets `avatars` and `group-images` exist.
 - RLS is enabled on app tables.
+- Public profile reads use `app_public_profiles`.
+- One user cannot save more than 250 rounds for one local day.
 
 ## 4. Supabase Auth Settings
 
@@ -128,7 +131,7 @@ Supabase Dashboard -> Storage:
 - `avatars` bucket exists and is public.
 - `group-images` bucket exists and is public.
 - Upload limit is 2 MB.
-- Allowed image types: JPG, PNG, WebP, GIF.
+- Allowed image types: JPG, PNG, WebP.
 
 Manual test:
 
@@ -163,7 +166,7 @@ Auth:
 - Confirm email.
 - Sign in with email.
 - Sign in with username.
-- Sign in with phone.
+- Sign in with phone if the account has an optional phone number saved.
 - Reset password.
 - Email OTP login.
 - Change password from Profile.
@@ -176,7 +179,7 @@ Rounds:
 - Edit today.
 - Edit a date after the account join date.
 - Confirm dates before the account join date and after today are blocked.
-- Confirm daily max is 999.
+- Confirm daily max is 250.
 
 Leaderboards:
 
@@ -222,7 +225,7 @@ Profile:
 Decide before launch:
 
 - Final domain name.
-- Whether phone number is mandatory long term.
+- Whether phone number remains optional long term.
 - Whether email OTP should remain enabled.
 - Whether group codes can be changed after members join.
 - Privacy policy text.

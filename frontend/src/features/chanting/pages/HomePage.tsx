@@ -275,6 +275,26 @@ export function HomePage() {
 
   return (
     <div className="space-y-4 sm:space-y-5">
+      {hasUnsavedDraft && (
+        <div className="fixed inset-x-2 bottom-2 z-30 rounded-lg border border-saffron-300 bg-white/95 p-2 shadow-soft backdrop-blur sm:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-xs font-black text-stone-900">
+                {selectedDateLabel}: {currentRounds} -&gt; {draftRounds}
+              </p>
+              <p className="text-xs font-bold text-saffron-900">Unsaved round total</p>
+            </div>
+            <button
+              type="button"
+              className="shrink-0 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm disabled:bg-saffron-200"
+              disabled={!canSaveDraft}
+              onClick={saveDraftRounds}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
       <PageHeader
         eyebrow={selectedDateLabel}
         icon={<CalendarDays size={16} />}
@@ -387,7 +407,7 @@ export function HomePage() {
               </div>
               <button
                 type="button"
-                className="rounded-md bg-saffron-500 px-5 py-2.5 font-bold text-white shadow-sm transition hover:bg-saffron-600"
+                className="rounded-md bg-saffron-500 px-5 py-3 text-base font-black text-white shadow-sm transition hover:bg-saffron-600 sm:py-2.5 sm:text-sm"
                 onClick={saveDraftRounds}
                 disabled={!canSaveDraft}
               >

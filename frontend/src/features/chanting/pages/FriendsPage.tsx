@@ -376,6 +376,17 @@ function FriendSearch() {
       .flatMap((request) => [request.fromUserId, request.toUserId])
       .filter((userId) => userId !== currentUser.id)
   );
+  const relationshipLabel = (userId: string) => {
+    const request = state.friendRequests.find(
+      (item) =>
+        (item.fromUserId === currentUser.id && item.toUserId === userId) ||
+        (item.fromUserId === userId && item.toUserId === currentUser.id)
+    );
+    if (!request) return "";
+    if (request.status === "accepted") return "Already friends";
+    if (request.fromUserId === currentUser.id) return "Request sent";
+    return "Request received";
+  };
   const results = state.users
     .filter(
       (user) =>
@@ -461,12 +472,14 @@ function FriendSearch() {
           results.map((user) => {
             const isExact = user.username.toLowerCase() === cleanQuery;
             const alreadyRelated = relatedUserIds.has(user.id);
+            const statusLabel = relationshipLabel(user.id);
             return (
               <PublicUserCard
                 key={user.id}
                 user={user}
                 currentUserId={currentUser.id}
-                badges={[isExact ? "Exact" : "", alreadyRelated ? "Connected" : ""].filter(Boolean)}
+                badges={[isExact ? "Exact match" : "", statusLabel].filter(Boolean)}
+                meta={alreadyRelated ? "Connection exists" : "Available to add"}
                 onOpenProfile={() => setSelectedPublicUserId(user.id)}
                 showCountry={user.privacy?.showCountry ?? true}
                 compact
@@ -485,7 +498,7 @@ function FriendSearch() {
                     onClick={() => sendRequest(user.id)}
                     disabled={isBusy || alreadyRelated}
                   >
-                    {alreadyRelated ? "Added" : "Add"}
+                    {statusLabel || "Add friend"}
                   </button>
                   </>
                 }

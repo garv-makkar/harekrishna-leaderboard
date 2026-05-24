@@ -50,6 +50,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
   const [payload, setPayload] = useState<PublicProfilePayload | null>(null);
   const [status, setStatus] = useState("Loading public profile...");
   const [isLoading, setIsLoading] = useState(true);
+  const [shareStatus, setShareStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -187,16 +188,35 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                 </div>
               </Panel>
 
-              <Panel title="Hare Krishna Leaderboard" icon={<ExternalLink size={18} />}>
+              <Panel title="Share profile" icon={<ExternalLink size={18} />}>
                 <p className="text-sm leading-5 text-stone-600 sm:leading-6">
-                  Track rounds with friends, groups, and leaderboards.
+                  This public page can be shared without showing private email or phone details.
                 </p>
-                <Link
-                  href="/"
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm"
-                >
-                  Open app
-                </Link>
+                {shareStatus && <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{shareStatus}</p>}
+                <div className="mt-4 grid gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm"
+                    onClick={() => {
+                      const url = window.location.href;
+                      navigator.clipboard.writeText(url).then(
+                        () => {
+                          setShareStatus("Profile link copied.");
+                          window.setTimeout(() => setShareStatus(""), 2500);
+                        },
+                        () => setShareStatus(url)
+                      );
+                    }}
+                  >
+                    Copy profile link
+                  </button>
+                  <Link
+                    href="/"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
+                  >
+                    Open app
+                  </Link>
+                </div>
               </Panel>
             </div>
 

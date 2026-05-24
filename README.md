@@ -75,10 +75,12 @@ backend/supabase/migrations/014_public_group_invite_rpc.sql
 backend/supabase/migrations/015_notifications.sql
 backend/supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
 backend/supabase/migrations/017_featured_milestones.sql
+backend/supabase/migrations/018_security_hardening.sql
 ```
 
 Migration `016` removes the temporary admin/reporting tables and changes round edits to allow any date from the user's join date through today.
 Migration `017` adds featured profile milestones and updates the public profile function.
+Migration `018` makes phone optional, caps per-user daily rounds and daily goals at 250, protects public profile reads, and tightens image/storage rules.
 
 See `SUPABASE_SETUP.md` for dashboard setup, SMTP, OTP, reset password, and redirect URL notes.
 See `DEPLOYMENT_READINESS.md` before going online.
@@ -118,3 +120,12 @@ Browser
 ```
 
 The app loads core user and rounds data first. Groups and friends data are loaded when those sections are opened, which keeps startup lighter while preserving the simple single-page experience.
+
+## Current App Rules
+
+- Email is mandatory for signup.
+- Phone is optional. If present, it must be unique and can be used to sign in.
+- Username is unique and public.
+- One user can save 0-250 rounds for one local day.
+- Users can edit dates from their account join date through today.
+- Group, friends, and global leaderboards use self-entered chanting totals.

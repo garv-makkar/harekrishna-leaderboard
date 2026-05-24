@@ -30,6 +30,7 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
   const [payload, setPayload] = useState<PublicGroupInvitePayload | null>(null);
   const [status, setStatus] = useState("Loading group invite...");
   const [isLoading, setIsLoading] = useState(true);
+  const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -123,12 +124,30 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
                 <p className="mx-auto mt-2 max-w-xl text-sm leading-5 text-stone-600 sm:leading-6">
                   Invited by {payload.owner.displayName || payload.owner.username}.
                 </p>
-                <Link
-                  href={continueHref}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-5 py-2.5 text-sm font-black text-white shadow-sm sm:mt-4 sm:w-auto sm:py-3"
-                >
-                  <ExternalLink size={17} /> Continue to join
-                </Link>
+                {copyStatus && <p className="mx-auto mt-3 w-fit rounded-md bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">{copyStatus}</p>}
+                <div className="mx-auto mt-3 grid max-w-sm gap-2 sm:mt-4 sm:flex sm:max-w-none sm:justify-center">
+                  <Link
+                    href={continueHref}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-5 py-2.5 text-sm font-black text-white shadow-sm sm:w-auto sm:py-3"
+                  >
+                    <ExternalLink size={17} /> Continue to join
+                  </Link>
+                  <button
+                    type="button"
+                    className="inline-flex w-full items-center justify-center rounded-md bg-white px-5 py-2.5 text-sm font-black text-saffron-900 ring-1 ring-saffron-200 sm:w-auto sm:py-3"
+                    onClick={() => {
+                      navigator.clipboard.writeText(payload.group.code).then(
+                        () => {
+                          setCopyStatus("Group code copied.");
+                          window.setTimeout(() => setCopyStatus(""), 2500);
+                        },
+                        () => setCopyStatus(`Code: ${payload.group.code}`)
+                      );
+                    }}
+                  >
+                    Copy code
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-0">
                 <InviteHeroMetric label="Members" value={payload.memberCount} />
@@ -142,6 +161,11 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
                 <p className="text-sm leading-5 text-stone-600 sm:leading-6">
                   Sign in or create an account. The code will open on the Groups page.
                 </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <InviteTrustPill title="Private account" text="Email and phone are not shown here." />
+                  <InviteTrustPill title="Self-entered rounds" text="Leaderboards use members' saved totals." />
+                  <InviteTrustPill title="Join by code" text="Only this group code is needed." />
+                </div>
                 <div className="mt-3 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-5 text-peacock-950 sm:mt-4 sm:px-4 sm:leading-6">
                   <p className="font-black">What happens after joining</p>
                   <p>Your saved rounds will count in this group&apos;s leaderboards.</p>
@@ -206,6 +230,15 @@ function loadDemoInvite(code: string) {
     },
     memberCount: state.groupMembers.filter((member) => member.groupId === group.id).length
   } satisfies PublicGroupInvitePayload;
+}
+
+function InviteTrustPill({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-md border border-stone-200 bg-white px-3 py-2 text-left shadow-sm">
+      <p className="text-sm font-black text-stone-900">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-stone-600">{text}</p>
+    </div>
+  );
 }
 
 function InviteHeroMetric({ label, value }: { label: string; value: number }) {

@@ -47,6 +47,7 @@ export function ActivityPage() {
     .filter((total) => total.userId === currentUser.id && total.rounds > 0)
     .sort((a, b) => b.localDate.localeCompare(a.localDate));
   const feedItems = buildActivityFeed(state, currentUser.id, todayKey).slice(0, 14);
+  const monthCalendar = buildMonthCalendar(todayKey, currentUser.joinedAt.slice(0, 10), state.chantTotals, currentUser.id);
   const exportHistory = () => {
     const rows = [
       ["date", "rounds", "updated_at"],
@@ -177,6 +178,44 @@ export function ActivityPage() {
         </Panel>
       </div>
 
+      <Panel title="This month calendar" icon={<CalendarDays size={18} />}>
+        <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+            <div key={day} className="px-1 text-center text-[11px] font-black uppercase text-stone-500 sm:text-xs">
+              {day}
+            </div>
+          ))}
+          {monthCalendar.map((item) =>
+            item.dateKey ? (
+              <button
+                key={item.dateKey}
+                type="button"
+                className={`min-h-[64px] rounded-md border px-1.5 py-2 text-left shadow-sm transition sm:min-h-[78px] sm:px-2 ${
+                  item.isToday
+                    ? "border-saffron-400 bg-saffron-50"
+                    : item.isBeforeJoin
+                      ? "border-stone-100 bg-stone-50 text-stone-400"
+                      : item.rounds > 0
+                        ? "border-peacock-100 bg-peacock-50"
+                        : "border-stone-200 bg-white hover:border-saffron-200"
+                }`}
+                disabled={item.isBeforeJoin}
+                onClick={() => {
+                  setSelectedDate(item.dateKey);
+                  showMessage(`Selected ${formatDate(item.dateKey)} in the rounds editor.`);
+                }}
+              >
+                <p className="text-xs font-black text-stone-500">{Number(item.dateKey.slice(-2))}</p>
+                <p className="mt-2 text-lg font-black text-stone-950">{item.rounds}</p>
+                <p className="text-[11px] font-bold text-stone-500">rounds</p>
+              </button>
+            ) : (
+              <div key={item.key} className="min-h-[64px] rounded-md bg-transparent sm:min-h-[78px]" />
+            )
+          )}
+        </div>
+      </Panel>
+
       <Panel title="Logged days" icon={<ListChecks size={18} />}>
         <div className="mb-3 rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2 text-sm leading-5 text-peacock-900 sm:mb-4 sm:px-4 sm:py-2.5 sm:leading-6">
           <div className="flex items-center gap-2 font-black">
@@ -268,6 +307,27 @@ function freshnessLabel(updatedAt: string) {
   const ageMs = now.getTime() - updated.getTime();
   if (ageMs >= 0 && ageMs < 7 * 24 * 60 * 60 * 1000) return "Updated this week";
   return "Older update";
+}
+
+function buildMonthCalendar(todayKey: string, joinedDateKey: string, totals: { userId: string; localDate: string; rounds: number }[], userId: string) {
+  const monthStart = `${todayKey.slice(0, 8)}01`;
+  const startDate = new Date(`${monthStart}T00:00:00Z`);
+  const firstDay = startDate.getUTCDay();
+  const mondayOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const lastDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth() + 1, 0)).getUTCDate();
+  const blanks = Array.from({ length: mondayOffset }, (_, index) => ({ key: `blank-${index}`, dateKey: "", rounds: 0, isToday: false, isBeforeJoin: false }));
+  const days = Array.from({ length: lastDate }, (_, index) => {
+    const day = String(index + 1).padStart(2, "0");
+    const dateKey = `${todayKey.slice(0, 8)}${day}`;
+    return {
+      key: dateKey,
+      dateKey,
+      rounds: totals.filter((total) => total.userId === userId && total.localDate === dateKey).reduce((sum, total) => sum + total.rounds, 0),
+      isToday: dateKey === todayKey,
+      isBeforeJoin: dateKey < joinedDateKey
+    };
+  });
+  return [...blanks, ...days];
 }
 
 function shortDate(dateKey: string) {

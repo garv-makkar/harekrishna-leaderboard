@@ -53,11 +53,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
 Restart the dev server after saving `frontend/.env.local`.
 
-## 5. MVP Auth Setting
+## 5. Auth Settings
 
-For easiest local testing, go to Authentication -> Providers -> Email and temporarily turn off email confirmation.
-
-Later, turn verification back on and add proper email/phone OTP flows.
+For easiest local testing, you may temporarily turn off email confirmation in Authentication -> Providers -> Email.
 
 For production, turn email confirmation back on:
 
@@ -66,13 +64,12 @@ For production, turn email confirmation back on:
 3. Enable Confirm email.
 4. Save.
 
-Then open Authentication -> URL Configuration and add:
+Then open Authentication -> URL Configuration and add your local and production URLs:
 
 ```text
 http://localhost:3000
+https://your-production-domain.com
 ```
-
-Also add your production domain when you deploy.
 
 ## 6. Password Reset
 
@@ -109,9 +106,9 @@ The app uses:
 
 - Email as the primary Supabase Auth identity.
 - Username as a unique public handle.
-- Phone as a unique profile identifier, stored in international format such as `+919876543210`.
+- Phone as an optional unique profile identifier, stored in international format such as `+919876543210`.
 
-Signup checks username, email, and phone before creating the auth user. The database also enforces uniqueness for all three.
+Signup checks username, email, and optional phone before creating the auth user. The database also enforces unique username/email, and unique phone only when phone is present.
 
 ## 9. Run Locally
 
