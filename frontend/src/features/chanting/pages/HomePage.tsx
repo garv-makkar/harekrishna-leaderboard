@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, ExternalLink, Flame, History, ListChecks, Medal, Moon, PlusCircle, Target, Users } from "lucide-react";
+import { AlertTriangle, Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, ExternalLink, Flame, History, Medal, Moon, PlusCircle, Target, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   approximateHinduCalendar,
   addDays,
   bestStreak,
-  buildActivityFeed,
   computeMilestones,
   currentStreak,
   daysChantedThisMonth,
@@ -16,13 +15,11 @@ import {
   latestUpdateLabel,
   localDayBoundaryText,
   MAX_DAILY_ROUNDS,
-  rankUsers,
   recentChantingHistory,
   sumRounds,
   VAISHNAVA_CALENDAR_REFERENCE
 } from "../domain";
-import type { ActivityFeedItem } from "../domain";
-import { ActionEmptyState, Field, Leaderboard, MetricCard, MilestoneGrid, Panel } from "../ui";
+import { ActionEmptyState, Field, MetricCard, MilestoneGrid, Panel } from "../ui";
 
 export function HomePage() {
   const {
@@ -41,7 +38,6 @@ export function HomePage() {
     setDailyRounds,
     isBusy,
     updateUserPreferences,
-    refreshRemoteState,
     joinedGroups,
     groupMemberCount,
     setSelectedGroupId,
@@ -188,8 +184,6 @@ export function HomePage() {
         })
     }
   ];
-  const homeLeaderboardUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, state.users.map((user) => user.id), todayKey, todayKey));
-  const recentActivityItems = buildActivityFeed(state, currentUser.id, todayKey).slice(0, 5);
   const nextMilestone = milestones
     .filter((milestone) => !milestone.earned)
     .sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
@@ -458,17 +452,6 @@ export function HomePage() {
       )}
 
       <OnboardingChecklist items={onboardingItems} />
-
-      <HomeActivityFeed
-        items={recentActivityItems}
-        onOpenActivity={() =>
-          showActionFeedback({
-            title: "Open Activity",
-            body: "Activity has your feed, history, import, and export tools.",
-            action: { label: "Go to Activity", tab: "activity" }
-          })
-        }
-      />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
         <Panel title="Daily focus" icon={<Target size={18} />}>
@@ -787,16 +770,6 @@ export function HomePage() {
         </Panel>
       </div>
 
-      <Leaderboard
-        title="Global leaderboard"
-        period="daily"
-        currentUserId={currentUser.id}
-        emptyText="No global chanting entries for today yet. Save your rounds and your row will appear here."
-        rows={rankUsers(state.users, state.chantTotals, "daily", todayKey)}
-        lastUpdated={homeLeaderboardUpdated}
-        isRefreshing={isBusy}
-        onRefresh={() => refreshRemoteState(currentUser.id)}
-      />
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-saffron-200 bg-white/95 p-3 shadow-soft backdrop-blur md:hidden">
         <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
           <button
@@ -884,57 +857,6 @@ function HighRoundGuardrail({
       </div>
     </div>
   );
-}
-
-function HomeActivityFeed({ items, onOpenActivity }: { items: ActivityFeedItem[]; onOpenActivity: () => void }) {
-  return (
-    <Panel title="Recent activity" icon={<ListChecks size={18} />}>
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-        <div className="grid gap-2">
-          {items.length === 0 ? (
-            <p className="rounded-md border border-dashed border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-600">
-              Save rounds, join a group, or add a friend and your activity will appear here.
-            </p>
-          ) : (
-            items.map((item) => (
-              <div key={item.id} className="grid gap-2 rounded-md border border-stone-200 bg-white px-3 py-3 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center">
-                <div className="min-w-0">
-                  <p className="truncate font-black text-stone-950">{item.title}</p>
-                  <p className="text-sm leading-6 text-stone-600">{item.body}</p>
-                </div>
-                <span className={`w-fit rounded-md px-2 py-1 text-xs font-black ${homeActivityBadgeClass(item.tone)}`}>
-                  {formatHomeFeedTime(item.at)}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-        <button
-          type="button"
-          className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white shadow-sm"
-          onClick={onOpenActivity}
-        >
-          Open activity
-        </button>
-      </div>
-    </Panel>
-  );
-}
-
-function homeActivityBadgeClass(tone: ActivityFeedItem["tone"]) {
-  if (tone === "emerald") return "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100";
-  if (tone === "saffron") return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100";
-  if (tone === "peacock") return "bg-peacock-50 text-peacock-900 ring-1 ring-peacock-100";
-  return "bg-stone-100 text-stone-700 ring-1 ring-stone-200";
-}
-
-function formatHomeFeedTime(value: string) {
-  return new Date(value).toLocaleString(undefined, {
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit"
-  });
 }
 
 function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
