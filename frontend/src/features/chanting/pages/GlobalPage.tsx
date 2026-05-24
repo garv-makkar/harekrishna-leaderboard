@@ -31,7 +31,7 @@ export function GlobalPage() {
         eyebrow={range.label}
         icon={<Globe2 size={16} />}
         title="Global leaderboard"
-        description="See how the wider chanting community is doing for the selected period."
+        description="Daily, weekly, and monthly community rankings."
         stats={
           <StatGrid columns={2}>
             <StatCard icon={<Users size={17} />} label="Active users" value={activeUserCount} tone="peacock" />
@@ -52,7 +52,7 @@ export function GlobalPage() {
           period={period}
           periodText={range.label}
           currentUserId={currentUser.id}
-          emptyText="No global entries for this period yet."
+          emptyText="No global rounds saved for this period yet."
           visibility={showAllUsers ? "all" : "active"}
           rows={rankUsersInRange(state.users, state.chantTotals, range.start, range.end)}
           lastUpdated={lastUpdated}
@@ -74,7 +74,7 @@ function LeaderboardVisibilityToggle({
   allLabel: string;
 }) {
   return (
-    <div className="mb-3 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:mb-4">
+    <div className="mb-3 grid max-w-full grid-cols-2 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:mb-4 sm:inline-flex sm:flex-wrap">
       <button
         type="button"
         className={`rounded-md px-3 py-1.5 text-sm font-black transition sm:py-2 ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}

@@ -33,7 +33,7 @@ export function MilestonesPage() {
         eyebrow="Achievements"
         icon={<Award size={16} />}
         title="Milestones"
-        description="Track long-term chanting progress and choose up to 3 earned milestones for your profile."
+        description="Track progress and feature up to 3 earned milestones."
         stats={
           <StatGrid columns={3}>
             <StatCard label="Completed" value={`${earned.length}/${milestones.length}`} tone="saffron" />
@@ -46,7 +46,7 @@ export function MilestonesPage() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Panel title="Featured on profile" icon={<Star size={18} />}>
           {fallbackFeatured.length === 0 ? (
-            <EmptyState text="Complete a milestone, then choose up to 3 to feature on your profile." />
+            <EmptyState text="Complete a milestone to feature it on your profile." />
           ) : (
             <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
               {fallbackFeatured.map((milestone) => (
@@ -68,7 +68,7 @@ export function MilestonesPage() {
           {closestNext ? (
             <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5">
               <p className="font-black text-stone-950">{closestNext.title}</p>
-              <p className="mt-1 text-sm leading-6 text-stone-700">{closestNext.description}</p>
+              <p className="mt-1 text-sm leading-5 text-stone-700 sm:leading-6">{closestNext.description}</p>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
                 <div className="h-full bg-peacock-500" style={{ width: `${Math.round((closestNext.progress / Math.max(1, closestNext.target)) * 100)}%` }} />
               </div>
@@ -81,11 +81,11 @@ export function MilestonesPage() {
       </div>
 
       <Panel title="Choose profile milestones" icon={<Star size={18} />}>
-        <p className="mb-3 text-sm leading-6 text-stone-600">
-          Only earned milestones can be featured. Select up to 3; they appear on your profile and public profile.
+        <p className="mb-3 text-sm leading-5 text-stone-600 sm:leading-6">
+          Select up to 3 earned milestones for your profile.
         </p>
         {earned.length === 0 ? (
-          <EmptyState text="No earned milestones yet. Log rounds, build streaks, join groups, and add friends to unlock your first milestone." />
+          <EmptyState text="No earned milestones yet. Log rounds to unlock the first one." />
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {earned.map((milestone) => {

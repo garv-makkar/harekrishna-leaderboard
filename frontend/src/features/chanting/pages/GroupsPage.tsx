@@ -162,7 +162,7 @@ export function GroupsPage({
         eyebrow={`${joinedGroups.length} joined`}
         icon={<Users size={16} />}
         title={selectedGroup ? selectedGroup.name : "Your chanting groups"}
-        description="Select a group to view its leaderboard, copy invites, and manage members."
+        description="Join by code, share invites, and view group leaderboards."
         actions={
           selectedGroup ? (
             <>
@@ -224,7 +224,7 @@ export function GroupsPage({
           <ActionEmptyState
             icon={<UserPlus size={20} />}
             title="No groups yet"
-            text="Join with a code from a group owner, or create your own group and share the code with others."
+            text="Join with a code, or create a group and share it."
           >
             <button
               type="button"
@@ -245,9 +245,9 @@ export function GroupsPage({
           <>
           <FilterBar meta={`Showing ${visibleJoinedGroups.length} of ${joinedGroups.length}`}>
             <label className="min-w-0 flex-1">
-              <span className="mb-1 block text-sm font-bold text-stone-700">Search your groups</span>
+              <span className="mb-1 block text-sm font-bold text-stone-700">Search groups</span>
               <input
-                className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100 sm:py-2.5 sm:text-base"
                 value={groupSearch}
                 onChange={(event) => setGroupSearch(event.target.value)}
                 placeholder="name, code, or role"
@@ -337,7 +337,7 @@ export function GroupsPage({
                   period={period}
                   periodText={range.label}
                   currentUserId={currentUser.id}
-                  emptyText="No group entries for this period yet. Save rounds on Home, or switch to All members to see members with no entry."
+                  emptyText="No group rounds saved for this period yet."
                   visibility={showAllMembers ? "all" : "active"}
                   lastUpdated={selectedLastUpdated}
                   isRefreshing={isBusy || isLoadingGroups}
@@ -458,7 +458,7 @@ function GroupStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-0.5 text-xl font-black text-stone-950 sm:text-2xl">{value}</p>
+      <p className="mt-0.5 text-lg font-black text-stone-950 sm:text-2xl">{value}</p>
     </div>
   );
 }
@@ -483,7 +483,7 @@ function GroupOverviewPanel({
   return (
     <Panel title="Group overview" icon={<Users size={18} />}>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
           <GroupStat label="Members" value={memberCount} />
           <GroupStat label="Active today" value={activeToday} />
           <GroupStat label="Today total" value={todayTotal} />
@@ -579,8 +579,8 @@ function InviteMembersModal({
   const fullMessage = groupInviteMessage(group);
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-      <div className="mx-auto mt-4 max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-saffron-200 bg-white shadow-soft">
+    <div className="fixed inset-0 z-50 bg-stone-950/45 p-2 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true">
+      <div className="mx-auto mt-2 max-h-[calc(100vh-1rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-saffron-200 bg-white shadow-soft sm:mt-4 sm:max-h-[calc(100vh-2rem)]">
         <div className="flex items-start justify-between gap-3 border-b border-saffron-100 p-3 sm:p-4">
           <div className="flex min-w-0 gap-3">
             <Avatar src={group.imageUrl} label={group.name} />
@@ -630,7 +630,7 @@ function InviteMembersModal({
             </div>
           )}
 
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 min-[420px]:grid-cols-2">
             <button
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-2.5 text-sm font-black text-white"
@@ -926,7 +926,7 @@ function GroupOwnerDashboard({
     <Panel title="Owner dashboard" icon={<Settings size={18} />}>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
         <div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <GroupStat label="Updated today" value={updatedToday} />
             <GroupStat label="Not updated" value={notUpdatedToday} />
             <GroupStat label="Today rounds" value={todayRounds} />
@@ -945,7 +945,7 @@ function GroupOwnerDashboard({
               </p>
             </div>
           )}
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
             <OwnerDigestTile label="Weekly total" value={`${weeklyTotal}`} note={week.label} />
             <OwnerDigestTile label="Best contributor" value={bestContributor?.user?.username || "-"} note={`${bestContributor?.rounds || 0} rounds`} />
             <OwnerDigestTile label="Most consistent" value={mostConsistent?.user?.username || "-"} note={`${mostConsistent?.activeDays || 0} active days`} />
@@ -1050,7 +1050,7 @@ function GroupActivityFeed({ group }: { group: Group }) {
 
   return (
     <Panel title="Group activity" icon={<Clock3 size={18} />}>
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
         <GroupStat label="Recent items" value={items.length} />
         <GroupStat label="Today updates" value={todayRoundUpdates} />
         <GroupStat label="Members tracked" value={memberships.length} />
@@ -1182,7 +1182,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
 
   return (
     <Panel title="Group members" icon={<Users size={18} />}>
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
         <GroupStat label="Members" value={rows.length} />
         <GroupStat label="Active today" value={activeToday} />
         <GroupStat label="Active week" value={activeThisWeek} />
@@ -1290,7 +1290,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
                   View profile
                 </button>
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-2 sm:mt-4">
                 <MemberRosterStat label="Today" value={row.todayRounds} />
                 <MemberRosterStat label="Week" value={row.weekRounds} />
                 <MemberRosterStat label="Streak" value={row.streak} />
@@ -1349,7 +1349,7 @@ function GroupAccountabilityPanel({ group }: { group: Group }) {
 
   return (
     <Panel title="Today accountability" icon={<Users size={18} />}>
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
         <GroupStat label="Updated today" value={updated.length} />
         <GroupStat label="Not updated" value={pending.length} />
         <GroupStat label="Members" value={members.length} />
@@ -1430,6 +1430,16 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
       )
     : members;
   const canEditGroup = role === "owner";
+  const cleanTargetDaily = Math.max(0, Math.floor(Number(targetDaily) || 0));
+  const cleanTargetWeekly = Math.max(0, Math.floor(Number(targetWeekly) || 0));
+  const settingsDirty =
+    canEditGroup &&
+    (name.trim() !== group.name ||
+      normalizeGroupCode(code) !== group.code ||
+      imageUrl.trim() !== group.imageUrl ||
+      announcement.trim() !== group.announcement ||
+      cleanTargetDaily !== (group.targetDaily || 0) ||
+      cleanTargetWeekly !== (group.targetWeekly || 0));
 
   useEffect(() => {
     setName(group.name);
@@ -1441,6 +1451,16 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
     setDeleteText("");
     setFormError("");
   }, [group]);
+
+  useEffect(() => {
+    if (!settingsDirty) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [settingsDirty]);
 
   const updateGroup = async (event: FormEvent) => {
     event.preventDefault();
@@ -1471,8 +1491,8 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
             code: cleanCode,
             image_url: imageUrl.trim(),
             announcement: announcement.trim(),
-            target_daily: Math.max(0, Math.floor(Number(targetDaily) || 0)),
-            target_weekly: Math.max(0, Math.floor(Number(targetWeekly) || 0))
+            target_daily: cleanTargetDaily,
+            target_weekly: cleanTargetWeekly
           })
           .eq("id", group.id);
         if (error) throw error;
@@ -1491,8 +1511,8 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
               code: cleanCode,
               imageUrl: imageUrl.trim(),
               announcement: announcement.trim(),
-              targetDaily: Math.max(0, Math.floor(Number(targetDaily) || 0)),
-              targetWeekly: Math.max(0, Math.floor(Number(targetWeekly) || 0))
+              targetDaily: cleanTargetDaily,
+              targetWeekly: cleanTargetWeekly
             }
           : item
       )
@@ -1591,6 +1611,7 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
       {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
       {canEditGroup ? (
         <form className="space-y-4" onSubmit={updateGroup}>
+          {settingsDirty && <InlineNotice tone="info">You have unsaved group settings. Save before leaving this page.</InlineNotice>}
           <GroupOwnerControlSection title="Basic info" description="Name, join code, picture, and announcement.">
             <div className="grid gap-3 lg:grid-cols-2">
               <Field label="Group name" value={name} onChange={setName} required />
@@ -1632,8 +1653,8 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
               />
             </div>
           </GroupOwnerControlSection>
-          <button className="rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" disabled={isBusy}>
-            Save group settings
+          <button className="rounded-md bg-saffron-500 px-4 py-3 font-bold text-white disabled:bg-saffron-200" disabled={isBusy || !settingsDirty}>
+            {isBusy ? "Saving..." : settingsDirty ? "Save group settings" : "Settings saved"}
           </button>
         </form>
       ) : (
@@ -2005,7 +2026,7 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
           />
         </Card>
         <GroupImagePicker imageUrl={imageUrl} setImageUrl={setImageUrl} label={name || "Group"} />
-        <button className="rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={isBusy}>
+        <button className="w-full rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white sm:w-auto" disabled={isBusy}>
           Create group
         </button>
       </form>
@@ -2122,7 +2143,7 @@ function JoinGroupForm({
             helper="Ask the group owner for the exact code."
           />
         </Card>
-        <button className="rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={isBusy}>
+        <button className="w-full rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white sm:w-auto" disabled={isBusy}>
           Join group
         </button>
       </form>

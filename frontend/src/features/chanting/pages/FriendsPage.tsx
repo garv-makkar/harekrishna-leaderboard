@@ -92,7 +92,7 @@ export function FriendsPage() {
           eyebrow="Friend circle"
           icon={<HeartHandshake size={16} />}
           title="Friends"
-          description="Manage requests and compare chanting progress with accepted friends."
+          description="Requests, friends, and your private friends leaderboard."
           stats={
             <StatGrid columns={3}>
               <StatCard label="Accepted" value={acceptedRequests.length} tone="saffron" />
@@ -106,7 +106,7 @@ export function FriendsPage() {
         <ActionEmptyState
           icon={<UserRoundSearch size={20} />}
           title="Build your friends leaderboard"
-          text="Search a username, send a request, and accepted friends will get a private leaderboard with you."
+          text="Search a username and send a request."
         >
           <button
             type="button"
@@ -128,7 +128,7 @@ export function FriendsPage() {
                 <PanelSkeleton rows={1} title={false} />
               </div>
             ) : incomingRequests.length === 0 ? (
-              <EmptyState text="No incoming friend requests. When someone searches your username and sends a request, it will appear here." />
+              <EmptyState text="No incoming requests." />
             ) : (
               <div className="space-y-2">
                 {incomingRequests.map((request) => {
@@ -169,7 +169,7 @@ export function FriendsPage() {
                 <PanelSkeleton rows={1} title={false} />
               </div>
             ) : outgoingRequests.length === 0 ? (
-              <EmptyState text="No outgoing requests. Search a username to send one; pending requests stay here until accepted or canceled." />
+              <EmptyState text="No outgoing requests." />
             ) : (
               <div className="space-y-2">
                 {outgoingRequests.map((request) => {
@@ -206,7 +206,7 @@ export function FriendsPage() {
           <ActionEmptyState
             icon={<HeartHandshake size={20} />}
             title="No accepted friends yet"
-            text="Send a request by username. Once accepted, they will appear here and on your friends leaderboard."
+            text="Accepted friends appear here and in your leaderboard."
           >
             <button
               type="button"
@@ -219,7 +219,7 @@ export function FriendsPage() {
         ) : (
           <>
           <FilterBar meta={`Showing ${visibleAcceptedRequests.length} of ${acceptedRequests.length}`}>
-            <div className="min-w-[220px] flex-1">
+            <div className="min-w-0 flex-1 sm:min-w-[220px]">
               <Field
                 label="Search friends"
                 value={friendSearch}
@@ -327,7 +327,7 @@ function FriendRequestRow({
           <p className="truncate text-sm text-stone-600">{subtitle}</p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-2 sm:justify-end">{actions}</div>
+      <div className="flex flex-wrap gap-2 sm:justify-end [&>button]:flex-1 sm:[&>button]:flex-none">{actions}</div>
     </div>
   );
 }

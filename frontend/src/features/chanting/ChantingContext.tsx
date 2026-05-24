@@ -117,7 +117,7 @@ type ChantingContextValue = {
   currentUserGroupRole: (groupId: string) => GroupRole | undefined;
   copyGroupCode: (code: string) => Promise<void>;
   copyGroupInvite: (group: Group) => Promise<void>;
-  updateUserPreferences: (updates: Partial<Pick<UserProfile, "dailyGoal" | "reminderEnabled" | "reminderTime">>) => Promise<void>;
+  updateUserPreferences: (updates: Partial<Pick<UserProfile, "dailyGoal" | "reminderEnabled" | "reminderTime">>) => Promise<boolean>;
   updateFeaturedMilestones: (milestoneIds: string[]) => Promise<void>;
   runRemote: (action: () => Promise<void>) => Promise<void>;
   refreshRemoteState: (currentUserId: string, scope?: RemoteScope) => Promise<void>;
@@ -491,7 +491,14 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       })
       .select("*")
       .single();
-    if (error) return;
+    if (error) {
+      setState((current) => ({
+        ...current,
+        notifications: (current.notifications || []).filter((item) => item.id !== nextNotification.id)
+      }));
+      showMessage(readableError(error));
+      return;
+    }
     if (data) {
       const saved = fromNotificationRow(data as NotificationRow);
       setState((current) => ({
@@ -503,6 +510,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
 
   const markNotificationRead = async (notificationId: string) => {
     const readAt = new Date().toISOString();
+    const previousReadAt = (state.notifications || []).find((item) => item.id === notificationId)?.readAt || "";
     setState((current) => ({
       ...current,
       notifications: (current.notifications || []).map((item) =>
@@ -510,12 +518,22 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       )
     }));
     if (!supabase) return;
-    await supabase.from("notifications").update({ read_at: readAt }).eq("id", notificationId);
+    const { error } = await supabase.from("notifications").update({ read_at: readAt }).eq("id", notificationId);
+    if (error) {
+      setState((current) => ({
+        ...current,
+        notifications: (current.notifications || []).map((item) =>
+          item.id === notificationId ? { ...item, readAt: previousReadAt } : item
+        )
+      }));
+      showMessage(readableError(error));
+    }
   };
 
   const markAllNotificationsRead = async () => {
     if (!currentUser) return;
     const readAt = new Date().toISOString();
+    const previousNotifications = state.notifications || [];
     setState((current) => ({
       ...current,
       notifications: (current.notifications || []).map((item) =>
@@ -523,7 +541,14 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       )
     }));
     if (!supabase) return;
-    await supabase.from("notifications").update({ read_at: readAt }).eq("user_id", currentUser.id).is("read_at", null);
+    const { error } = await supabase.from("notifications").update({ read_at: readAt }).eq("user_id", currentUser.id).is("read_at", null);
+    if (error) {
+      setState((current) => ({
+        ...current,
+        notifications: previousNotifications
+      }));
+      showMessage(readableError(error));
+    }
   };
 
   const currentRounds =
@@ -725,7 +750,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUserPreferences = async (updates: Partial<Pick<UserProfile, "dailyGoal" | "reminderEnabled" | "reminderTime">>) => {
-    if (!currentUser) return;
+    if (!currentUser) return false;
     const cleanUpdates = {
       ...(typeof updates.dailyGoal === "number" ? { dailyGoal: Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(updates.dailyGoal))) } : {}),
       ...(typeof updates.reminderEnabled === "boolean" ? { reminderEnabled: updates.reminderEnabled } : {}),
@@ -744,13 +769,17 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
           .eq("id", currentUser.id);
         if (error) throw error;
         await refreshRemoteState(currentUser.id, "core");
-      }).catch((error: Error) => showMessage(readableError(error, "profile")));
-      return;
+      }).catch((error: Error) => {
+        showMessage(readableError(error, "profile"));
+        throw error;
+      });
+      return true;
     }
     saveState({
       ...state,
       users: state.users.map((user) => (user.id === currentUser.id ? { ...user, ...cleanUpdates } : user))
     });
+    return true;
   };
 
   const updateFeaturedMilestones = async (milestoneIds: string[]) => {

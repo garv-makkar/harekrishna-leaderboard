@@ -316,8 +316,14 @@ export function readableError(error: unknown, context?: "signin" | "signup" | "o
   if (text.includes("profiles_phone_key") || (text.includes("phone") && text.includes("duplicate"))) {
     return "That phone number is already registered. Leave phone blank or use a different number.";
   }
+  if (text.includes("groups_code_key") || (text.includes("group") && text.includes("code") && text.includes("duplicate"))) {
+    return "That group code is already used. Try a more specific code.";
+  }
   if (text.includes("username, email, or phone is already registered")) {
     return "That username, email, or phone is already registered. Try changing that field or sign in.";
+  }
+  if (text.includes("duplicate key value") || text.includes("unique constraint")) {
+    return "That value is already used. Change it and try again.";
   }
   if (text.includes("email not confirmed")) {
     return "Your email is not confirmed yet. Open the confirmation email, then sign in.";

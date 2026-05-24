@@ -108,16 +108,16 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
   const highestRecentRounds = Math.max(1, ...(payload?.recentHistory || []).map((item) => item.rounds));
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff7ed,transparent_32%),linear-gradient(135deg,#fffaf0,#f5fffb_48%,#fff7ed)] px-4 py-5 text-stone-900 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff7ed,transparent_32%),linear-gradient(135deg,#fffaf0,#f5fffb_48%,#fff7ed)] px-3 py-3 text-stone-900 sm:px-6 sm:py-5 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-3 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/"
-            className="inline-flex w-fit items-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 shadow-sm ring-1 ring-saffron-200"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 shadow-sm ring-1 ring-saffron-200 sm:w-fit"
           >
             <Home size={17} /> Hare Krishna Leaderboard
           </Link>
-          <span className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
+          <span className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100 sm:w-fit">
             <ShieldCheck size={16} /> Public profile
           </span>
         </div>
@@ -140,8 +140,8 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
         {payload && (
           <div className="space-y-4 sm:space-y-5">
             <section className="overflow-hidden rounded-lg border border-saffron-200 bg-white/94 text-center shadow-soft">
-              <div className="border-b border-saffron-100 bg-saffron-50/80 px-4 py-5 sm:px-6">
-                <div className="mx-auto mb-3 h-20 w-20 overflow-hidden rounded-lg ring-1 ring-saffron-200">
+              <div className="border-b border-saffron-100 bg-saffron-50/80 px-3 py-4 sm:px-6 sm:py-5">
+                <div className="mx-auto mb-3 h-16 w-16 overflow-hidden rounded-lg ring-1 ring-saffron-200 sm:h-20 sm:w-20">
                   {payload.profile.avatarUrl ? (
                     <img src={payload.profile.avatarUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -150,13 +150,13 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                     </div>
                   )}
                 </div>
-                <h1 className="text-2xl font-black tracking-normal text-stone-950 sm:text-3xl">
+                <h1 className="text-xl font-black tracking-normal text-stone-950 sm:text-3xl">
                   {payload.profile.displayName || payload.profile.username}
                 </h1>
                 <p className="mt-1 text-sm font-bold text-stone-600">@{payload.profile.username}</p>
-                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-stone-600">
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-5 text-stone-600 sm:leading-6">
                   {payload.profile.country ? `${payload.profile.country}. ` : ""}
-                  Joined {formatDate(payload.profile.joinedAt.slice(0, 10))}. Public chanting summary.
+                  Joined {formatDate(payload.profile.joinedAt.slice(0, 10))}.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-0 sm:grid-cols-4">
@@ -169,27 +169,27 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
               <Panel title="Stats" icon={<Trophy size={18} />}>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {privacy.showStreak ? (
                     <>
                       <PublicMetric label="Current streak" value={streakNow} note={`Best ${streakBest}`} compact />
                       <PublicMetric label="Best streak" value={streakBest} note="active days" compact />
                     </>
                   ) : (
-                    <HiddenBlock text="Streak details are hidden by this user's privacy settings." />
+                    <HiddenBlock text="Streak details are private." />
                   )}
                   <PublicMetric label="Friends" value={payload.stats.friendCount} note="accepted connections" compact />
                   {privacy.showGroups ? (
                     <PublicMetric label="Groups" value={payload.stats.groupCount} note="joined groups" compact />
                   ) : (
-                    <HiddenBlock text="Group count is hidden." />
+                    <HiddenBlock text="Group count is private." />
                   )}
                 </div>
               </Panel>
 
-              <Panel title="Profile link" icon={<ExternalLink size={18} />}>
-                <p className="text-sm leading-6 text-stone-600">
-                  This page is safe to share. It never shows email, phone number, or private account settings.
+              <Panel title="Hare Krishna Leaderboard" icon={<ExternalLink size={18} />}>
+                <p className="text-sm leading-5 text-stone-600 sm:leading-6">
+                  Track rounds with friends, groups, and leaderboards.
                 </p>
                 <Link
                   href="/"
@@ -204,26 +204,28 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
 
             {privacy.showRecentHistory ? (
               <Panel title="Recent 7 days" icon={<CalendarDays size={18} />}>
-                <div className="grid gap-2 [grid-template-columns:repeat(7,minmax(42px,1fr))]">
-                  {payload.recentHistory.map((item) => {
-                    const barHeight = Math.max(8, Math.round((item.rounds / highestRecentRounds) * 90));
-                    return (
-                      <div key={item.dateKey} className="flex min-w-0 flex-col items-center gap-2 rounded-md border border-stone-200 bg-white px-1 py-2 text-center shadow-sm">
-                        <div className="flex h-20 w-full items-end rounded-md bg-stone-50 px-1 py-1 sm:h-24">
-                          <div
-                            className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
-                            style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
-                          />
+                <div className="-mx-1 overflow-x-auto px-1 pb-1">
+                  <div className="grid min-w-[490px] gap-2 [grid-template-columns:repeat(7,minmax(0,1fr))] sm:min-w-0">
+                    {payload.recentHistory.map((item) => {
+                      const barHeight = Math.max(8, Math.round((item.rounds / highestRecentRounds) * 90));
+                      return (
+                        <div key={item.dateKey} className="flex min-w-0 flex-col items-center gap-2 rounded-md border border-stone-200 bg-white px-1 py-2 text-center shadow-sm">
+                          <div className="flex h-20 w-full items-end rounded-md bg-stone-50 px-1 py-1 sm:h-24">
+                            <div
+                              className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
+                              style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
+                            />
+                          </div>
+                          <p className="text-sm font-black text-stone-900">{item.rounds}</p>
+                          <p className="max-w-full truncate text-xs text-stone-500">{item.dateKey === payload.todayKey ? "Today" : shortDate(item.dateKey)}</p>
                         </div>
-                        <p className="text-sm font-black text-stone-900">{item.rounds}</p>
-                        <p className="max-w-full truncate text-xs text-stone-500">{item.dateKey === payload.todayKey ? "Today" : shortDate(item.dateKey)}</p>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </Panel>
             ) : (
-              <HiddenBlock text="Recent chanting history is hidden by this user's privacy settings." />
+              <HiddenBlock text="Recent history is private." />
             )}
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -243,7 +245,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                   )}
                 </Panel>
               ) : (
-                <HiddenBlock text="Milestones are hidden by this user's privacy settings." />
+                <HiddenBlock text="Milestones are private." />
               )}
 
               {privacy.showGroups ? (
@@ -265,7 +267,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                   )}
                 </Panel>
               ) : (
-                <HiddenBlock text="Joined groups are hidden by this user's privacy settings." />
+                <HiddenBlock text="Joined groups are private." />
               )}
             </div>
           </div>
@@ -421,18 +423,18 @@ function bestStreakFromDates(dateKeys: string[]) {
 
 function PublicMetric({ label, value, note, compact = false }: { label: string; value: number; note: string; compact?: boolean }) {
   return (
-    <div className="rounded-lg border border-saffron-200/80 bg-white/90 px-3 py-2.5 shadow-soft sm:px-4 sm:py-3">
-      <p className="text-sm font-bold text-stone-600">{label}</p>
+    <div className="rounded-lg border border-saffron-200/80 bg-white/90 px-2.5 py-2 shadow-soft sm:px-4 sm:py-3">
+      <p className="text-xs font-bold text-stone-600 sm:text-sm">{label}</p>
       <p className={`${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"} mt-0.5 font-black text-saffron-900`}>{value}</p>
-      <p className="text-sm text-stone-600">{note}</p>
+      <p className="text-xs text-stone-600 sm:text-sm">{note}</p>
     </div>
   );
 }
 
 function PublicHeroMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border-r border-t border-saffron-100 px-3 py-3 last:border-r-0 even:border-r-0 sm:even:border-r sm:last:border-r-0">
-      <p className="text-2xl font-black text-saffron-900 sm:text-3xl">{value}</p>
+    <div className="border-r border-t border-saffron-100 px-2 py-2.5 last:border-r-0 even:border-r-0 sm:even:border-r sm:last:border-r-0 sm:px-3 sm:py-3">
+      <p className="text-xl font-black text-saffron-900 sm:text-3xl">{value}</p>
       <p className="mt-0.5 text-xs font-black uppercase text-stone-500">{label}</p>
     </div>
   );

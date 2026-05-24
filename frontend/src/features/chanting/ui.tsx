@@ -37,7 +37,7 @@ export function Field({
     <label className="block">
       <span className="mb-1 block text-sm font-bold text-stone-700">{label}</span>
       <input
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100 sm:py-2.5 sm:text-base"
         name={name}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -49,7 +49,7 @@ export function Field({
         placeholder={placeholder}
         inputMode={inputMode}
       />
-      {helper && <span className="mt-1 block text-xs leading-5 text-stone-500">{helper}</span>}
+      {helper && <span className="mt-1 block text-xs leading-4 text-stone-500 sm:leading-5">{helper}</span>}
     </label>
   );
 }
@@ -68,7 +68,7 @@ export function TimezoneSelect({
     <label className="block">
       <span className="mb-1 block text-sm font-bold text-stone-700">Timezone</span>
       <select
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100 sm:py-2.5 sm:text-base"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
@@ -80,7 +80,7 @@ export function TimezoneSelect({
         ))}
       </select>
       <span className="mt-1 block text-xs leading-5 text-stone-500">
-        Detected from this browser: {detected}. This controls daily reset, weekly reset, and editable dates.
+        Browser detected: {detected}. This controls day/week/month boundaries.
       </span>
     </label>
   );
@@ -136,7 +136,7 @@ export function PasswordChecklist({
 export function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="rounded-lg border border-saffron-200/80 bg-white/92 p-3 shadow-soft sm:p-4">
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-2.5 flex items-center gap-2 sm:mb-3">
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100">
           {icon}
         </span>
@@ -162,7 +162,7 @@ export function Card({
       : level === "list"
         ? "border-stone-200 bg-white shadow-sm"
         : "border-stone-200 bg-stone-50/70 shadow-sm";
-  return <div className={`rounded-lg border p-3 sm:p-4 ${levelClass} ${className}`}>{children}</div>;
+  return <div className={`rounded-lg border p-3 ${levelClass} ${className}`}>{children}</div>;
 }
 
 export function SectionHeading({
@@ -205,21 +205,21 @@ export function PageHeader({
   return (
     <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
       <div className={stats ? "grid gap-0 xl:grid-cols-[minmax(0,1fr)_minmax(310px,360px)]" : ""}>
-        <div className="p-4 sm:p-5">
+        <div className="p-3 sm:p-5">
           {(eyebrow || icon) && (
-            <div className="mb-3 inline-flex max-w-full items-center gap-2 rounded-md bg-saffron-50 px-3 py-1.5 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
+            <div className="mb-2 inline-flex max-w-full items-center gap-2 rounded-md bg-saffron-50 px-2.5 py-1.5 text-xs font-black text-saffron-900 ring-1 ring-saffron-100 sm:mb-3 sm:px-3 sm:text-sm">
               {icon}
               {eyebrow && <span className="truncate">{eyebrow}</span>}
             </div>
           )}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
-              <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">{title}</h2>
-              {description && <p className="mt-1 max-w-3xl text-sm leading-6 text-stone-600">{description}</p>}
+              <h2 className="text-lg font-black tracking-normal text-stone-950 sm:text-2xl">{title}</h2>
+              {description && <p className="mt-1 max-w-3xl text-sm leading-5 text-stone-600 sm:leading-6">{description}</p>}
             </div>
-            {actions && <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">{actions}</div>}
+            {actions && <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto lg:justify-end">{actions}</div>}
           </div>
-          {children && <div className="mt-4">{children}</div>}
+          {children && <div className="mt-3 sm:mt-4">{children}</div>}
         </div>
         {stats && (
           <aside className="border-t border-saffron-100 bg-saffron-50/70 p-3 sm:p-4 xl:border-l xl:border-t-0">
@@ -233,7 +233,7 @@ export function PageHeader({
 
 export function StatGrid({ children, columns = 3 }: { children: React.ReactNode; columns?: 2 | 3 | 4 }) {
   const columnClass =
-    columns === 4 ? "sm:grid-cols-2 xl:grid-cols-4" : columns === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3";
+    columns === 4 ? "grid-cols-2 xl:grid-cols-4" : columns === 2 ? "grid-cols-2" : "grid-cols-3";
   return <div className={`grid gap-2 sm:gap-3 ${columnClass}`}>{children}</div>;
 }
 
@@ -259,12 +259,12 @@ export function StatCard({
           ? "border-emerald-100 bg-emerald-50/80 text-emerald-800"
           : "border-stone-200 bg-white text-stone-900";
   return (
-    <div className={`rounded-lg border px-3 py-2.5 shadow-sm ${toneClass}`}>
+    <div className={`rounded-lg border px-2.5 py-2 shadow-sm sm:px-3 sm:py-2.5 ${toneClass}`}>
       <div className="flex min-w-0 items-center justify-between gap-3">
         <p className="truncate text-xs font-black uppercase text-stone-500">{label}</p>
         {icon && <span className="shrink-0 text-stone-500">{icon}</span>}
       </div>
-      <p className="mt-0.5 truncate text-xl font-black">{value}</p>
+      <p className="mt-0.5 truncate text-lg font-black sm:text-xl">{value}</p>
       {note && <p className="text-xs leading-5 text-stone-600 sm:text-sm">{note}</p>}
     </div>
   );
@@ -280,10 +280,10 @@ export function FilterBar({
   meta?: React.ReactNode;
 }) {
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm sm:mb-4">
+    <div className="mb-3 flex flex-wrap items-stretch gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm sm:mb-4 sm:items-center">
       {label && <span className="shrink-0 px-1 text-xs font-black uppercase text-stone-500">{label}</span>}
       {children}
-      {meta && <span className="ml-auto rounded-md bg-stone-50 px-3 py-1.5 text-sm font-bold text-stone-600">{meta}</span>}
+      {meta && <span className="rounded-md bg-stone-50 px-3 py-1.5 text-sm font-bold text-stone-600 sm:ml-auto">{meta}</span>}
     </div>
   );
 }
@@ -437,12 +437,12 @@ export function PeriodTabs({
   options: LeaderboardPeriod[];
 }) {
   return (
-    <div className="mb-3 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:mb-4">
+    <div className="mb-3 grid max-w-full grid-cols-3 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:mb-4 sm:inline-flex sm:flex-wrap">
       {options.map((option) => (
         <button
           key={option}
           type="button"
-          className={`rounded-md px-3 py-1.5 text-sm font-bold capitalize transition sm:py-2 ${
+          className={`rounded-md px-2 py-1.5 text-sm font-bold capitalize transition sm:px-3 sm:py-2 ${
             value === option ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
           }`}
           onClick={() => onChange(option)}
@@ -464,7 +464,7 @@ export function PeriodHistoryControls({
   label: string;
 }) {
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-4">
+    <div className="mb-3 grid grid-cols-3 gap-2 sm:mb-4 sm:flex sm:flex-wrap sm:items-center">
       <button
         type="button"
         className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-sm font-bold text-stone-700 shadow-sm sm:py-2"
@@ -487,7 +487,7 @@ export function PeriodHistoryControls({
       >
         Current
       </button>
-      <span className="rounded-md border border-peacock-100 bg-peacock-50 px-3 py-1.5 text-sm font-black text-peacock-900 sm:py-2">
+      <span className="col-span-3 rounded-md border border-peacock-100 bg-peacock-50 px-3 py-1.5 text-center text-sm font-black text-peacock-900 sm:col-span-1 sm:py-2">
         {label}
       </span>
     </div>
@@ -570,30 +570,30 @@ export function Leaderboard({
         </div>
       )}
       {!title && (lastUpdated || onRefresh) && (
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex justify-start sm:justify-end">
           <LeaderboardRefreshMeta periodText={periodText || periodLabel(period)} lastUpdated={lastUpdated} isRefreshing={isRefreshing} onRefresh={onRefresh} />
         </div>
       )}
-      <div className="mb-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-bold leading-5 text-stone-600 sm:mb-4">
-        Status guide: <b>0 saved</b> means the user intentionally saved zero rounds. <b>No entry</b> means no total has been saved for this period.
+      <div className="mb-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-bold leading-5 text-stone-600">
+        <b>0 saved</b> means zero was saved. <b>No entry</b> means nothing was saved.
       </div>
       {activeRows.length === 0 && (
         <div className="mb-4">
           <EmptyState text={emptyText} />
         </div>
       )}
-      <div className="mb-4 grid gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm sm:flex sm:flex-wrap sm:items-center">
+      <div className="mb-3 grid gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm sm:mb-4 sm:flex sm:flex-wrap sm:items-center">
         <label className="min-w-0 sm:min-w-[220px] sm:flex-1">
           <span className="sr-only">Search leaderboard</span>
           <input
             className="w-full rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-bold text-stone-900 outline-none transition focus:border-saffron-500 focus:bg-white focus:ring-2 focus:ring-saffron-100"
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Search name, username, or rounds"
+            placeholder="Search leaderboard"
             type="search"
           />
         </label>
-        <div className="grid grid-cols-2 gap-2 sm:contents">
+        <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-4 sm:contents">
           <button
             type="button"
             className={`rounded-md px-3 py-2 text-sm font-black transition ${onlyUpdatedToday ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
@@ -688,17 +688,17 @@ export function Leaderboard({
           <div className="rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-stone-500">Your rank</p>
             <p className="mt-1 text-xl font-black text-saffron-900 sm:text-2xl">{currentRow.rounds > 0 ? `#${currentRow.rank}` : "-"}</p>
-            <p className="text-sm text-stone-600">{periodText || periodLabel(period)}</p>
+            <p className="truncate text-xs text-stone-600 sm:text-sm">{periodText || periodLabel(period)}</p>
           </div>
           <div className="rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-stone-500">Your rounds</p>
             <p className="mt-1 text-xl font-black text-peacock-900 sm:text-2xl">{currentRow.rounds}</p>
-            <p className="text-sm text-stone-600">{entryStatusText(currentRow)}</p>
+            <p className="text-xs text-stone-600 sm:text-sm">{entryStatusText(currentRow)}</p>
           </div>
           <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-stone-500">Next rank</p>
             <p className="mt-1 text-xl font-black text-stone-900 sm:text-2xl">{roundsBehind || "-"}</p>
-            <p className="text-sm text-stone-600">
+            <p className="text-xs text-stone-600 sm:text-sm">
               {roundsBehind ? `${roundsBehind} rounds behind` : "You are at the top score"}
             </p>
           </div>
@@ -713,7 +713,7 @@ export function Leaderboard({
                     ? "0 saved"
                     : "No entry"}
             </p>
-            <p className="text-sm text-stone-600">
+            <p className="text-xs text-stone-600 sm:text-sm">
               {tiedWithCount > 0 && currentRow.rounds > 0
                 ? `With ${tiedWithCount} other user${tiedWithCount === 1 ? "" : "s"}`
                 : currentRow.rounds > 0
@@ -752,7 +752,7 @@ export function Leaderboard({
             <div
               key={row.user.id}
               ref={isCurrent ? currentRowRef : undefined}
-              className={`grid grid-cols-[44px_minmax(0,1fr)_72px] items-center gap-2 border-b border-stone-100 px-2 py-2.5 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:gap-3 sm:px-4 sm:py-3 ${
+              className={`grid grid-cols-[40px_minmax(0,1fr)_60px] items-center gap-2 border-b border-stone-100 px-2 py-2 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:gap-3 sm:px-4 sm:py-3 ${
                 isCurrent
                   ? "bg-saffron-50/90 shadow-[inset_3px_0_0_#d98f08]"
                   : isTopRank
@@ -761,26 +761,27 @@ export function Leaderboard({
               }`}
             >
               <div>
-                <p className={`inline-flex min-w-10 justify-center rounded-md px-2 py-1 text-base font-black sm:min-w-11 sm:text-lg ${rankBadgeClass(row.rank)}`}>
+                <p className={`inline-flex min-w-9 justify-center rounded-md px-1.5 py-1 text-sm font-black sm:min-w-11 sm:px-2 sm:text-lg ${rankBadgeClass(row.rank)}`}>
                   {rankLabel(row.rank)}
                 </p>
-                {isTied && <p className="mt-1 text-[11px] font-bold text-peacock-700 sm:text-xs">Tied with {rowTieCount}</p>}
+                {isTied && <p className="mt-1 text-[10px] font-bold text-peacock-700 sm:text-xs">Tie</p>}
               </div>
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
                 <div className="min-w-0">
                   <button
                     type="button"
-                    className="max-w-full truncate text-left font-bold text-stone-900 hover:text-saffron-800"
+                    className="max-w-full truncate text-left text-sm font-bold text-stone-900 hover:text-saffron-800 sm:text-base"
                     onClick={() => setSelectedPublicUserId(row.user.id)}
                   >
                     {row.user.displayName || row.user.username}
                     {isCurrent && <span className="ml-2 rounded-sm bg-saffron-500 px-1.5 py-0.5 text-xs font-black text-white">You</span>}
                   </button>
-                  <p className="truncate text-sm text-stone-500">@{row.user.username}</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <p className="truncate text-xs text-stone-500 sm:text-sm">@{row.user.username}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5 sm:mt-2 sm:gap-2">
                     <span className={`rounded-md px-2 py-1 text-xs font-black ${row.hasEntry ? "bg-peacock-50 text-peacock-900" : "bg-stone-100 text-stone-600"}`}>
-                      {entryStatusText(row)}
+                      <span className="sm:hidden">{row.hasEntry ? (row.rounds === 0 ? "0 saved" : "Saved") : "No entry"}</span>
+                      <span className="hidden sm:inline">{entryStatusText(row)}</span>
                     </span>
                     <span className="hidden rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600 sm:inline-flex">
                       {lastUpdatedText(row)}
@@ -802,7 +803,7 @@ export function Leaderboard({
                 </div>
               </div>
               <div className="text-right">
-                <div className={`inline-flex min-w-14 justify-center rounded-md px-3 py-2 font-black ring-1 ${
+                <div className={`inline-flex min-w-11 justify-center rounded-md px-2 py-1.5 text-sm font-black ring-1 sm:min-w-14 sm:px-3 sm:py-2 sm:text-base ${
                   row.rounds > 0 ? "bg-peacock-50 text-peacock-900 ring-peacock-100" : row.hasEntry ? "bg-stone-100 text-stone-700 ring-stone-200" : "bg-stone-50 text-stone-500 ring-stone-100"
                 }`}>
                   {row.rounds}
@@ -829,7 +830,7 @@ function LeaderboardRefreshMeta({
   onRefresh?: () => void | Promise<void>;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
       {lastUpdated && (
         <span className="rounded-md border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600">
           Last update {lastUpdated}
@@ -977,7 +978,7 @@ export function PublicUserCard({
           </div>
         </div>
         {(stats?.length || actions) && (
-          <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+          <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto sm:justify-end [&>button]:flex-1 sm:[&>button]:flex-none">
             {stats?.map((stat) => (
               <span key={stat.label} className={`rounded-md px-2.5 py-1.5 text-sm font-black ${publicUserStatClass(stat.tone || "stone")}`}>
                 {stat.value} <span className="font-bold">{stat.label}</span>
@@ -1030,8 +1031,8 @@ function publicUserStatClass(tone: "saffron" | "peacock" | "stone") {
 
 export function EmptyState({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-stone-200 bg-stone-50/80 px-4 py-5 text-center">
-      <p className="mx-auto max-w-lg text-sm leading-6 text-stone-600">{text}</p>
+    <div className="rounded-lg border border-dashed border-stone-200 bg-stone-50/80 px-3 py-4 text-center sm:px-4 sm:py-5">
+      <p className="mx-auto max-w-lg text-sm leading-5 text-stone-600 sm:leading-6">{text}</p>
     </div>
   );
 }
@@ -1048,15 +1049,15 @@ export function ActionEmptyState({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-saffron-200 bg-white/90 p-4 shadow-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-lg border border-dashed border-saffron-200 bg-white/90 p-3 shadow-sm sm:p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex min-w-0 gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100">
             {icon}
           </span>
           <div className="min-w-0">
             <p className="font-black text-stone-950">{title}</p>
-            <p className="mt-1 text-sm leading-6 text-stone-600">{text}</p>
+            <p className="mt-1 text-sm leading-5 text-stone-600 sm:leading-6">{text}</p>
           </div>
         </div>
         {children && <div className="grid shrink-0 gap-2 sm:flex sm:flex-wrap sm:justify-end">{children}</div>}

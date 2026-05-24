@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { Bell, CheckCircle2, Circle, Copy, Download, ExternalLink, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Star, Trash2, UserRound } from "lucide-react";
+import { Bell, CheckCircle2, Circle, Copy, Download, ExternalLink, ImageUp, KeyRound, Mail, MapPin, RefreshCw, ShieldCheck, Star, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { ProfilePrivacy } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
@@ -39,6 +39,7 @@ export function ProfilePage() {
     runRemote,
     refreshRemoteState,
     showMessage,
+    showActionFeedback,
     emailVerified,
     profileForm,
     setProfileForm,
@@ -74,6 +75,40 @@ export function ProfilePage() {
     setPrivacyDraft({ ...defaultProfilePrivacy, ...(currentUser.privacy || {}) });
   }, [currentUser?.id, currentUser?.reminderEnabled, currentUser?.reminderTime, currentUser]);
 
+  const normalizedProfilePhone = normalizedOptionalPhone(profileForm.phone, profileForm.country);
+  const profileDirty = currentUser
+    ? profileForm.username.trim().toLowerCase() !== currentUser.username ||
+      profileForm.displayName.trim() !== currentUser.displayName ||
+      profileForm.email.trim().toLowerCase() !== currentUser.email ||
+      normalizedProfilePhone !== currentUser.phone ||
+      profileForm.country !== currentUser.country ||
+      profileForm.timezone !== currentUser.timezone ||
+      profileForm.avatarUrl !== currentUser.avatarUrl
+    : false;
+
+  useEffect(() => {
+    if (!profileDirty) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [profileDirty]);
+
+  const changeProfileSection = (section: ProfileSection) => {
+    if (section === profileSection) return;
+    if (profileDirty && !window.confirm("Discard unsaved profile changes?")) return;
+    setProfileSection(section);
+  };
+
+  const refreshProfile = async () => {
+    if (!currentUser) return;
+    if (profileDirty && !window.confirm("Refresh profile and discard unsaved changes?")) return;
+    await refreshRemoteState(currentUser.id, "core");
+    showMessage("Profile refreshed.");
+  };
+
   if (!currentUser) return null;
   const profileCompletionItems = [
     { label: "Profile picture", done: Boolean(currentUser.avatarUrl) },
@@ -84,15 +119,6 @@ export function ProfilePage() {
     { label: "Added a friend", done: friends.length > 0 },
     { label: "Logged rounds", done: state.chantTotals.some((total) => total.userId === currentUser.id && total.rounds > 0) }
   ];
-  const normalizedProfilePhone = normalizedOptionalPhone(profileForm.phone, profileForm.country);
-  const profileDirty =
-    profileForm.username.trim().toLowerCase() !== currentUser.username ||
-    profileForm.displayName.trim() !== currentUser.displayName ||
-    profileForm.email.trim().toLowerCase() !== currentUser.email ||
-    normalizedProfilePhone !== currentUser.phone ||
-    profileForm.country !== currentUser.country ||
-    profileForm.timezone !== currentUser.timezone ||
-    profileForm.avatarUrl !== currentUser.avatarUrl;
 
   const uploadAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -184,7 +210,8 @@ export function ProfilePage() {
 
   const saveReminderPreferences = async () => {
     setReminderStatus("");
-    await updateUserPreferences({ reminderEnabled, reminderTime });
+    const saved = await updateUserPreferences({ reminderEnabled, reminderTime }).catch(() => false);
+    if (!saved) return;
     setReminderStatus(reminderEnabled ? `Reminder preference saved for ${reminderTime}.` : "Reminder preference saved.");
     window.setTimeout(() => setReminderStatus(""), 2500);
   };
@@ -288,7 +315,10 @@ export function ProfilePage() {
         if (error) throw error;
         await refreshRemoteState(currentUser.id);
         if (profile.avatarUrl) setAvatarStatus("Profile picture saved. It now appears in the header and Profile tab.");
-        showMessage("Profile updated.");
+        showActionFeedback({
+          title: "Profile saved",
+          body: "Your profile and account details are up to date."
+        });
       }).catch((error: Error) => showMessage(readableError(error, "profile")));
       return;
     }
@@ -299,7 +329,10 @@ export function ProfilePage() {
       )
     });
     if (profile.avatarUrl) setAvatarStatus("Profile picture saved. It now appears in the header and Profile tab.");
-    showMessage("Profile updated.");
+    showActionFeedback({
+      title: "Profile saved",
+      body: "Your profile and account details are up to date."
+    });
   };
 
   return (
@@ -309,6 +342,16 @@ export function ProfilePage() {
         icon={<UserRound size={16} />}
         title={currentUser.displayName || currentUser.username}
         description={`Joined ${formatDate(currentUser.joinedAt.slice(0, 10))}. Manage what people see, how your account works, and your data.`}
+        actions={
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm disabled:bg-peacock-200"
+            disabled={isBusy}
+            onClick={() => void refreshProfile()}
+          >
+            <RefreshCw size={16} /> Refresh
+          </button>
+        }
         stats={
           <StatGrid columns={2}>
             <StatCard label="Email status" value={emailVerified ? "Verified" : "Unverified"} tone={emailVerified ? "peacock" : "saffron"} />
@@ -335,7 +378,7 @@ export function ProfilePage() {
         </div>
       </PageHeader>
 
-      <ProfileSectionTabs value={profileSection} onChange={setProfileSection} />
+      <ProfileSectionTabs value={profileSection} onChange={changeProfileSection} />
 
       {profileSection === "public" && (
         <>
@@ -415,7 +458,7 @@ export function ProfilePage() {
                   <span>Public profile changes save together.</span>
                 </div>
                 <button className="rounded-md bg-saffron-500 px-5 py-2.5 font-bold text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200" disabled={isBusy || !profileDirty}>
-                  {profileDirty ? "Save profile" : "Profile saved"}
+                  {isBusy ? "Saving..." : profileDirty ? "Save profile" : "Profile saved"}
                 </button>
               </div>
             </div>
@@ -479,7 +522,7 @@ export function ProfilePage() {
                   <span>Contact and timezone changes save together.</span>
                 </div>
                 <button className="rounded-md bg-saffron-500 px-5 py-2.5 font-bold text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200" disabled={isBusy || !profileDirty}>
-                  {profileDirty ? "Save account" : "Account saved"}
+                  {isBusy ? "Saving..." : profileDirty ? "Save account" : "Account saved"}
                 </button>
               </div>
             </div>
@@ -610,14 +653,14 @@ function PublicProfilePreview() {
           stats={[{ label: "all time", value: allTimeRounds, tone: "saffron" }]}
           showCountry={privacy.showCountry}
         />
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3">
           <PrivacyMetric label="All-time rounds" value={allTimeRounds} />
           {privacy.showStreak ? <PrivacyMetric label="Current streak" value={streak} /> : <PrivacyHiddenMetric label="Current streak" />}
           {privacy.showGroups ? <PrivacyMetric label="Groups" value={groupCount} /> : <PrivacyHiddenMetric label="Groups" />}
           <PrivacyMetric label="Friends" value={friendCount} />
         </div>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      <div className="mt-4 grid gap-2 min-[420px]:grid-cols-3">
         <PrivacyVisibilityPill label="Recent 7 days" visible={privacy.showRecentHistory} />
         <PrivacyVisibilityPill label="Milestones" visible={privacy.showMilestones} />
         <PrivacyVisibilityPill label="Country" visible={privacy.showCountry} />
@@ -630,7 +673,7 @@ function PublicProfilePreview() {
         {featuredMilestones.length === 0 ? (
           <EmptyState text="Choose up to 3 earned milestones from the Milestones page to show here." />
         ) : (
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 min-[420px]:grid-cols-3">
             {featuredMilestones.map((milestone) => (
               <div key={milestone.id} className="rounded-md bg-white px-3 py-2 text-sm ring-1 ring-saffron-100">
                 <p className="font-black text-stone-950">{milestone.title}</p>
@@ -688,13 +731,13 @@ function ProfileSectionTabs({
     { id: "danger", label: "Danger" }
   ];
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
-      <div className="grid grid-cols-2 gap-1 sm:grid-cols-5">
+    <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+      <div className="flex min-w-max gap-1 sm:grid sm:min-w-0 sm:grid-cols-5">
         {sections.map((section) => (
           <button
             key={section.id}
             type="button"
-            className={`rounded-md px-3 py-2 text-sm font-black transition ${
+            className={`shrink-0 rounded-md px-3 py-2 text-sm font-black transition ${
               value === section.id ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
             }`}
             onClick={() => onChange(section.id)}
@@ -831,7 +874,7 @@ function DataPrivacyPanel() {
         <InlineNotice tone="info">
           This export contains your profile, chanting totals, group memberships, friend connections, and notifications.
         </InlineNotice>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <PrivacyMetric label="Rounds entries" value={state.chantTotals.filter((total) => total.userId === currentUser.id).length} />
           <PrivacyMetric label="Groups" value={joinedGroups.length} />
           <PrivacyMetric label="Friends" value={friends.length} />

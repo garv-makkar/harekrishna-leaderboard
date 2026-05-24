@@ -68,16 +68,16 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
   const continueHref = `/?group=${encodeURIComponent(cleanCode)}`;
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff7ed,transparent_32%),linear-gradient(135deg,#fffaf0,#f5fffb_48%,#fff7ed)] px-4 py-5 text-stone-900 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff7ed,transparent_32%),linear-gradient(135deg,#fffaf0,#f5fffb_48%,#fff7ed)] px-3 py-3 text-stone-900 sm:px-6 sm:py-5 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-3 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/"
-            className="inline-flex w-fit items-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 shadow-sm ring-1 ring-saffron-200"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 shadow-sm ring-1 ring-saffron-200 sm:w-fit"
           >
             <Home size={17} /> Hare Krishna Leaderboard
           </Link>
-          <span className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
+          <span className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100 sm:w-fit">
             <ShieldCheck size={16} /> Group invite
           </span>
         </div>
@@ -106,8 +106,8 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
         {payload && (
           <div className="space-y-4 sm:space-y-5">
             <section className="overflow-hidden rounded-lg border border-saffron-200 bg-white/94 text-center shadow-soft">
-              <div className="border-b border-saffron-100 bg-saffron-50/80 px-4 py-5 sm:px-6">
-                <div className="mx-auto mb-3 h-20 w-20 overflow-hidden rounded-lg ring-1 ring-saffron-200">
+              <div className="border-b border-saffron-100 bg-saffron-50/80 px-3 py-4 sm:px-6 sm:py-5">
+                <div className="mx-auto mb-3 h-16 w-16 overflow-hidden rounded-lg ring-1 ring-saffron-200 sm:h-20 sm:w-20">
                   {payload.group.imageUrl ? (
                     <img src={payload.group.imageUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -116,16 +116,16 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
                     </div>
                   )}
                 </div>
-                <p className="mx-auto mb-3 inline-flex rounded-md bg-white px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
+                <p className="mx-auto mb-2 inline-flex rounded-md bg-white px-3 py-1.5 text-sm font-black text-saffron-900 ring-1 ring-saffron-100 sm:mb-3 sm:py-2">
                   Code {payload.group.code}
                 </p>
-                <h1 className="text-2xl font-black tracking-normal text-stone-950 sm:text-3xl">{payload.group.name}</h1>
-                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-stone-600">
-                  Invited by {payload.owner.displayName || payload.owner.username}. Created {formatDate(payload.group.createdAt.slice(0, 10))}.
+                <h1 className="text-xl font-black tracking-normal text-stone-950 sm:text-3xl">{payload.group.name}</h1>
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-5 text-stone-600 sm:leading-6">
+                  Invited by {payload.owner.displayName || payload.owner.username}.
                 </p>
                 <Link
                   href={continueHref}
-                  className="mt-4 inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-5 py-3 text-sm font-black text-white shadow-sm"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-5 py-2.5 text-sm font-black text-white shadow-sm sm:mt-4 sm:w-auto sm:py-3"
                 >
                   <ExternalLink size={17} /> Continue to join
                 </Link>
@@ -139,12 +139,12 @@ export function PublicGroupInvitePage({ code }: { code: string }) {
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <Panel title="Join this group" icon={<Users size={18} />}>
-                <p className="text-sm leading-6 text-stone-600">
-                  Sign in or create an account to join this group. After login, the invite code will be ready on the Groups page.
+                <p className="text-sm leading-5 text-stone-600 sm:leading-6">
+                  Sign in or create an account. The code will open on the Groups page.
                 </p>
-                <div className="mt-4 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-950 sm:px-4">
+                <div className="mt-3 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-5 text-peacock-950 sm:mt-4 sm:px-4 sm:leading-6">
                   <p className="font-black">What happens after joining</p>
-                  <p>Your saved daily rounds will appear in this group&apos;s daily, weekly, and monthly leaderboards.</p>
+                  <p>Your saved rounds will count in this group&apos;s leaderboards.</p>
                 </div>
                 <Link
                   href={continueHref}
@@ -210,8 +210,8 @@ function loadDemoInvite(code: string) {
 
 function InviteHeroMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border-r border-t border-saffron-100 px-3 py-3 last:border-r-0">
-      <p className="text-2xl font-black text-saffron-900 sm:text-3xl">{value || "-"}</p>
+    <div className="border-r border-t border-saffron-100 px-2 py-2.5 last:border-r-0 sm:px-3 sm:py-3">
+      <p className="text-xl font-black text-saffron-900 sm:text-3xl">{value || "-"}</p>
       <p className="mt-0.5 text-xs font-black uppercase text-stone-500">{label}</p>
     </div>
   );

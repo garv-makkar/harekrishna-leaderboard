@@ -23,8 +23,8 @@ import { Field, InlineNotice, PasswordChecklist } from "./ui";
 function AuthHeader({ title, body }: { title: string; body: string }) {
   return (
     <div>
-      <h2 className="text-lg font-black tracking-normal text-saffron-900 sm:text-xl">{title}</h2>
-      <p className="mt-1 text-sm leading-5 text-stone-600">{body}</p>
+      <h2 className="text-base font-black tracking-normal text-saffron-900 sm:text-xl">{title}</h2>
+      <p className="mt-0.5 text-xs leading-5 text-stone-600 sm:mt-1 sm:text-sm">{body}</p>
     </div>
   );
 }
@@ -33,10 +33,10 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
   const { authMode, message } = useChanting();
 
   return (
-    <main className="grid min-h-dvh place-items-center px-3 py-2 sm:px-6 sm:py-5">
-      <div className="w-full max-w-4xl overflow-hidden rounded-lg border border-saffron-200 bg-white/96 shadow-soft">
+    <main className="grid min-h-dvh place-items-start px-2 py-2 sm:place-items-center sm:px-6 sm:py-5">
+      <div className="w-full max-w-3xl overflow-hidden rounded-lg border border-saffron-200 bg-white/96 shadow-soft">
         <CompactAuthBrand />
-        <section className="p-3 sm:p-4 lg:p-5">
+        <section className="p-2.5 sm:p-4">
           {inviteCode && <SignedOutInviteNotice inviteCode={inviteCode} />}
           <AuthModeTabs />
           {message && (
@@ -50,7 +50,7 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
           {authMode === "newPassword" && <NewPasswordForm />}
           {authMode === "checkEmail" && <CheckEmailScreen />}
           {!supabase && (
-            <p className="mt-3 text-center text-xs leading-5 text-stone-500">
+            <p className="mt-2 text-center text-xs leading-5 text-stone-500 sm:mt-3">
               {`${runtimeLabel(publicSupabaseConfig.mode)}. Demo login: demo@example.com or gauranga_das, password HareKrishna108. Data is stored in this browser.`}
             </p>
           )}
@@ -62,10 +62,10 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
 
 function CompactAuthBrand() {
   return (
-    <section className="flex items-center gap-3 border-b border-saffron-100 bg-saffron-500 px-3 py-3 text-white sm:px-4">
-      <div className="lotus-mark grid h-10 w-10 shrink-0 place-items-center rounded-lg text-sm font-black shadow-soft">HK</div>
+    <section className="flex items-center gap-2.5 border-b border-saffron-100 bg-saffron-500 px-3 py-2 text-white sm:gap-3 sm:px-4 sm:py-3">
+      <div className="lotus-mark grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-black shadow-soft sm:h-10 sm:w-10 sm:text-sm">HK</div>
       <div className="min-w-0">
-        <h1 className="truncate text-lg font-black tracking-normal sm:text-xl">Hare Krishna Leaderboard</h1>
+        <h1 className="truncate text-base font-black tracking-normal sm:text-xl">Hare Krishna Leaderboard</h1>
         <p className="hidden truncate text-xs font-bold text-saffron-50 sm:block sm:text-sm">Track rounds with groups, friends, and leaderboards.</p>
       </div>
     </section>
@@ -75,32 +75,32 @@ function CompactAuthBrand() {
 function SignedOutInviteNotice({ inviteCode }: { inviteCode: string }) {
   const { setAuthMode } = useChanting();
   return (
-    <div className="mb-5 rounded-lg border border-peacock-200 bg-peacock-50 p-4 text-peacock-950 shadow-sm">
+    <div className="mb-3 rounded-lg border border-peacock-200 bg-peacock-50 p-3 text-peacock-950 shadow-sm sm:mb-5 sm:p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-white px-2.5 py-1.5 text-xs font-black text-peacock-900 ring-1 ring-peacock-100 sm:px-3 sm:py-2 sm:text-sm">
             <Users size={16} /> Group invite
           </div>
-          <p className="text-lg font-black text-stone-950">You were invited to join a chanting group.</p>
-          <p className="mt-1 text-sm leading-6 text-stone-700">
+          <p className="text-base font-black text-stone-950 sm:text-lg">You were invited to join a chanting group.</p>
+          <p className="mt-1 text-sm leading-5 text-stone-700 sm:leading-6">
             Sign in or create an account to continue. The group code will be ready on the Groups page.
           </p>
         </div>
-        <div className="shrink-0 rounded-md bg-stone-950 px-4 py-3 text-center text-xl font-black tracking-normal text-white">
+        <div className="shrink-0 rounded-md bg-stone-950 px-3 py-2 text-center text-lg font-black tracking-normal text-white sm:px-4 sm:py-3 sm:text-xl">
           {inviteCode}
         </div>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4">
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-3 py-2 text-sm font-black text-white sm:px-4 sm:py-2.5"
           onClick={() => setAuthMode("signup")}
         >
           <Plus size={16} /> Create account
         </button>
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-peacock-900 ring-1 ring-peacock-200"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-200 sm:px-4 sm:py-2.5"
           onClick={() => setAuthMode("signin")}
         >
           <ShieldCheck size={16} /> Sign in
@@ -137,12 +137,12 @@ function AuthModeTabs() {
   const { authMode, setAuthMode } = useChanting();
   if (authMode === "checkEmail" || authMode === "newPassword") return null;
   return (
-    <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg border border-saffron-100 bg-saffron-50 p-1">
+    <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg border border-saffron-100 bg-saffron-50 p-1 sm:mb-3">
       {(["signin", "signup"] as const).map((mode) => (
         <button
           key={mode}
           type="button"
-          className={`flex-1 rounded-md px-3 py-2 text-sm font-bold capitalize transition ${
+          className={`flex-1 rounded-md px-3 py-1.5 text-sm font-bold capitalize transition sm:py-2 ${
             authMode === mode ? "bg-white text-saffron-900 shadow-sm" : "text-stone-600 hover:bg-white/60"
           }`}
           onClick={() => setAuthMode(mode)}
@@ -179,9 +179,9 @@ function CompactField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-bold text-stone-700">{label}</span>
+      <span className="mb-1 block text-xs font-bold text-stone-700 sm:text-sm">{label}</span>
       <input
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100 sm:py-2"
         name={name}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -191,7 +191,7 @@ function CompactField({
         placeholder={placeholder}
         inputMode={inputMode}
       />
-      {helper && <span className="mt-1 block text-xs leading-4 text-stone-500">{helper}</span>}
+      {helper && <span className="mt-1 block text-[11px] leading-4 text-stone-500 sm:text-xs">{helper}</span>}
     </label>
   );
 }
@@ -204,13 +204,13 @@ function CompactPasswordChecklist({
   touched: boolean;
 }) {
   return (
-    <div className="rounded-md border border-stone-200 bg-stone-50/90 px-3 py-2">
-      <p className="mb-1.5 text-xs font-black uppercase text-stone-500">Password requirements</p>
-      <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+    <div className="rounded-md border border-stone-200 bg-stone-50/90 px-2.5 py-2 sm:px-3">
+      <p className="mb-1.5 text-[11px] font-black uppercase text-stone-500 sm:text-xs">Password requirements</p>
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1">
         {rules.map((rule) => (
           <div
             key={rule.label}
-            className={`flex items-center gap-1.5 text-xs font-semibold leading-4 ${
+            className={`flex items-center gap-1.5 text-[11px] font-semibold leading-4 sm:text-xs ${
               rule.met ? "text-emerald-700" : touched ? "text-red-700" : "text-stone-500"
             }`}
           >
@@ -276,7 +276,7 @@ function SignInForm() {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5 sm:space-y-3">
       <AuthHeader title="Welcome back" body="Use password, or use email OTP if you do not want to enter your password." />
       {formError && (
         <InlineNotice tone="error">
@@ -294,12 +294,12 @@ function SignInForm() {
           </div>
         </InlineNotice>
       )}
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">
-        <form className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 shadow-sm" onSubmit={submit}>
+      <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)] md:gap-3">
+        <form className="space-y-2.5 rounded-lg border border-stone-200 bg-stone-50/70 p-2.5 shadow-sm sm:space-y-3 sm:p-3" onSubmit={submit}>
           <p className="text-sm font-black text-stone-900">Password</p>
           <CompactField label="Username or email" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
           <CompactField label="Password" name="signin-password" value={password} onChange={setPassword} type="password" required autoComplete="current-password" />
-          <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white" disabled={localBusy}>
+          <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2 text-sm font-black text-white sm:py-2.5" disabled={localBusy}>
             <ShieldCheck size={16} /> Sign in with password
           </button>
         </form>
@@ -372,7 +372,7 @@ function EmailOtpSignInSection() {
   };
 
   return (
-    <form className="space-y-3 rounded-lg border border-peacock-100 bg-peacock-50/65 p-3 shadow-sm" onSubmit={verifyOtp}>
+    <form className="space-y-2.5 rounded-lg border border-peacock-100 bg-peacock-50/65 p-2.5 shadow-sm sm:space-y-3 sm:p-3" onSubmit={verifyOtp}>
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-sm font-black text-stone-900">Email OTP</p>
@@ -384,13 +384,13 @@ function EmailOtpSignInSection() {
         {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
         {hasSent && <InlineNotice tone="success">Code sent to {email.trim().toLowerCase()}. Keep this tab open and enter the code from your email.</InlineNotice>}
         <CompactField label="Account email" name="signin-otp-email" value={email} onChange={setEmail} type="email" required autoComplete="email" placeholder="you@example.com" />
-        <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-peacock-900 ring-1 ring-peacock-200" disabled={localBusy} onClick={sendOtp}>
+        <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-200 sm:py-2.5" disabled={localBusy} onClick={sendOtp}>
           <ShieldCheck size={16} /> {localBusy ? "Sending..." : hasSent ? "Send again" : "Send email OTP"}
         </button>
         {hasSent && (
           <>
             <CompactField label="OTP code" name="signin-otp-code" value={token} onChange={setToken} required autoComplete="one-time-code" inputMode="numeric" placeholder="123456" />
-            <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white" disabled={localBusy || token.trim().length < 6}>
+            <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2 text-sm font-black text-white sm:py-2.5" disabled={localBusy || token.trim().length < 6}>
               <ShieldCheck size={16} /> Verify and sign in
             </button>
           </>
@@ -513,21 +513,21 @@ function SignUpForm() {
   };
 
   return (
-    <form className="space-y-3" onSubmit={submit}>
-      <AuthHeader title="Create account" body="Email is required. Phone and country can be added later in Profile." />
+    <form className="space-y-2.5 sm:space-y-3" onSubmit={submit}>
+      <AuthHeader title="Create account" body="Email is required. Phone is optional and can be added later in Profile." />
       {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
       {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 shadow-sm">
+      <div className="grid gap-2.5 lg:grid-cols-2 lg:gap-3">
+        <div className="space-y-2.5 rounded-lg border border-stone-200 bg-stone-50/70 p-2.5 shadow-sm sm:space-y-3 sm:p-3">
           <CompactField label="Username" name="signup-username" value={form.username} onChange={(value) => setForm({ ...form, username: value })} required autoComplete="username" placeholder="garv_makkar" />
           <CompactField label="Email" name="signup-email" value={form.email} onChange={(value) => setForm({ ...form, email: value })} type="email" required autoComplete="email" placeholder="you@example.com" />
         </div>
-        <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 shadow-sm">
+        <div className="space-y-2.5 rounded-lg border border-stone-200 bg-stone-50/70 p-2.5 shadow-sm sm:space-y-3 sm:p-3">
           <CompactField label="Password" name="signup-password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} type="password" required autoComplete="new-password" />
           <CompactPasswordChecklist rules={rules} touched={form.password.length > 0} />
         </div>
       </div>
-      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white" disabled={localBusy || !isPasswordReady}>
+      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2 text-sm font-black text-white sm:py-2.5" disabled={localBusy || !isPasswordReady}>
         <Plus size={16} /> Create account
       </button>
     </form>

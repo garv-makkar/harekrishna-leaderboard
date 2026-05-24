@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Award, BarChart3, CalendarDays, CheckCircle2, Download, Flame, ListChecks, ShieldCheck, Users } from "lucide-react";
+import { Award, BarChart3, CalendarDays, CheckCircle2, Download, Flame, ListChecks, RefreshCw, ShieldCheck, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   addDays,
@@ -22,7 +22,7 @@ const rangeOptions = [
 ];
 
 export function ActivityPage() {
-  const { state, currentUser, todayKey, editableDates, setSelectedDate, showMessage, refreshRemoteState } = useChanting();
+  const { state, currentUser, todayKey, editableDates, setSelectedDate, showMessage, refreshRemoteState, isBusy } = useChanting();
   const [days, setDays] = useState(30);
   const refreshedUserRef = useRef("");
 
@@ -72,15 +72,25 @@ export function ActivityPage() {
         eyebrow={`${days}-day view`}
         icon={<BarChart3 size={16} />}
         title="Activity summary"
-        description="Review chanting history, recent app activity, and exported records."
+        description="History, recent activity, and CSV export."
         actions={
-          <button
-            type="button"
-            className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm"
-            onClick={exportHistory}
-          >
-            <Download size={16} /> Export CSV
-          </button>
+          <>
+            <button
+              type="button"
+              className="inline-flex w-fit items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100 disabled:text-stone-400"
+              disabled={isBusy}
+              onClick={() => void refreshRemoteState(currentUser.id, "core").then(() => showMessage("Activity refreshed."))}
+            >
+              <RefreshCw size={16} /> Refresh
+            </button>
+            <button
+              type="button"
+              className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm"
+              onClick={exportHistory}
+            >
+              <Download size={16} /> Export CSV
+            </button>
+          </>
         }
       >
         <FilterBar label="Range">
@@ -107,42 +117,44 @@ export function ActivityPage() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
         <Panel title={`${days}-day history`} icon={<CalendarDays size={18} />}>
-          <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(62px,1fr))]">
-            {history.map((item) => {
-              const isToday = item.dateKey === todayKey;
-              const barHeight = Math.max(8, Math.round((item.rounds / highestRounds) * 76));
-              return (
-                <button
-                  key={item.dateKey}
-                  type="button"
-                  className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-2 text-center ${
-                    isToday ? "border-saffron-400 bg-saffron-50 shadow-sm" : "border-stone-200 bg-white shadow-sm hover:border-saffron-200"
-                  }`}
-                  onClick={() => {
-                    setSelectedDate(item.dateKey);
-                    showMessage(`Selected ${formatDate(item.dateKey)} in the rounds editor.`);
-                  }}
-                  title={`${formatDate(item.dateKey)}: ${item.rounds} rounds`}
-                >
-                  <div className="flex h-16 w-full items-end rounded bg-stone-50 px-1 py-1 sm:h-20">
-                    <div
-                      className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
-                      style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
-                    />
-                  </div>
-                  <span className="text-sm font-black text-stone-900">{item.rounds}</span>
-                  <span className={`truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
-                    {isToday ? "Today" : shortDate(item.dateKey)}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="-mx-1 overflow-x-auto px-1 pb-1">
+            <div className="grid auto-cols-[64px] grid-flow-col gap-2 sm:auto-cols-[72px] xl:auto-cols-fr xl:grid-flow-row xl:[grid-template-columns:repeat(auto-fit,minmax(62px,1fr))]">
+              {history.map((item) => {
+                const isToday = item.dateKey === todayKey;
+                const barHeight = Math.max(8, Math.round((item.rounds / highestRounds) * 76));
+                return (
+                  <button
+                    key={item.dateKey}
+                    type="button"
+                    className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-2 text-center ${
+                      isToday ? "border-saffron-400 bg-saffron-50 shadow-sm" : "border-stone-200 bg-white shadow-sm hover:border-saffron-200"
+                    }`}
+                    onClick={() => {
+                      setSelectedDate(item.dateKey);
+                      showMessage(`Selected ${formatDate(item.dateKey)} in the rounds editor.`);
+                    }}
+                    title={`${formatDate(item.dateKey)}: ${item.rounds} rounds`}
+                  >
+                    <div className="flex h-16 w-full items-end rounded bg-stone-50 px-1 py-1 sm:h-20">
+                      <div
+                        className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
+                        style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
+                      />
+                    </div>
+                    <span className="text-sm font-black text-stone-900">{item.rounds}</span>
+                    <span className={`truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
+                      {isToday ? "Today" : shortDate(item.dateKey)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </Panel>
 
         <Panel title="Recent activity" icon={<ListChecks size={18} />}>
           {feedItems.length === 0 ? (
-            <EmptyState text="No recent app activity yet. Log rounds, join a group, or add a friend and it will appear here." />
+            <EmptyState text="No recent activity yet." />
           ) : (
             <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
               {feedItems.slice(0, 8).map((item) => (
@@ -167,15 +179,15 @@ export function ActivityPage() {
       </div>
 
       <Panel title="Logged days" icon={<ListChecks size={18} />}>
-        <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:px-4">
+        <div className="mb-3 rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2 text-sm leading-5 text-peacock-900 sm:mb-4 sm:px-4 sm:py-2.5 sm:leading-6">
           <div className="flex items-center gap-2 font-black">
             <ShieldCheck size={16} />
             Data confidence
           </div>
-          <p>Rounds are self-entered. Dates from your account join date through today can be corrected from Home.</p>
+          <p>Rounds are self-entered and can be corrected from Home.</p>
         </div>
         {allEntries.length === 0 ? (
-          <EmptyState text="No chanting history yet. Add rounds on Home and your logged days will appear here." />
+          <EmptyState text="No logged days yet. Add rounds on Home." />
         ) : (
           <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
             {allEntries.slice(0, 60).map((entry) => {

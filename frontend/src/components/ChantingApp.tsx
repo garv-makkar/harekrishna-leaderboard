@@ -230,7 +230,7 @@ function AppShell({
             aria-label="Close menu"
             onClick={() => setShowMobileNav(false)}
           />
-          <aside className="relative flex h-full w-[min(320px,88vw)] flex-col border-r border-saffron-200 bg-white shadow-soft">
+          <aside className="relative flex h-full w-[min(304px,88vw)] flex-col border-r border-saffron-200 bg-white shadow-soft">
             <div className="flex items-center justify-between border-b border-saffron-100 px-3 py-3 sm:px-4 sm:py-4">
               <BrandLockup compact />
               <button
@@ -289,18 +289,19 @@ function AppShell({
 
         <div className="min-w-0">
           <header className="sticky top-0 z-30 border-b border-saffron-200/80 bg-white/90 backdrop-blur">
-            <div className="flex min-h-[58px] items-center justify-between gap-2 px-3 py-2 sm:min-h-[66px] sm:px-5 sm:py-3 lg:px-6">
+            <div className="flex min-h-[54px] items-center justify-between gap-2 px-2.5 py-2 sm:min-h-[66px] sm:px-5 sm:py-3 lg:px-6">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
                   type="button"
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-saffron-200 bg-white text-stone-800 shadow-sm sm:h-11 sm:w-11 lg:hidden"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-saffron-200 bg-white text-stone-800 shadow-sm sm:h-11 sm:w-11 lg:hidden"
                   onClick={() => setShowMobileNav(true)}
                   aria-label="Open menu"
                 >
-                  <Menu size={22} />
+                  <Menu size={20} />
                 </button>
                 <div className="min-w-0 lg:hidden">
-                  <BrandLockup compact />
+                  <p className="text-[11px] font-bold uppercase text-stone-500">Dashboard</p>
+                  <h1 className="truncate text-base font-black tracking-normal text-stone-950 sm:text-lg">{activeTabLabel}</h1>
                 </div>
                 <div className="hidden min-w-0 lg:block">
                   <p className="text-sm font-bold text-stone-500">Dashboard</p>
@@ -326,7 +327,7 @@ function AppShell({
                 <div className="relative">
                   <button
                     type="button"
-                    className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-200 bg-white px-2 text-sm font-semibold text-stone-800 shadow-sm sm:h-11 sm:px-3"
+                    className="inline-flex h-9 items-center gap-2 rounded-md border border-stone-200 bg-white px-2 text-sm font-semibold text-stone-800 shadow-sm sm:h-11 sm:px-3"
                     onClick={() => setShowNotifications((value) => !value)}
                   >
                     <Bell size={17} />
@@ -338,7 +339,7 @@ function AppShell({
                     )}
                   </button>
                   {showNotifications && (
-                    <div className="fixed left-3 right-3 top-[66px] z-30 max-h-[calc(100vh-84px)] overflow-y-auto rounded-lg border border-saffron-200 bg-white p-3 shadow-soft sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[min(380px,calc(100vw-2rem))]">
+                    <div className="fixed left-2 right-2 top-[60px] z-30 max-h-[calc(100vh-72px)] overflow-y-auto rounded-lg border border-saffron-200 bg-white p-3 shadow-soft sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[min(380px,calc(100vw-2rem))]">
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <div>
                           <p className="font-black text-stone-900">Notifications</p>
@@ -444,7 +445,7 @@ function AppShell({
             </div>
           </header>
 
-          <section className="min-w-0 px-3 pb-28 pt-4 sm:px-5 sm:py-6 lg:px-6 lg:py-6">
+          <section className="min-w-0 px-2.5 pb-24 pt-3 sm:px-5 sm:py-6 lg:px-6 lg:py-6">
           {(message || actionFeedback) && (
             <FeedbackBanner
               feedback={actionFeedback}
@@ -504,7 +505,7 @@ function FeedbackBanner({
 
   const isInfo = feedback.tone === "info";
   return (
-    <div className={`mb-4 rounded-lg border px-4 py-3 shadow-sm ${
+    <div className={`mb-4 rounded-lg border px-3 py-3 shadow-sm sm:px-4 ${
       isInfo ? "border-peacock-200 bg-peacock-50 text-peacock-950" : "border-emerald-200 bg-emerald-50 text-emerald-950"
     }`}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

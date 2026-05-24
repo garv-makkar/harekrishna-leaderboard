@@ -215,7 +215,14 @@ export function HomePage() {
     setDailyRounds(selectedDate, draftRounds);
   };
   const saveDailyGoal = async () => {
-    await updateUserPreferences({ dailyGoal: Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(Number(goalDraft) || 0))) });
+    const nextGoal = Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(Number(goalDraft) || 0)));
+    const saved = await updateUserPreferences({ dailyGoal: nextGoal }).catch(() => false);
+    if (!saved) return;
+    showActionFeedback({
+      title: "Daily goal saved",
+      body: nextGoal > 0 ? `Your daily goal is now ${nextGoal} rounds.` : "Your daily goal is now hidden.",
+      action: { label: "View activity", tab: "activity" }
+    });
   };
   const downloadShareCard = () => {
     const canvas = document.createElement("canvas");
@@ -269,25 +276,25 @@ export function HomePage() {
       <PageHeader
         eyebrow={selectedDateLabel}
         icon={<CalendarDays size={16} />}
-        title="Add chanting rounds"
-        description="Save the exact total for today or any date since you created your account."
+        title="Today's rounds"
+        description="Set the total once, then use quick adjustments through the day."
         stats={
           <>
-            <p className="mb-3 text-sm font-black uppercase text-stone-500">Practice totals</p>
+            <p className="mb-2 text-xs font-black uppercase text-stone-500 sm:mb-3 sm:text-sm">Practice totals</p>
             <StatGrid columns={2}>
-              <StatCard label="Today" value={currentRounds} note="saved rounds" tone="saffron" />
-              <StatCard label="This week" value={weeklyRounds} note="Monday onward" tone="peacock" />
-              <StatCard label="This month" value={monthlyRounds} note={`${monthDays} active day${monthDays === 1 ? "" : "s"}`} tone="stone" />
+              <StatCard label="Today" value={currentRounds} note="saved" tone="saffron" />
+              <StatCard label="Week" value={weeklyRounds} note="Mon onward" tone="peacock" />
+              <StatCard label="Month" value={monthlyRounds} note={`${monthDays} days`} tone="stone" />
               <StatCard label="All time" value={allTimeRounds} note={`Since ${formatDate(currentUser.joinedAt.slice(0, 10))}`} tone="saffron" />
             </StatGrid>
           </>
         }
       >
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_150px]">
+            <div className="grid gap-2 sm:gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px]">
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
                 <input
-                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100 sm:py-2.5 sm:text-base"
                   type="date"
                   value={selectedDate}
                   min={currentUser.joinedAt.slice(0, 10)}
@@ -299,7 +306,7 @@ export function HomePage() {
                 />
               </label>
               <Field
-                label="Exact total to save"
+                label="Total rounds"
                 value={roundInput}
                 onChange={(value) => {
                   setPreviousDraft(draftRounds);
@@ -308,13 +315,13 @@ export function HomePage() {
                 type="number"
                 min={0}
                 max={MAX_DAILY_ROUNDS}
-                helper="This is the full total for the selected date."
+                helper="Full total for the selected date."
               />
-              <StatCard label="Saved total" value={currentRounds} note="rounds" tone="saffron" />
+              <StatCard label="Saved" value={currentRounds} note="rounds" tone="saffron" />
             </div>
 
-            <div className="mt-4">
-              <p className="mb-2 text-sm font-bold text-stone-700">Quick totals</p>
+            <div className="mt-3 sm:mt-4">
+              <p className="mb-2 text-sm font-bold text-stone-700">Set total</p>
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {[1, 4, 8, 16, 32, 64].map((value) => (
                   <button
@@ -334,7 +341,7 @@ export function HomePage() {
               </div>
             </div>
 
-            <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
+            <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto] sm:mt-4">
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {[-1, 1, 4, 8, 16].map((amount) => (
                   <button
@@ -377,12 +384,13 @@ export function HomePage() {
               </button>
             </div>
 
-            <div className="mt-4 rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4">
-              Draft total: <b className="text-stone-900">{draftRounds}</b>
-              {draftDelta !== 0 && <span> ({draftDelta > 0 ? `+${draftDelta}` : draftDelta} from saved)</span>}
-              <span> Daily maximum is {MAX_DAILY_ROUNDS}.</span>
-              <span className="block font-bold text-stone-700">All round totals are self-entered.</span>
-              <span className="block">{localDayBoundaryText(currentUser.timezone)}</span>
+            <div className="mt-3 grid gap-1 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600 sm:mt-4 sm:grid-cols-[1fr_auto] sm:items-center sm:px-4 sm:text-sm">
+              <p>
+                Draft: <b className="text-stone-900">{draftRounds}</b>
+                {draftDelta !== 0 && <span> ({draftDelta > 0 ? `+${draftDelta}` : draftDelta})</span>}
+                <span> · Max {MAX_DAILY_ROUNDS}</span>
+              </p>
+              <p className="font-bold text-stone-700">{localDayBoundaryText(currentUser.timezone)}</p>
             </div>
 
             {hasUnsavedDraft && (
@@ -391,8 +399,8 @@ export function HomePage() {
                   <AlertTriangle className="mt-0.5 shrink-0" size={18} />
                   <div>
                     <p className="font-black">Unsaved changes</p>
-                    <p className="leading-6">
-                      You changed {selectedDateLabel} from {currentRounds} to {draftRounds}. Save before switching dates or leaving this entry.
+                    <p className="leading-5 sm:leading-6">
+                      {selectedDateLabel}: {currentRounds} -&gt; {draftRounds}. Save before switching dates.
                     </p>
                   </div>
                 </div>
@@ -460,9 +468,9 @@ export function HomePage() {
             </Card>
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <DailyFocusTile label="Current streak" value={streakNow} note={`Best streak ${streakBest}`} />
-              <DailyFocusTile label="Last 7 days" value={sevenDayRounds} note={`${history.filter((item) => item.rounds > 0).length} active days`} />
+              <DailyFocusTile label="7 days" value={sevenDayRounds} note={`${history.filter((item) => item.rounds > 0).length} active days`} />
               <DailyFocusTile label="Yesterday" value={yesterdayRounds} note={canEditYesterday ? "Still editable" : "Edit window closed"} />
-              <DailyFocusTile label="Groups joined" value={joinedGroups.length} note={joinedGroups.length ? "Active group shortcuts below" : "Join or create your first group"} />
+              <DailyFocusTile label="Groups" value={joinedGroups.length} note={joinedGroups.length ? "Shortcuts below" : "Join or create one"} />
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -493,7 +501,7 @@ export function HomePage() {
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto] sm:items-end">
               <div>
                 <p className="font-black text-stone-900">Daily goal</p>
-                <p className="mt-1 text-sm leading-6 text-stone-600">
+                <p className="mt-1 text-sm leading-5 text-stone-600 sm:leading-6">
                   {currentRounds >= dailyGoal ? "Goal complete today." : `${remainingGoalRounds} rounds left today.`}
                 </p>
               </div>
@@ -571,50 +579,52 @@ export function HomePage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.9fr)_minmax(0,1.1fr)]">
-        <Panel title="Chanting consistency" icon={<Flame size={18} />}>
+        <Panel title="7-day rhythm" icon={<Flame size={18} />}>
           <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-black text-stone-900">Last 7 days</p>
-                <p className="text-sm text-stone-600">Your recent rhythm. Click a day to edit it on Home.</p>
+                <p className="text-sm text-stone-600">Tap a day to edit it.</p>
               </div>
               <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
                 {sevenDayRounds} rounds
               </span>
             </div>
-            <div className="grid gap-1 [grid-template-columns:repeat(7,minmax(0,1fr))] sm:gap-2">
-              {history.map((item) => {
-                const barHeight = Math.max(10, Math.round((item.rounds / highestHistoryRounds) * 104));
-                const isToday = item.dateKey === todayKey;
-                return (
-                  <button
-                    key={item.dateKey}
-                    type="button"
-                    className={`flex min-w-0 flex-col items-center gap-1 rounded-md border px-0.5 py-2 transition sm:gap-2 sm:px-1 ${
-                      isToday ? "border-saffron-300 bg-saffron-50" : "border-transparent hover:border-stone-200 hover:bg-stone-50"
-                    }`}
-                    onClick={() => {
-                      changeEditableDate(item.dateKey, item.rounds);
-                    }}
-                  >
-                    <div className="flex h-20 w-full items-end rounded-md bg-stone-50 px-0.5 py-1 sm:h-28 sm:px-1">
-                      <div
-                        className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
-                        style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
-                      />
-                    </div>
-                    <p className="text-xs font-black text-stone-900 sm:text-sm">{item.rounds}</p>
-                    <p className={`max-w-full truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
-                      {isToday ? "Today" : formatDate(item.dateKey).replace(/,.*$/, "")}
-                    </p>
-                  </button>
-                );
-              })}
+            <div className="-mx-1 overflow-x-auto px-1 pb-1">
+              <div className="grid min-w-[490px] gap-2 [grid-template-columns:repeat(7,minmax(0,1fr))] sm:min-w-0">
+                {history.map((item) => {
+                  const barHeight = Math.max(10, Math.round((item.rounds / highestHistoryRounds) * 104));
+                  const isToday = item.dateKey === todayKey;
+                  return (
+                    <button
+                      key={item.dateKey}
+                      type="button"
+                      className={`flex min-w-0 flex-col items-center gap-1 rounded-md border px-1 py-2 transition sm:gap-2 ${
+                        isToday ? "border-saffron-300 bg-saffron-50" : "border-transparent hover:border-stone-200 hover:bg-stone-50"
+                      }`}
+                      onClick={() => {
+                        changeEditableDate(item.dateKey, item.rounds);
+                      }}
+                    >
+                      <div className="flex h-20 w-full items-end rounded-md bg-stone-50 px-1 py-1 sm:h-28">
+                        <div
+                          className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
+                          style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
+                        />
+                      </div>
+                      <p className="text-xs font-black text-stone-900 sm:text-sm">{item.rounds}</p>
+                      <p className={`max-w-full truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
+                        {isToday ? "Today" : formatDate(item.dateKey).replace(/,.*$/, "")}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </Panel>
 
-        <Panel title="Milestone progress" icon={<Award size={18} />}>
+        <Panel title="Milestones" icon={<Award size={18} />}>
           <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)]">
             <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-center">
               <p className="text-xs font-black uppercase text-stone-500">Completed</p>
@@ -637,7 +647,7 @@ export function HomePage() {
         </Panel>
       </div>
 
-      <Panel title="Extras" icon={<Moon size={18} />}>
+      <Panel title="Calendar and share" icon={<Moon size={18} />}>
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
             <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5">
@@ -668,7 +678,7 @@ export function HomePage() {
           </div>
           <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
             <p className="font-black text-stone-900">Share progress</p>
-            <p className="mt-1 text-sm leading-6 text-stone-600">Download today&apos;s simple progress card.</p>
+            <p className="mt-1 text-sm leading-5 text-stone-600 sm:leading-6">Download today&apos;s progress card.</p>
             {shareStatus && <p className="mt-2 rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{shareStatus}</p>}
             <button
               type="button"
