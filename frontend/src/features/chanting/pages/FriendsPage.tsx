@@ -6,7 +6,6 @@ import { Check, HeartHandshake, Search, Trophy, UserRoundSearch, Users } from "l
 import { supabase } from "@/lib/supabase";
 import { makeFriendRequest, useChanting } from "../ChantingContext";
 import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange, readableError } from "../domain";
-import { ModerationReportButton } from "../ModerationReportButton";
 import { ActionEmptyState, Avatar, EmptyState, Field, FilterBar, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function FriendsPage() {
@@ -254,7 +253,6 @@ export function FriendsPage() {
                     >
                       Remove
                     </button>
-                    {friend && <ModerationReportButton userId={friend.id} username={friend.username} />}
                   </div>
                 </div>
               );
@@ -465,7 +463,6 @@ function FriendSearch() {
                   >
                     {alreadyRelated ? "Added" : "Add"}
                   </button>
-                  <ModerationReportButton userId={user.id} username={user.username} />
                 </div>
               </div>
             );

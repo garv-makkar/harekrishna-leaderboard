@@ -60,23 +60,13 @@ export type FriendRequest = {
   createdAt: string;
 };
 
-export type ModerationReport = {
-  id: string;
-  reporterId: string;
-  reportedUserId: string;
-  reason: string;
-  details: string;
-  status: "open" | "reviewed" | "dismissed";
-  createdAt: string;
-};
-
 export type AppNotification = {
   id: string;
   userId: string;
   title: string;
   body: string;
   tone: "success" | "info" | "warning";
-  actionTab: "home" | "groups" | "friends" | "global" | "activity" | "notifications" | "profile" | "admin" | "about" | "";
+  actionTab: "home" | "groups" | "friends" | "global" | "activity" | "notifications" | "profile" | "about" | "";
   dedupeKey: string;
   readAt: string;
   createdAt: string;
@@ -88,7 +78,6 @@ export type AppState = {
   groups: Group[];
   groupMembers: GroupMember[];
   friendRequests: FriendRequest[];
-  moderationReports: ModerationReport[];
   notifications: AppNotification[];
   currentUserId: string | null;
 };

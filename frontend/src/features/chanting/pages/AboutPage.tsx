@@ -14,7 +14,7 @@ export function AboutPage() {
       />
       <Panel title="About the website" icon={<Flame size={18} />}>
         <div className="grid gap-3 md:grid-cols-3">
-          <AboutTile icon={<Flame size={18} />} title="Daily practice" text="Enter rounds for today and recent editable days." />
+          <AboutTile icon={<Flame size={18} />} title="Daily practice" text="Enter rounds for today or any date since joining." />
           <AboutTile icon={<HeartHandshake size={18} />} title="Friends and groups" text="Build small accountability circles with people you know." />
           <AboutTile icon={<Trophy size={18} />} title="Leaderboards" text="View daily, weekly, and monthly ranking with tied ranks." />
         </div>

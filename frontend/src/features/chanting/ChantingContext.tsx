@@ -9,7 +9,6 @@ import type {
   Group,
   GroupRole,
   LeaderboardPeriod,
-  ModerationReport,
   UserProfile
 } from "@/lib/types";
 import {
@@ -17,7 +16,6 @@ import {
   FriendRequestRow,
   GroupMemberRow,
   GroupRow,
-  ModerationReportRow,
   NotificationRow,
   ProfileRow,
   STORAGE_KEY,
@@ -29,10 +27,10 @@ import {
   fromChantTotalRow,
   fromFriendRequestRow,
   fromGroupRow,
-  fromModerationReportRow,
   fromNotificationRow,
   fromProfileRow,
-  lastEditableDates,
+  editableDatesSinceJoin,
+  isEditableSinceJoin,
   loadState,
   localDateKey,
   MAX_DAILY_ROUNDS,
@@ -75,7 +73,6 @@ type ChantingContextValue = {
   saveState: (next: AppState) => void;
   isLoaded: boolean;
   isBusy: boolean;
-  isAdmin: boolean;
   loadedRemoteSlices: RemoteSliceStatus;
   loadingRemoteSlices: RemoteSliceStatus;
   authMode: AuthMode;
@@ -124,11 +121,8 @@ type ChantingContextValue = {
   refreshRemoteState: (currentUserId: string, scope?: RemoteScope) => Promise<void>;
   ensureGroupsData: (force?: boolean) => Promise<void>;
   ensureFriendsData: (force?: boolean) => Promise<void>;
-  ensureAdminData: (force?: boolean) => Promise<void>;
   resolveLoginEmail: (identifier: string) => Promise<string>;
   checkIdentityConflicts: (username: string, email: string, phone: string) => Promise<void>;
-  submitUserReport: (reportedUserId: string, reason: string, details: string) => Promise<void>;
-  updateModerationReportStatus: (reportId: string, status: ModerationReport["status"]) => Promise<void>;
   addNotification: (notification: NewNotification) => Promise<void>;
   markNotificationRead: (notificationId: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
@@ -143,12 +137,11 @@ type NewNotification = {
   userId?: string;
 };
 
-type RemoteScope = "core" | "groups" | "friends" | "admin" | "all";
+type RemoteScope = "core" | "groups" | "friends" | "all";
 
 type RemoteSliceStatus = {
   groups: boolean;
   friends: boolean;
-  admin: boolean;
 };
 
 const ChantingContext = createContext<ChantingContextValue | null>(null);
@@ -163,7 +156,6 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(() => createSeedState());
   const [isLoaded, setIsLoaded] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [pendingAuthNotice, setPendingAuthNotice] = useState<PendingAuthNotice>({
     title: "",
@@ -183,13 +175,11 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
   const [loadedRemoteSlices, setLoadedRemoteSlices] = useState({
     groups: false,
-    friends: false,
-    admin: false
+    friends: false
   });
   const [loadingRemoteSlices, setLoadingRemoteSlices] = useState({
     groups: false,
-    friends: false,
-    admin: false
+    friends: false
   });
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     username: "",
@@ -260,9 +250,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       if (event === "SIGNED_IN" && session?.user) refreshRemoteState(session.user.id, "core");
       if (event === "SIGNED_OUT") {
         setState({ ...createSeedState(), currentUserId: null, users: [], chantTotals: [], groups: [], groupMembers: [], friendRequests: [], notifications: [] });
-        setIsAdmin(false);
-        setLoadedRemoteSlices({ groups: false, friends: false, admin: false });
-        setLoadingRemoteSlices({ groups: false, friends: false, admin: false });
+        setLoadedRemoteSlices({ groups: false, friends: false });
+        setLoadingRemoteSlices({ groups: false, friends: false });
       }
     });
     return () => subscription.unsubscribe();
@@ -277,7 +266,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     [state]
   );
   const todayKey = currentUser ? localDateKey(new Date(), currentUser.timezone) : localDateKey(new Date(), detectTimezone());
-  const editableDates = lastEditableDates(todayKey);
+  const editableDates = currentUser ? editableDatesSinceJoin(todayKey, currentUser.joinedAt) : [todayKey];
 
   useEffect(() => {
     if (!selectedDate && currentUser) setSelectedDate(todayKey);
@@ -310,22 +299,20 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     const shouldLoadCore = scope === "core" || scope === "all";
     const shouldLoadGroups = scope === "groups" || scope === "all";
     const shouldLoadFriends = scope === "friends" || scope === "all";
-    const shouldLoadAdmin = scope === "admin";
-    const shouldLoadProfiles = shouldLoadCore || shouldLoadGroups || shouldLoadFriends || shouldLoadAdmin;
-    const shouldLoadTotals = shouldLoadCore || shouldLoadGroups || shouldLoadFriends || shouldLoadAdmin;
-    const shouldLoadGroupTables = shouldLoadGroups || shouldLoadAdmin;
+    const shouldLoadProfiles = shouldLoadCore || shouldLoadGroups || shouldLoadFriends;
+    const shouldLoadTotals = shouldLoadCore || shouldLoadGroups || shouldLoadFriends;
+    const shouldLoadGroupTables = shouldLoadGroups;
 
-    const [profilesResult, totalsResult, groupsResult, membersResult, requestsResult, reportsResult, notificationsResult] = await Promise.all([
+    const [profilesResult, totalsResult, groupsResult, membersResult, requestsResult, notificationsResult] = await Promise.all([
       shouldLoadProfiles ? supabase.from("profiles").select("*").order("username") : Promise.resolve({ data: null, error: null }),
       shouldLoadTotals ? supabase.from("chant_totals").select("*") : Promise.resolve({ data: null, error: null }),
       shouldLoadGroupTables ? supabase.from("groups").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
       shouldLoadGroupTables ? supabase.from("group_members").select("*") : Promise.resolve({ data: null, error: null }),
       shouldLoadFriends ? supabase.from("friend_requests").select("*") : Promise.resolve({ data: null, error: null }),
-      shouldLoadAdmin ? supabase.from("moderation_reports").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
       shouldLoadCore ? supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at", { ascending: false }).limit(80) : Promise.resolve({ data: null, error: null })
     ]);
 
-    const error = profilesResult.error || totalsResult.error || groupsResult.error || membersResult.error || requestsResult.error || reportsResult.error;
+    const error = profilesResult.error || totalsResult.error || groupsResult.error || membersResult.error || requestsResult.error;
 
     if (error) {
       showMessage(readableError(error));
@@ -346,7 +333,6 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
           }))
         : state.groupMembers,
       friendRequests: shouldLoadFriends ? ((requestsResult.data || []) as FriendRequestRow[]).map(fromFriendRequestRow) : state.friendRequests,
-      moderationReports: shouldLoadAdmin ? ((reportsResult.data || []) as ModerationReportRow[]).map(fromModerationReportRow) : state.moderationReports || [],
       notifications:
         shouldLoadCore && !notificationsResult.error
           ? ((notificationsResult.data || []) as NotificationRow[]).map(fromNotificationRow)
@@ -355,16 +341,13 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     setState(nextState);
     setLoadedRemoteSlices((current) => ({
       groups: current.groups || shouldLoadGroups,
-      friends: current.friends || shouldLoadFriends,
-      admin: current.admin || shouldLoadAdmin
+      friends: current.friends || shouldLoadFriends
     }));
     const { data: authData } = await supabase.auth.getUser();
     setEmailVerified(Boolean(authData.user?.email_confirmed_at));
-    const { data: adminData, error: adminError } = await supabase.rpc("is_app_admin");
-    if (!adminError) setIsAdmin(Boolean(adminData));
     const current = nextState.users.find((user) => user.id === currentUserId);
     setSelectedDate(localDateKey(new Date(), current?.timezone || detectTimezone()));
-  }, [state.chantTotals, state.friendRequests, state.groupMembers, state.groups, state.moderationReports, state.notifications, state.users]);
+  }, [state.chantTotals, state.friendRequests, state.groupMembers, state.groups, state.notifications, state.users]);
 
   const ensureGroupsData = useCallback(async (force = false) => {
     if (!supabase || !currentUser || (!force && loadedRemoteSlices.groups) || loadingRemoteSlices.groups) return;
@@ -385,16 +368,6 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       setLoadingRemoteSlices((current) => ({ ...current, friends: false }));
     }
   }, [currentUser, loadedRemoteSlices.friends, loadingRemoteSlices.friends, refreshRemoteState]);
-
-  const ensureAdminData = useCallback(async (force = false) => {
-    if (!supabase || !currentUser || !isAdmin || (!force && loadedRemoteSlices.admin) || loadingRemoteSlices.admin) return;
-    setLoadingRemoteSlices((current) => ({ ...current, admin: true }));
-    try {
-      await refreshRemoteState(currentUser.id, "admin");
-    } finally {
-      setLoadingRemoteSlices((current) => ({ ...current, admin: false }));
-    }
-  }, [currentUser, isAdmin, loadedRemoteSlices.admin, loadingRemoteSlices.admin, refreshRemoteState]);
 
   const runRemote = async (action: () => Promise<void>) => {
     setIsBusy(true);
@@ -542,8 +515,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
 
   const setDailyRounds = async (dateKey: string, rounds: number) => {
     if (!currentUser) return;
-    if (!editableDates.includes(dateKey)) {
-      showMessage("You can edit only today and the previous 6 days.");
+    if (!isEditableSinceJoin(dateKey, todayKey, currentUser.joinedAt)) {
+      showMessage("You can edit dates from your account join date through today.");
       return;
     }
     const cleanRounds = Math.max(0, Math.min(MAX_DAILY_ROUNDS, Math.floor(rounds || 0)));
@@ -762,82 +735,11 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const submitUserReport = async (reportedUserId: string, reason: string, details: string) => {
-    if (!currentUser) return;
-    const cleanReason = reason.trim();
-    if (!cleanReason) {
-      showMessage("Choose a report reason.");
-      return;
-    }
-    if (reportedUserId === currentUser.id) {
-      showMessage("You cannot report your own profile.");
-      return;
-    }
-    if (supabase) {
-      const client = supabase;
-      await runRemote(async () => {
-        const { error } = await client.from("moderation_reports").insert({
-          reporter_id: currentUser.id,
-          reported_user_id: reportedUserId,
-          reason: cleanReason,
-          details: details.trim(),
-          status: "open"
-        });
-        if (error) throw error;
-        const report: ModerationReport = {
-          id: uid("report"),
-          reporterId: currentUser.id,
-          reportedUserId,
-          reason: cleanReason,
-          details: details.trim(),
-          status: "open",
-          createdAt: new Date().toISOString()
-        };
-        saveState({ ...state, moderationReports: [report, ...(state.moderationReports || [])] });
-        showMessage("Report submitted for review.");
-      }).catch((error: Error) => showMessage(readableError(error)));
-      return;
-    }
-    const report: ModerationReport = {
-      id: uid("report"),
-      reporterId: currentUser.id,
-      reportedUserId,
-      reason: cleanReason,
-      details: details.trim(),
-      status: "open",
-      createdAt: new Date().toISOString()
-    };
-    saveState({ ...state, moderationReports: [report, ...(state.moderationReports || [])] });
-    showMessage("Report submitted for review.");
-  };
-
-  const updateModerationReportStatus = async (reportId: string, status: ModerationReport["status"]) => {
-    if (!currentUser || !isAdmin) return;
-    if (supabase) {
-      const client = supabase;
-      await runRemote(async () => {
-        const { error } = await client.from("moderation_reports").update({ status }).eq("id", reportId);
-        if (error) throw error;
-        await refreshRemoteState(currentUser.id, "admin");
-        showMessage(`Report marked ${status}.`);
-      }).catch((error: Error) => showMessage(readableError(error)));
-      return;
-    }
-    saveState({
-      ...state,
-      moderationReports: state.moderationReports.map((report) =>
-        report.id === reportId ? { ...report, status } : report
-      )
-    });
-    showMessage(`Report marked ${status}.`);
-  };
-
   const value: ChantingContextValue = {
     state,
     saveState,
     isLoaded,
     isBusy,
-    isAdmin,
     loadedRemoteSlices,
     loadingRemoteSlices,
     authMode,
@@ -886,11 +788,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     refreshRemoteState,
     ensureGroupsData,
     ensureFriendsData,
-    ensureAdminData,
     resolveLoginEmail,
     checkIdentityConflicts,
-    submitUserReport,
-    updateModerationReportStatus,
     addNotification,
     markNotificationRead,
     markAllNotificationsRead

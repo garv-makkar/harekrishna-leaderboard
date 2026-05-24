@@ -133,10 +133,13 @@ security definer
 set search_path = public
 as $$
   select entry_local_date between (
-    (now() at time zone coalesce(
-      (select timezone from public.profiles where id = entry_user_id),
-      'Asia/Kolkata'
-    ))::date - 6
+    coalesce(
+      (select joined_at::date from public.profiles where id = entry_user_id),
+      (now() at time zone coalesce(
+        (select timezone from public.profiles where id = entry_user_id),
+        'Asia/Kolkata'
+      ))::date
+    )
   )
   and (
     now() at time zone coalesce(

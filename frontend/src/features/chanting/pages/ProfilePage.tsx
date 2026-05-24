@@ -770,7 +770,6 @@ function DataPrivacyPanel() {
       request.fromUserId === currentUser.id ||
       request.toUserId === currentUser.id
   );
-  const submittedReports = (state.moderationReports || []).filter((report) => report.reporterId === currentUser.id);
   const exportAccountData = () => {
     const payload = {
       exportedAt: new Date().toISOString(),
@@ -791,7 +790,6 @@ function DataPrivacyPanel() {
         .sort((a, b) => a.localDate.localeCompare(b.localDate)),
       groups: userGroups,
       friendRequests: friendConnections,
-      submittedReports,
       notifications: (state.notifications || []).filter((notification) => notification.userId === currentUser.id)
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" }));
@@ -809,18 +807,17 @@ function DataPrivacyPanel() {
     <Panel title="Data and privacy" icon={<Download size={18} />}>
       <div className="space-y-4">
         <InlineNotice tone="info">
-          This export contains your profile, chanting totals, group memberships, friend connections, and reports submitted by you.
+          This export contains your profile, chanting totals, group memberships, friend connections, and notifications.
         </InlineNotice>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3">
           <PrivacyMetric label="Rounds entries" value={state.chantTotals.filter((total) => total.userId === currentUser.id).length} />
           <PrivacyMetric label="Groups" value={joinedGroups.length} />
           <PrivacyMetric label="Friends" value={friends.length} />
-          <PrivacyMetric label="Reports" value={submittedReports.length} />
         </div>
         <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm leading-6 text-stone-700 sm:px-4 sm:py-3">
           <p className="font-black text-stone-900">Stored for your account</p>
           <p>Identity fields: username, email, phone, display name, country, timezone, profile picture URL, and join date.</p>
-          <p>App activity: daily round totals, group memberships, friend requests, and moderation reports you submit.</p>
+          <p>App activity: daily round totals, group memberships, friend requests, and notifications.</p>
           <p>Passwords are handled by Supabase Auth and are not included in this export.</p>
         </div>
         <button

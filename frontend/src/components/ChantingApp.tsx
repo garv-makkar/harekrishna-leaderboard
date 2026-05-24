@@ -13,7 +13,6 @@ import {
   LogOut,
   Menu,
   Settings,
-  ShieldCheck,
   Sparkles,
   Users,
   X
@@ -30,7 +29,6 @@ import { GroupsPage } from "@/features/chanting/pages/GroupsPage";
 import { HomePage } from "@/features/chanting/pages/HomePage";
 import { ProfilePage } from "@/features/chanting/pages/ProfilePage";
 import { ActivityPage } from "@/features/chanting/pages/ActivityPage";
-import { AdminPage } from "@/features/chanting/pages/AdminPage";
 import { NotificationsPage } from "@/features/chanting/pages/NotificationsPage";
 import {
   bestStreak,
@@ -53,7 +51,6 @@ const tabs = [
   { id: "activity", label: "Activity", icon: LineChart },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "profile", label: "Profile", icon: Settings },
-  { id: "admin", label: "Admin", icon: ShieldCheck, adminOnly: true },
   { id: "about", label: "About", icon: Sparkles }
 ] as const;
 
@@ -156,7 +153,6 @@ function AppShell({
     emailVerified,
     ensureFriendsData,
     friends,
-    isAdmin,
     message,
     markAllNotificationsRead,
     markNotificationRead,
@@ -238,7 +234,6 @@ function AppShell({
               currentUserAvatar={currentUser?.avatarUrl || ""}
               friendsCount={friends.length}
               incomingRequestCount={incomingRequestCount}
-              isAdmin={isAdmin}
               unreadNotificationCount={urgentNotificationCount}
               onTabChange={handleTabChange}
             />
@@ -264,7 +259,6 @@ function AppShell({
               currentUserAvatar={currentUser?.avatarUrl || ""}
               friendsCount={friends.length}
               incomingRequestCount={incomingRequestCount}
-              isAdmin={isAdmin}
               unreadNotificationCount={urgentNotificationCount}
               onTabChange={handleTabChange}
             />
@@ -456,7 +450,6 @@ function AppShell({
           {activeTab === "activity" && <ActivityPage />}
           {activeTab === "notifications" && <NotificationsPage onOpenTab={handleTabChange} />}
           {activeTab === "profile" && <ProfilePage />}
-          {activeTab === "admin" && <AdminPage />}
           {activeTab === "about" && <AboutPage />}
         </section>
       </div>
@@ -557,7 +550,6 @@ function NavigationList({
   currentUserAvatar,
   friendsCount,
   incomingRequestCount,
-  isAdmin,
   unreadNotificationCount,
   onTabChange
 }: {
@@ -565,13 +557,12 @@ function NavigationList({
   currentUserAvatar: string;
   friendsCount: number;
   incomingRequestCount: number;
-  isAdmin: boolean;
   unreadNotificationCount: number;
   onTabChange: (tab: TabId) => void;
 }) {
   return (
     <nav className="mt-3 space-y-1 overflow-y-auto px-3 pb-4 lg:mt-0 lg:px-0">
-      {tabs.filter((tab) => !("adminOnly" in tab) || isAdmin).map((tab) => {
+      {tabs.map((tab) => {
         const Icon = tab.icon;
         const badgeValue =
           tab.id === "friends"
@@ -783,7 +774,6 @@ function buildNotifications(
 ): DropdownNotification[] {
   const incoming = state.friendRequests.filter((request) => request.toUserId === currentUserId && request.status === "pending");
   const outgoing = state.friendRequests.filter((request) => request.fromUserId === currentUserId && request.status === "pending");
-  const openReports = (state.moderationReports || []).filter((report) => report.reporterId === currentUserId && report.status === "open");
   const persisted = (state.notifications || [])
     .filter((notification) => notification.userId === currentUserId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -820,15 +810,6 @@ function buildNotifications(
           body: "Confirm your email to keep account recovery reliable.",
           readAt: "",
           action: { type: "open-tab" as const, tab: "profile" as TabId, label: "Open profile" }
-        }]
-      : []),
-    ...(openReports.length > 0
-      ? [{
-          id: "reports-open",
-          tone: "info" as const,
-          title: "Reports submitted",
-          body: `${openReports.length} report${openReports.length === 1 ? "" : "s"} waiting for future moderator review.`,
-          readAt: new Date().toISOString()
         }]
       : []),
     ...(message

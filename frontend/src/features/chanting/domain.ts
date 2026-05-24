@@ -6,7 +6,6 @@ import type {
   Group,
   GroupRole,
   LeaderboardPeriod,
-  ModerationReport,
   ProfilePrivacy,
   UserProfile
 } from "@/lib/types";
@@ -69,7 +68,7 @@ export type ActivityFeedItem = {
 };
 
 export type AuthMode = "signin" | "signup" | "forgot" | "otp" | "newPassword" | "checkEmail";
-export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "notifications" | "profile" | "admin" | "about";
+export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "notifications" | "profile" | "about";
 
 export type ProfileRow = {
   id: string;
@@ -143,16 +142,6 @@ export type FriendRequestRow = {
   created_at: string;
 };
 
-export type ModerationReportRow = {
-  id: string;
-  reporter_id: string;
-  reported_user_id: string;
-  reason: string;
-  details: string;
-  status: "open" | "reviewed" | "dismissed";
-  created_at: string;
-};
-
 export type NotificationRow = {
   id: string;
   user_id: string;
@@ -197,8 +186,18 @@ export function addDays(dateKey: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
-export function lastEditableDates(todayKey: string) {
-  return Array.from({ length: 7 }, (_, index) => addDays(todayKey, -index));
+export function editableDatesSinceJoin(todayKey: string, joinedAt: string) {
+  const joinedDate = /^\d{4}-\d{2}-\d{2}/.test(joinedAt) ? joinedAt.slice(0, 10) : todayKey;
+  const dates: string[] = [];
+  for (let dateKey = todayKey; dateKey >= joinedDate; dateKey = addDays(dateKey, -1)) {
+    dates.push(dateKey);
+  }
+  return dates.length ? dates : [todayKey];
+}
+
+export function isEditableSinceJoin(dateKey: string, todayKey: string, joinedAt: string) {
+  const joinedDate = /^\d{4}-\d{2}-\d{2}/.test(joinedAt) ? joinedAt.slice(0, 10) : todayKey;
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateKey) && dateKey >= joinedDate && dateKey <= todayKey;
 }
 
 export function monthStart(dateKey: string) {
@@ -332,7 +331,7 @@ export function readableError(error: unknown, context?: "signin" | "signup" | "o
     context === "rounds" &&
     (text.includes("row-level security") || text.includes("violates row-level security") || text.includes("editable"))
   ) {
-    return "The database blocked this edit because that date is outside your 7-day edit window.";
+    return "The database blocked this edit because the date is before your account join date or after today.";
   }
   if (text.includes("network")) return "Network error. Check your internet connection and try again.";
   if (text.includes("bucket not found")) return "Storage bucket is missing. Run the latest Supabase Storage migration, then try again.";
@@ -558,7 +557,6 @@ export function createSeedState(): AppState {
         createdAt: joinedAt
       }
     ],
-    moderationReports: [],
     notifications: []
   };
 }
@@ -572,7 +570,6 @@ export function loadState(): AppState {
     return {
       ...parsed,
       users: (parsed.users || []).map(withDefaultProfilePrivacy),
-      moderationReports: parsed.moderationReports || [],
       notifications: parsed.notifications || []
     };
   } catch {
@@ -926,18 +923,6 @@ export function fromFriendRequestRow(row: FriendRequestRow): FriendRequest {
     id: row.id,
     fromUserId: row.from_user_id,
     toUserId: row.to_user_id,
-    status: row.status,
-    createdAt: row.created_at
-  };
-}
-
-export function fromModerationReportRow(row: ModerationReportRow): ModerationReport {
-  return {
-    id: row.id,
-    reporterId: row.reporter_id,
-    reportedUserId: row.reported_user_id,
-    reason: row.reason,
-    details: row.details || "",
     status: row.status,
     createdAt: row.created_at
   };

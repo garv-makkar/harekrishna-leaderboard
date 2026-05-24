@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import { addDays, currentStreak, formatDate, groupCodeProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
-import { ModerationReportButton } from "../ModerationReportButton";
 import { ActionEmptyState, Avatar, Card, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function GroupsPage({
@@ -1595,7 +1594,7 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
         </div>
       ) : (
         <InlineNotice tone="info">
-          Moderators can remove regular members and report profiles. Only owners can edit group details, change codes, promote moderators, or delete the group.
+          Moderators can remove regular members. Only owners can edit group details, change codes, promote moderators, or delete the group.
         </InlineNotice>
       )}
       <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
@@ -1637,7 +1636,6 @@ function GroupOwnerControls({ group, role }: { group: Group; role: "owner" | "mo
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
-                  <ModerationReportButton userId={user.id} username={user.username} />
                   {role === "owner" && membership.role === "member" && (
                     <button
                       type="button"

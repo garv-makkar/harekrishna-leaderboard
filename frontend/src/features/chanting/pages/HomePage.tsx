@@ -264,7 +264,7 @@ export function HomePage() {
         eyebrow={selectedDateLabel}
         icon={<CalendarDays size={16} />}
         title="Add chanting rounds"
-        description="Save the exact total for today or any of the last 7 editable days."
+        description="Save the exact total for today or any date since you created your account."
         stats={
           <>
             <p className="mb-3 text-sm font-black uppercase text-stone-500">Practice totals</p>
@@ -280,20 +280,17 @@ export function HomePage() {
             <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_150px]">
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
-                <select
+                <input
                   className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                  type="date"
                   value={selectedDate}
+                  min={currentUser.joinedAt.slice(0, 10)}
+                  max={todayKey}
                   onChange={(event) => {
                     const nextDate = event.target.value;
                     changeEditableDate(nextDate);
                   }}
-                >
-                  {editableDates.map((dateKey) => (
-                    <option key={dateKey} value={dateKey}>
-                      {formatDate(dateKey)}
-                    </option>
-                  ))}
-                </select>
+                />
               </label>
               <Field
                 label="Exact total to save"
@@ -616,7 +613,7 @@ export function HomePage() {
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-black text-stone-900">Last 7 days</p>
-                <p className="text-sm text-stone-600">Your recent rhythm and editable day window.</p>
+                <p className="text-sm text-stone-600">Your recent rhythm. Click a day to edit it on Home.</p>
               </div>
               <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
                 {sevenDayRounds} rounds

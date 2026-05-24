@@ -56,11 +56,18 @@ backend/supabase/migrations/007_group_images_storage.sql
 backend/supabase/migrations/008_group_member_moderation.sql
 backend/supabase/migrations/009_admin_review.sql
 backend/supabase/migrations/010_group_roles_v2.sql
+backend/supabase/migrations/011_goals_announcements_reminders.sql
+backend/supabase/migrations/012_profile_privacy.sql
+backend/supabase/migrations/013_public_profile_rpc.sql
+backend/supabase/migrations/014_public_group_invite_rpc.sql
+backend/supabase/migrations/015_notifications.sql
+backend/supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
 ```
 
 Quick checks in Supabase after running SQL:
 
-- `profiles`, `chant_totals`, `groups`, `group_members`, `friend_requests`, `moderation_reports`, and `app_admins` exist.
+- `profiles`, `chant_totals`, `groups`, `group_members`, `friend_requests`, and `notifications` exist.
+- `moderation_reports` and `app_admins` do not exist after migration `016`.
 - Storage buckets `avatars` and `group-images` exist.
 - RLS is enabled on app tables.
 
@@ -130,29 +137,7 @@ Manual test:
 - Create or edit group picture.
 - Save group and confirm image remains.
 
-## 8. Admin Setup
-
-After creating your own account, make it an app admin:
-
-```sql
-insert into public.app_admins (user_id)
-select id
-from public.profiles
-where email = 'your-email@example.com'
-on conflict (user_id) do nothing;
-```
-
-Then sign out and sign back in. The Admin tab should appear.
-
-Admin test:
-
-- Submit a report from a non-admin account.
-- Open Admin as your admin account.
-- Mark the report reviewed.
-- Reopen it.
-- Dismiss it.
-
-## 9. Hosting Setup
+## 8. Hosting Setup
 
 For Vercel:
 
@@ -167,7 +152,7 @@ Alternative if deploying from repo root:
 npm --prefix frontend run build
 ```
 
-## 10. Pre-Production Manual Test Plan
+## 9. Pre-Production Manual Test Plan
 
 Run these with two test accounts.
 
@@ -188,8 +173,8 @@ Rounds:
 - Add rounds with +1.
 - Save exact total.
 - Edit today.
-- Edit each of the previous 6 days.
-- Confirm an older date is blocked.
+- Edit a date after the account join date.
+- Confirm dates before the account join date and after today are blocked.
 - Confirm daily max is 999.
 
 Leaderboards:
@@ -230,12 +215,7 @@ Profile:
 - Export account data JSON.
 - Check milestones.
 
-Admin:
-
-- Submit report.
-- Review, reopen, dismiss report.
-
-## 11. Known Production Decisions
+## 10. Known Production Decisions
 
 Decide before launch:
 

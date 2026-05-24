@@ -68,7 +68,15 @@ backend/supabase/migrations/007_group_images_storage.sql
 backend/supabase/migrations/008_group_member_moderation.sql
 backend/supabase/migrations/009_admin_review.sql
 backend/supabase/migrations/010_group_roles_v2.sql
+backend/supabase/migrations/011_goals_announcements_reminders.sql
+backend/supabase/migrations/012_profile_privacy.sql
+backend/supabase/migrations/013_public_profile_rpc.sql
+backend/supabase/migrations/014_public_group_invite_rpc.sql
+backend/supabase/migrations/015_notifications.sql
+backend/supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
 ```
+
+Migration `016` removes the temporary admin/reporting tables and changes round edits to allow any date from the user's join date through today.
 
 See `SUPABASE_SETUP.md` for dashboard setup, SMTP, OTP, reset password, and redirect URL notes.
 See `DEPLOYMENT_READINESS.md` before going online.
