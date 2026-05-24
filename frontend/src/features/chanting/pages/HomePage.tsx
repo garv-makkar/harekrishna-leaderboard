@@ -44,7 +44,10 @@ export function HomePage() {
     emailVerified,
     friends,
     showActionFeedback,
-    refreshRemoteState
+    refreshRemoteState,
+    ensureFriendsData,
+    ensureGroupsData,
+    loadingRemoteSlices
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState("");
@@ -56,7 +59,9 @@ export function HomePage() {
     if (!currentUser || refreshedUserRef.current === currentUser.id) return;
     refreshedUserRef.current = currentUser.id;
     void refreshRemoteState(currentUser.id, "core");
-  }, [currentUser, refreshRemoteState]);
+    void ensureFriendsData(true);
+    void ensureGroupsData(true);
+  }, [currentUser, ensureFriendsData, ensureGroupsData, refreshRemoteState]);
 
   useEffect(() => {
     if (currentUser) setGoalDraft(String(currentUser.dailyGoal || 16));
@@ -80,7 +85,8 @@ export function HomePage() {
   const sevenDayRounds = history.reduce((sum, item) => sum + item.rounds, 0);
   const selectedDateLabel = selectedDate === todayKey ? "Today" : formatDate(selectedDate || todayKey);
   const hasStartedChanting = allTimeRounds > 0;
-  const isFirstRun = !hasStartedChanting && joinedGroups.length === 0 && friends.length === 0;
+  const isLoadingRelationships = loadingRemoteSlices.friends || loadingRemoteSlices.groups;
+  const isFirstRun = !isLoadingRelationships && !hasStartedChanting && joinedGroups.length === 0 && friends.length === 0;
   const hinduDay = approximateHinduCalendar(todayKey);
   const dailyGoal = currentUser.dailyGoal || 16;
   const remainingGoalRounds = Math.max(0, dailyGoal - currentRounds);
@@ -156,7 +162,7 @@ export function HomePage() {
       id: "group",
       title: "Join or create group",
       text: "Groups make your daily practice social and easier to follow.",
-      complete: joinedGroups.length > 0,
+      complete: loadingRemoteSlices.groups || joinedGroups.length > 0,
       action: "Open groups",
       onClick: () =>
         showActionFeedback({
@@ -169,7 +175,7 @@ export function HomePage() {
       id: "friend",
       title: "Add a friend",
       text: "Build a private friends leaderboard.",
-      complete: friends.length > 0,
+      complete: loadingRemoteSlices.friends || friends.length > 0,
       action: "Open friends",
       onClick: () =>
         showActionFeedback({
