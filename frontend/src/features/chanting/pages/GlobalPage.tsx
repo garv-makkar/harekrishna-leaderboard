@@ -26,8 +26,8 @@ export function GlobalPage() {
     state.chantTotals.some((total) => total.userId === user.id && total.localDate >= range.start && total.localDate <= range.end && total.rounds > 0)
   ).length;
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <section className="rounded-lg border border-saffron-200/80 bg-white/92 p-3 shadow-soft sm:p-5">
+    <div className="space-y-4 sm:space-y-5">
+      <section className="rounded-lg border border-saffron-200/80 bg-white/92 p-3 shadow-soft sm:p-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
@@ -77,17 +77,17 @@ function LeaderboardVisibilityToggle({
   allLabel: string;
 }) {
   return (
-    <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+    <div className="mb-3 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:mb-4">
       <button
         type="button"
-        className={`rounded-md px-3 py-2 text-sm font-black transition ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        className={`rounded-md px-3 py-1.5 text-sm font-black transition sm:py-2 ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
         onClick={() => onChange(false)}
       >
         Active only
       </button>
       <button
         type="button"
-        className={`rounded-md px-3 py-2 text-sm font-black transition ${showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        className={`rounded-md px-3 py-1.5 text-sm font-black transition sm:py-2 ${showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
         onClick={() => onChange(true)}
       >
         {allLabel}
@@ -103,7 +103,7 @@ function GlobalMetric({ icon, label, value }: { icon: React.ReactNode; label: st
         {icon}
         <p className="text-xs font-black uppercase">{label}</p>
       </div>
-      <p className="text-2xl font-black text-stone-950 sm:text-3xl">{value}</p>
+      <p className="text-xl font-black text-stone-950 sm:text-2xl">{value}</p>
     </div>
   );
 }

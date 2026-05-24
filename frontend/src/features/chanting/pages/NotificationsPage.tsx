@@ -49,21 +49,21 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
         <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="p-4 sm:p-5 lg:p-6">
+          <div className="p-3 sm:p-4 lg:p-5">
             <div className="mb-4 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
               <Bell size={16} /> Notification center
             </div>
-            <h2 className="text-2xl font-black tracking-normal text-stone-950">Notifications</h2>
+            <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">Notifications</h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">
               Review saved updates from rounds, milestones, groups, and friends. Read status is kept with your account after the notifications migration is active.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <button
                 type="button"
-                className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white disabled:bg-peacock-200"
+                className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"
                 disabled={unreadCount === 0}
                 onClick={() => void markAllNotificationsRead()}
               >
@@ -71,7 +71,7 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
               </button>
             </div>
           </div>
-          <div className="grid gap-3 border-t border-saffron-100 bg-saffron-50/70 p-4 sm:grid-cols-3 xl:grid-cols-1 xl:border-l xl:border-t-0">
+          <div className="grid gap-2 border-t border-saffron-100 bg-saffron-50/70 p-3 sm:grid-cols-3 sm:p-4 xl:grid-cols-1 xl:border-l xl:border-t-0">
             <NotificationMetric label="Total" value={notifications.length} />
             <NotificationMetric label="Unread" value={unreadCount} />
             <NotificationMetric label="Warnings" value={warningCount} />
@@ -88,7 +88,7 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
             <button
               key={item.id}
               type="button"
-              className={`rounded-md px-3 py-2 text-sm font-black transition ${
+              className={`rounded-md px-3 py-1.5 text-sm font-black transition sm:py-2 ${
                 filter === item.id ? "bg-saffron-500 text-white shadow-sm" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"
               }`}
               onClick={() => setFilter(item.id)}
@@ -110,7 +110,7 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
             {visibleNotifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`grid gap-3 border-b border-stone-100 px-4 py-4 last:border-b-0 lg:grid-cols-[1fr_auto] lg:items-center ${
+                className={`grid gap-3 border-b border-stone-100 px-3 py-3 last:border-b-0 sm:px-4 lg:grid-cols-[1fr_auto] lg:items-center ${
                   notification.readAt ? "bg-white" : "bg-saffron-50/65"
                 }`}
               >
@@ -168,9 +168,9 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
 
 function NotificationMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-1 text-3xl font-black text-stone-950">{value}</p>
+      <p className="mt-0.5 text-xl font-black text-stone-950 sm:text-2xl">{value}</p>
     </div>
   );
 }

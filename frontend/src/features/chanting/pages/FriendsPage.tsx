@@ -71,7 +71,7 @@ export function FriendsPage() {
   const jumpToSearch = () => searchPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       {!isLoadingFriends && !hasFriendData && (
         <ActionEmptyState
           icon={<UserRoundSearch size={20} />}
@@ -80,7 +80,7 @@ export function FriendsPage() {
         >
           <button
             type="button"
-            className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm"
+            className="rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm"
             onClick={jumpToSearch}
           >
             Search username
@@ -93,18 +93,18 @@ export function FriendsPage() {
       {isLoadingFriends && !hasFriendData ? (
         <MetricSkeletonGrid />
       ) : (
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
         <div className="rounded-lg border border-saffron-200 bg-white/90 p-3 shadow-soft sm:p-4">
           <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Friends</span><span className="hidden sm:inline">Accepted friends</span></p>
-          <p className="mt-1 text-2xl font-black text-saffron-900 sm:text-3xl">{acceptedRequests.length}</p>
+          <p className="mt-0.5 text-xl font-black text-saffron-900 sm:text-2xl">{acceptedRequests.length}</p>
         </div>
         <div className="rounded-lg border border-peacock-100 bg-peacock-50 p-3 shadow-soft sm:p-4">
           <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Incoming</span><span className="hidden sm:inline">Incoming requests</span></p>
-          <p className="mt-1 text-2xl font-black text-peacock-900 sm:text-3xl">{incomingRequests.length}</p>
+          <p className="mt-0.5 text-xl font-black text-peacock-900 sm:text-2xl">{incomingRequests.length}</p>
         </div>
         <div className="rounded-lg border border-stone-200 bg-white/90 p-3 shadow-soft sm:p-4">
           <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Outgoing</span><span className="hidden sm:inline">Outgoing requests</span></p>
-          <p className="mt-1 text-2xl font-black text-stone-900 sm:text-3xl">{outgoingRequests.length}</p>
+          <p className="mt-0.5 text-xl font-black text-stone-900 sm:text-2xl">{outgoingRequests.length}</p>
         </div>
       </div>
       )}
@@ -121,7 +121,7 @@ export function FriendsPage() {
           >
             <button
               type="button"
-              className="rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
+              className="rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
               onClick={jumpToSearch}
             >
               Find friends
@@ -137,7 +137,7 @@ export function FriendsPage() {
               placeholder="username, name, or country"
               inputMode="search"
             />
-            <span className="rounded-md bg-white px-3 py-3 text-sm font-black text-stone-700 ring-1 ring-stone-200">
+            <span className="rounded-md bg-white px-3 py-2.5 text-sm font-black text-stone-700 ring-1 ring-stone-200">
               Showing {visibleAcceptedRequests.length} of {acceptedRequests.length}
             </span>
           </div>
@@ -292,17 +292,17 @@ export function FriendsPage() {
 
 function FriendLeaderboardToggle({ showAll, onChange }: { showAll: boolean; onChange: (value: boolean) => void }) {
   return (
-    <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+    <div className="mb-3 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:mb-4">
       <button
         type="button"
-        className={`rounded-md px-3 py-2 text-sm font-black transition ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        className={`rounded-md px-3 py-1.5 text-sm font-black transition sm:py-2 ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
         onClick={() => onChange(false)}
       >
         Active only
       </button>
       <button
         type="button"
-        className={`rounded-md px-3 py-2 text-sm font-black transition ${showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
+        className={`rounded-md px-3 py-1.5 text-sm font-black transition sm:py-2 ${showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
         onClick={() => onChange(true)}
       >
         All friends

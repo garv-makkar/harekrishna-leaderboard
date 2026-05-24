@@ -65,7 +65,7 @@ export function AdminPage() {
   const isLoadingAdmin = loadingRemoteSlices.admin && state.moderationReports.length === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       <ProductionReadinessPanel
         emailVerified={emailVerified}
         loadedRemoteSlices={loadedRemoteSlices}
@@ -73,7 +73,7 @@ export function AdminPage() {
         groupCount={state.groups.length}
       />
       <Panel title="Data quality signals" icon={<AlertTriangle size={18} />}>
-        <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm text-peacock-900">
+        <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm text-peacock-900 sm:px-4">
           These are review hints only. Chanting totals are still honesty-based, and this panel does not change user data.
         </div>
         <div className="mb-4 grid gap-3 sm:grid-cols-3">
@@ -86,7 +86,7 @@ export function AdminPage() {
             <button
               key={filter.value}
               type="button"
-              className={`rounded-md px-3 py-2 text-sm font-black transition ${
+              className={`rounded-md px-3 py-1.5 text-sm font-black transition sm:py-2 ${
                 signalFilter === filter.value ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
               }`}
               onClick={() => setSignalFilter(filter.value)}
@@ -100,7 +100,7 @@ export function AdminPage() {
         ) : (
           <div className="space-y-3">
             {filteredQualitySignals.slice(0, 30).map((signal) => (
-              <div key={signal.id} className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+              <div key={signal.id} className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <ReportPerson title={signal.label} user={signal.user} fallback={signal.userId} />
                   <div className="rounded-md bg-stone-50 px-3 py-2 text-sm text-stone-700 sm:max-w-sm">
@@ -130,7 +130,7 @@ export function AdminPage() {
             <button
               key={status}
               type="button"
-              className={`rounded-md px-3 py-2 text-sm font-black capitalize transition ${
+              className={`rounded-md px-3 py-1.5 text-sm font-black capitalize transition sm:py-2 ${
                 statusFilter === status ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
               }`}
               onClick={() => setStatusFilter(status)}
@@ -151,8 +151,8 @@ export function AdminPage() {
               const reporter = state.users.find((user) => user.id === report.reporterId);
               const reported = state.users.find((user) => user.id === report.reportedUserId);
               return (
-                <div key={report.id} className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div key={report.id} className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`rounded-md px-2 py-1 text-xs font-black uppercase ${statusClass(report.status)}`}>
@@ -164,7 +164,7 @@ export function AdminPage() {
                         <ReportPerson title="Reported user" user={reported} fallback={report.reportedUserId} />
                         <ReportPerson title="Reporter" user={reporter} fallback={report.reporterId} />
                       </div>
-                      <div className="rounded-md bg-stone-50 px-4 py-3">
+                      <div className="rounded-md bg-stone-50 px-3 py-2.5 sm:px-4 sm:py-3">
                         <p className="text-sm font-black text-stone-900">Reason</p>
                         <p className="text-sm text-stone-700">{report.reason}</p>
                         {report.details && (
@@ -268,12 +268,12 @@ function ProductionReadinessPanel({
 
   return (
     <Panel title="Production readiness" icon={<ShieldCheck size={18} />}>
-      <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-900">
+      <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:px-4">
         This checklist is a quick app-side view. Before deployment, still confirm Supabase SQL migrations, storage buckets, SMTP, and environment variables in the Supabase/Vercel dashboards.
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {checks.map((check) => (
-          <div key={check.label} className={`rounded-lg border px-4 py-3 shadow-sm ${check.ok ? "border-emerald-100 bg-emerald-50" : "border-saffron-200 bg-saffron-50"}`}>
+          <div key={check.label} className={`rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${check.ok ? "border-emerald-100 bg-emerald-50" : "border-saffron-200 bg-saffron-50"}`}>
             <p className={`text-sm font-black ${check.ok ? "text-emerald-800" : "text-saffron-900"}`}>
               {check.ok ? "Ready" : "Check"}: {check.label}
             </p>
@@ -333,9 +333,9 @@ function buildQualitySignals(state: ReturnType<typeof useChanting>["state"]) {
 
 function AdminMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
       <p className="text-sm font-bold text-stone-600">{label}</p>
-      <p className="mt-1 text-3xl font-black text-stone-900">{value}</p>
+      <p className="mt-0.5 text-xl font-black text-stone-900 sm:text-2xl">{value}</p>
     </div>
   );
 }

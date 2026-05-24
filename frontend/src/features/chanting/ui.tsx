@@ -37,7 +37,7 @@ export function Field({
     <label className="block">
       <span className="mb-1 block text-sm font-bold text-stone-700">{label}</span>
       <input
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
         name={name}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -68,7 +68,7 @@ export function TimezoneSelect({
     <label className="block">
       <span className="mb-1 block text-sm font-bold text-stone-700">Timezone</span>
       <select
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required
@@ -94,7 +94,7 @@ export function InlineNotice({ children, tone }: { children: React.ReactNode; to
         ? "border-emerald-200 bg-emerald-50 text-emerald-800"
         : "border-peacock-200 bg-peacock-50 text-peacock-900";
   return (
-    <div className={`rounded-md border px-4 py-3 text-sm font-semibold leading-5 shadow-sm ${toneClass}`}>
+    <div className={`rounded-md border px-3 py-2.5 text-sm font-semibold leading-5 shadow-sm sm:px-4 ${toneClass}`}>
       {children}
     </div>
   );
@@ -108,7 +108,7 @@ export function PasswordChecklist({
   touched: boolean;
 }) {
   return (
-    <div className="rounded-md border border-stone-200 bg-stone-50/90 px-4 py-3">
+    <div className="rounded-md border border-stone-200 bg-stone-50/90 px-3 py-2.5 sm:px-4 sm:py-3">
       <p className="mb-2 text-xs font-black uppercase tracking-wide text-stone-500">Password requirements</p>
       <div className="grid gap-2 sm:grid-cols-2">
         {rules.map((rule) => (
@@ -135,7 +135,7 @@ export function PasswordChecklist({
 
 export function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-3 shadow-soft sm:p-5">
+    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-3 shadow-soft sm:p-4">
       <div className="mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3">
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100 sm:h-9 sm:w-9">
           {icon}
@@ -159,7 +159,7 @@ export function PanelSkeleton({
   title?: boolean;
 }) {
   return (
-    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-4 shadow-soft sm:p-5">
+    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-3 shadow-soft sm:p-4">
       {title && (
         <div className="mb-4 flex items-center gap-3">
           <SkeletonBlock className="h-9 w-9 shrink-0" />
@@ -188,7 +188,7 @@ export function MetricSkeletonGrid({ count = 3 }: { count?: number }) {
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="rounded-lg border border-stone-200 bg-white/90 p-4 shadow-soft">
+        <div key={index} className="rounded-lg border border-stone-200 bg-white/90 p-3 shadow-soft sm:p-4">
           <SkeletonBlock className="h-4 w-28" />
           <SkeletonBlock className="mt-3 h-9 w-16" />
         </div>
@@ -218,11 +218,11 @@ export function LeaderboardSkeleton() {
 
 export function MetricCard({ label, value, note }: { label: string; value: number; note: string }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/90 p-3 shadow-soft sm:p-5">
+    <div className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/90 p-3 shadow-soft sm:p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold capitalize text-stone-500">{label}</p>
-          <p className="mt-1 text-2xl font-black text-saffron-900 sm:mt-2 sm:text-4xl">{value}</p>
+          <p className="mt-1 text-2xl font-black text-saffron-900 sm:text-3xl">{value}</p>
         </div>
         <span className="mt-1 h-3 w-3 shrink-0 rounded-full bg-peacock-400" />
       </div>
@@ -250,7 +250,7 @@ export function MilestoneGrid({ milestones, limit }: { milestones: Milestone[]; 
           return (
             <div
               key={milestone.id}
-              className={`rounded-md border px-4 py-3 ${
+              className={`rounded-md border px-3 py-2.5 sm:px-4 sm:py-3 ${
                 milestone.earned
                   ? "border-saffron-200 bg-saffron-50 shadow-sm"
                   : "border-stone-200 bg-stone-50/80"
@@ -296,12 +296,12 @@ export function PeriodTabs({
   options: LeaderboardPeriod[];
 }) {
   return (
-    <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+    <div className="mb-3 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:mb-4">
       {options.map((option) => (
         <button
           key={option}
           type="button"
-          className={`rounded-md px-3 py-2 text-sm font-bold capitalize transition ${
+          className={`rounded-md px-3 py-1.5 text-sm font-bold capitalize transition sm:py-2 ${
             value === option ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
           }`}
           onClick={() => onChange(option)}
@@ -323,17 +323,17 @@ export function PeriodHistoryControls({
   label: string;
 }) {
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
+    <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-4">
       <button
         type="button"
-        className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-stone-700 shadow-sm"
+        className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-sm font-bold text-stone-700 shadow-sm sm:py-2"
         onClick={() => onChange(offset + 1)}
       >
         Previous
       </button>
       <button
         type="button"
-        className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-stone-700 shadow-sm disabled:text-stone-400"
+        className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-sm font-bold text-stone-700 shadow-sm disabled:text-stone-400 sm:py-2"
         disabled={offset === 0}
         onClick={() => onChange(Math.max(0, offset - 1))}
       >
@@ -341,12 +341,12 @@ export function PeriodHistoryControls({
       </button>
       <button
         type="button"
-        className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100"
+        className="rounded-md bg-saffron-50 px-3 py-1.5 text-sm font-black text-saffron-900 ring-1 ring-saffron-100 sm:py-2"
         onClick={() => onChange(0)}
       >
         Current
       </button>
-      <span className="rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900">
+      <span className="rounded-md border border-peacock-100 bg-peacock-50 px-3 py-1.5 text-sm font-black text-peacock-900 sm:py-2">
         {label}
       </span>
     </div>
@@ -433,7 +433,7 @@ export function Leaderboard({
           <LeaderboardRefreshMeta periodText={periodText || periodLabel(period)} lastUpdated={lastUpdated} isRefreshing={isRefreshing} onRefresh={onRefresh} />
         </div>
       )}
-      <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50/90 px-4 py-3 text-sm leading-6 text-peacock-900">
+      <div className="mb-3 rounded-md border border-peacock-100 bg-peacock-50/90 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:mb-4 sm:px-4">
         Leaderboard totals are self-entered by users. Rows show whether a user logged an entry for this period and when their visible total was last updated.
       </div>
       {activeRows.length === 0 && (
@@ -506,7 +506,7 @@ export function Leaderboard({
               <button
                 key={`leader-${row.user.id}`}
                 type="button"
-                className={`min-w-0 rounded-lg border p-4 text-left shadow-sm transition hover:-translate-y-0.5 ${
+                className={`min-w-0 rounded-lg border p-3 text-left shadow-sm transition hover:-translate-y-0.5 ${
                   topRankCardClass(row.rank, isCurrent)
                 }`}
                 onClick={() => setSelectedPublicUserId(row.user.id)}
@@ -528,9 +528,9 @@ export function Leaderboard({
                     <p className="truncate text-sm text-stone-600">@{row.user.username}</p>
                   </div>
                 </div>
-                <div className="mt-4 flex items-end justify-between gap-3">
+                <div className="mt-3 flex items-end justify-between gap-3">
                   <div>
-                    <p className="text-3xl font-black text-stone-950">{row.rounds}</p>
+                    <p className="text-2xl font-black text-stone-950">{row.rounds}</p>
                     <p className="text-sm font-bold text-stone-600">rounds</p>
                   </div>
                   <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black text-stone-700 ring-1 ring-white">
@@ -543,27 +543,27 @@ export function Leaderboard({
         </div>
       )}
       {currentRow && (
-        <div className="mb-4 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
-          <div className="rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3">
+        <div className="mb-3 grid grid-cols-2 gap-2 sm:mb-4 sm:gap-3 md:grid-cols-4">
+          <div className="rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-stone-500">Your rank</p>
-            <p className="mt-1 text-2xl font-black text-saffron-900">{currentRow.rounds > 0 ? `#${currentRow.rank}` : "-"}</p>
+            <p className="mt-1 text-xl font-black text-saffron-900 sm:text-2xl">{currentRow.rounds > 0 ? `#${currentRow.rank}` : "-"}</p>
             <p className="text-sm text-stone-600">{periodText || periodLabel(period)}</p>
           </div>
-          <div className="rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3">
+          <div className="rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-stone-500">Your rounds</p>
-            <p className="mt-1 text-2xl font-black text-peacock-900">{currentRow.rounds}</p>
+            <p className="mt-1 text-xl font-black text-peacock-900 sm:text-2xl">{currentRow.rounds}</p>
             <p className="text-sm text-stone-600">{entryStatusText(currentRow)}</p>
           </div>
-          <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3">
+          <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-stone-500">Next rank</p>
-            <p className="mt-1 text-2xl font-black text-stone-900">{roundsBehind || "-"}</p>
+            <p className="mt-1 text-xl font-black text-stone-900 sm:text-2xl">{roundsBehind || "-"}</p>
             <p className="text-sm text-stone-600">
               {roundsBehind ? `${roundsBehind} rounds behind` : "You are at the top score"}
             </p>
           </div>
-          <div className="rounded-md border border-stone-200 bg-white px-4 py-3">
+          <div className="rounded-md border border-stone-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-stone-500">Status</p>
-            <p className="mt-1 text-2xl font-black text-stone-900">
+            <p className="mt-1 text-xl font-black text-stone-900 sm:text-2xl">
               {tiedWithCount > 0 && currentRow.rounds > 0
                 ? "Tied"
                 : currentRow.rounds > 0
@@ -585,14 +585,14 @@ export function Leaderboard({
         </div>
       )}
       {currentRow && currentRowIndex > 3 && (
-        <div className="mb-4 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50/80 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50/80 px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
           <div>
             <p className="font-black text-saffron-950">Your row is lower in this leaderboard.</p>
             <p className="text-sm text-stone-600">Jump directly to your highlighted row.</p>
           </div>
           <button
             type="button"
-            className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600"
+            className="rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600"
             onClick={() => currentRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
           >
             Jump to me
@@ -611,7 +611,7 @@ export function Leaderboard({
             <div
               key={row.user.id}
               ref={isCurrent ? currentRowRef : undefined}
-              className={`grid grid-cols-[44px_1fr] items-start gap-2 border-b border-stone-100 px-2 py-3 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:items-center sm:gap-3 sm:px-4 ${
+              className={`grid grid-cols-[44px_1fr] items-start gap-2 border-b border-stone-100 px-2 py-2.5 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:items-center sm:gap-3 sm:px-4 sm:py-3 ${
                 isCurrent
                   ? "bg-saffron-50/90 shadow-[inset_4px_0_0_#d98f08]"
                   : isTopRank
@@ -788,7 +788,7 @@ export function ActionEmptyState({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-saffron-200 bg-saffron-50/70 p-4 sm:p-5">
+    <div className="rounded-lg border border-dashed border-saffron-200 bg-saffron-50/70 p-3 sm:p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-white text-saffron-700 ring-1 ring-saffron-100">

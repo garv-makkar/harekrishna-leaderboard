@@ -102,7 +102,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/"
-            className="inline-flex w-fit items-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 shadow-sm ring-1 ring-saffron-200"
+            className="inline-flex w-fit items-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 shadow-sm ring-1 ring-saffron-200"
           >
             <Home size={17} /> Hare Krishna Leaderboard
           </Link>
@@ -112,7 +112,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
         </div>
 
         {isLoading && (
-          <div className="rounded-lg border border-saffron-200 bg-white/90 p-6 shadow-soft">
+          <div className="rounded-lg border border-saffron-200 bg-white/90 p-4 shadow-soft sm:p-5">
             <div className="flex items-center gap-3 text-saffron-900">
               <Loader2 className="animate-spin" size={20} />
               <p className="font-black">{status}</p>
@@ -127,14 +127,14 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
         )}
 
         {payload && (
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
             <section className="overflow-hidden rounded-lg border border-saffron-200 bg-white/92 shadow-soft">
-              <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_300px]">
-                <div className="p-5 sm:p-6">
+              <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="p-4 sm:p-5">
                   <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
                     <Avatar src={payload.profile.avatarUrl} label={payload.profile.displayName || payload.profile.username} />
                     <div className="min-w-0">
-                      <h1 className="truncate text-3xl font-black tracking-normal text-stone-950">
+                      <h1 className="truncate text-2xl font-black tracking-normal text-stone-950 sm:text-3xl">
                         {payload.profile.displayName || payload.profile.username}
                       </h1>
                       <p className="mt-1 truncate text-sm font-bold text-stone-600">@{payload.profile.username}</p>
@@ -145,9 +145,9 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                     </div>
                   </div>
                 </div>
-                <div className="border-t border-saffron-100 bg-saffron-50/80 p-5 lg:border-l lg:border-t-0">
+                <div className="border-t border-saffron-100 bg-saffron-50/80 p-4 lg:border-l lg:border-t-0">
                   <p className="text-sm font-black uppercase text-stone-500">Today</p>
-                  <p className="mt-2 text-6xl font-black text-saffron-900">{payload.stats.todayRounds}</p>
+                  <p className="mt-1 text-4xl font-black text-saffron-900 sm:text-5xl">{payload.stats.todayRounds}</p>
                   <p className="text-sm font-bold text-stone-600">rounds logged</p>
                 </div>
               </div>
@@ -160,7 +160,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
               <PublicMetric label="All time" value={payload.stats.allTimeRounds} note={`Since ${formatDate(payload.profile.joinedAt.slice(0, 10))}`} />
             </div>
 
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
               <Panel title="Public stats" icon={<Trophy size={18} />}>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {privacy.showStreak ? (
@@ -186,7 +186,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                 </p>
                 <Link
                   href="/"
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm"
                 >
                   Open app
                 </Link>
@@ -200,7 +200,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                     const barHeight = Math.max(8, Math.round((item.rounds / highestRecentRounds) * 90));
                     return (
                       <div key={item.dateKey} className="flex min-w-0 flex-col items-center gap-2 rounded-md border border-stone-200 bg-white px-1 py-2 text-center shadow-sm">
-                        <div className="flex h-24 w-full items-end rounded-md bg-stone-50 px-1 py-1">
+                        <div className="flex h-20 w-full items-end rounded-md bg-stone-50 px-1 py-1 sm:h-24">
                           <div
                             className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
                             style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
@@ -217,7 +217,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
               <HiddenBlock text="Recent chanting history is hidden by this user's privacy settings." />
             )}
 
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
               {privacy.showMilestones ? (
                 <Panel title="Milestones" icon={<Award size={18} />}>
                   <MilestoneGrid milestones={milestones} />
@@ -233,7 +233,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                   ) : (
                     <div className="space-y-2">
                       {payload.groups.slice(0, 8).map((group) => (
-                        <div key={`${group.name}-${group.role}`} className="flex min-w-0 items-center gap-3 rounded-md border border-stone-200 bg-white px-3 py-3 shadow-sm">
+                        <div key={`${group.name}-${group.role}`} className="flex min-w-0 items-center gap-3 rounded-md border border-stone-200 bg-white px-3 py-2.5 shadow-sm">
                           <Avatar src={group.imageUrl} label={group.name} />
                           <div className="min-w-0">
                             <p className="truncate font-black text-stone-950">{group.name}</p>
@@ -399,9 +399,9 @@ function bestStreakFromDates(dateKeys: string[]) {
 
 function PublicMetric({ label, value, note, compact = false }: { label: string; value: number; note: string; compact?: boolean }) {
   return (
-    <div className="rounded-lg border border-saffron-200/80 bg-white/90 px-4 py-3 shadow-soft">
+    <div className="rounded-lg border border-saffron-200/80 bg-white/90 px-3 py-2.5 shadow-soft sm:px-4 sm:py-3">
       <p className="text-sm font-bold text-stone-600">{label}</p>
-      <p className={`${compact ? "text-2xl" : "text-4xl"} mt-1 font-black text-saffron-900`}>{value}</p>
+      <p className={`${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"} mt-0.5 font-black text-saffron-900`}>{value}</p>
       <p className="text-sm text-stone-600">{note}</p>
     </div>
   );
@@ -409,7 +409,7 @@ function PublicMetric({ label, value, note, compact = false }: { label: string; 
 
 function HiddenBlock({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-4 text-sm font-bold leading-6 text-stone-600">
+    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-3 text-sm font-bold leading-6 text-stone-600 sm:px-4">
       {text}
     </div>
   );

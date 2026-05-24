@@ -259,11 +259,11 @@ export function HomePage() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="p-3 sm:p-5 lg:p-6">
-            <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="p-3 sm:p-4 lg:p-5">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
                   <CalendarDays size={16} /> {selectedDateLabel}
@@ -273,20 +273,20 @@ export function HomePage() {
                   Save the exact total for today or any of the last 7 editable days.
                 </p>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3 text-left shadow-sm sm:block sm:px-5 sm:py-4 sm:text-right">
+              <div className="flex items-center justify-between rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-left shadow-sm sm:block sm:min-w-36 sm:text-right">
                 <p className="text-xs font-black uppercase text-stone-500">Saved total</p>
                 <div className="text-right">
-                  <p className="text-4xl font-black text-saffron-900 sm:mt-1 sm:text-5xl">{currentRounds}</p>
+                  <p className="text-3xl font-black text-saffron-900 sm:mt-1 sm:text-4xl">{currentRounds}</p>
                   <p className="text-sm text-stone-600">rounds</p>
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-2">
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
                 <select
-                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
                   value={selectedDate}
                   onChange={(event) => {
                     const nextDate = event.target.value;
@@ -316,12 +316,12 @@ export function HomePage() {
 
             <div className="mt-4">
               <p className="mb-2 text-sm font-bold text-stone-700">Quick totals</p>
-              <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {[1, 4, 8, 16, 32, 64].map((value) => (
                   <button
                     key={value}
                     type="button"
-                    className={`rounded-md px-2 py-2.5 text-sm font-black ring-1 transition sm:px-3 sm:py-3 ${
+                    className={`rounded-md px-2 py-2.5 text-sm font-black ring-1 transition sm:px-3 ${
                       draftRounds === value
                         ? "bg-saffron-500 text-white ring-saffron-500"
                         : "bg-white text-stone-800 ring-stone-200 hover:bg-saffron-50"
@@ -336,12 +336,12 @@ export function HomePage() {
             </div>
 
             <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
-              <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {[-1, 1, 4, 8, 16].map((amount) => (
                   <button
                     key={amount}
                     type="button"
-                    className={`rounded-md px-2 py-2.5 text-sm font-black ring-1 transition sm:px-3 sm:py-3 sm:text-base ${
+                    className={`rounded-md px-2 py-2.5 text-sm font-black ring-1 transition sm:px-3 ${
                       amount < 0
                         ? "bg-stone-100 text-stone-800 ring-stone-200 hover:bg-stone-200"
                         : "bg-peacock-50 text-peacock-900 ring-peacock-100 hover:bg-peacock-100"
@@ -357,7 +357,7 @@ export function HomePage() {
                 ))}
                 <button
                   type="button"
-                  className="rounded-md bg-stone-100 px-2 py-2.5 text-sm font-black text-stone-800 ring-1 ring-stone-200 transition hover:bg-stone-200 sm:px-3 sm:py-3 sm:text-base"
+                  className="rounded-md bg-stone-100 px-2 py-2.5 text-sm font-black text-stone-800 ring-1 ring-stone-200 transition hover:bg-stone-200 sm:px-3"
                   onClick={() => {
                     if (previousDraft === null) return;
                     setRoundInput(String(previousDraft));
@@ -370,7 +370,7 @@ export function HomePage() {
               </div>
               <button
                 type="button"
-                className="rounded-md bg-saffron-500 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-saffron-600"
+                className="rounded-md bg-saffron-500 px-5 py-2.5 font-bold text-white shadow-sm transition hover:bg-saffron-600"
                 onClick={saveDraftRounds}
                 disabled={!canSaveDraft}
               >
@@ -378,7 +378,7 @@ export function HomePage() {
               </button>
             </div>
 
-            <div className="mt-4 rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+            <div className="mt-4 rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4">
               Draft total: <b className="text-stone-900">{draftRounds}</b>
               {draftDelta !== 0 && <span> ({draftDelta > 0 ? `+${draftDelta}` : draftDelta} from saved)</span>}
               <span> Daily maximum is {MAX_DAILY_ROUNDS}.</span>
@@ -399,7 +399,7 @@ export function HomePage() {
                 </div>
                 <button
                   type="button"
-                  className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm disabled:bg-saffron-200"
+                  className="rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white shadow-sm disabled:bg-saffron-200"
                   disabled={!canSaveDraft}
                   onClick={saveDraftRounds}
                 >
@@ -419,9 +419,9 @@ export function HomePage() {
             )}
           </div>
 
-          <aside className="border-t border-saffron-100 bg-saffron-50/70 p-3 sm:p-5 xl:border-l xl:border-t-0">
+          <aside className="border-t border-saffron-100 bg-saffron-50/70 p-3 sm:p-4 xl:border-l xl:border-t-0">
             <p className="text-sm font-black uppercase text-stone-500">Today at a glance</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-3 xl:grid-cols-1">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-1">
               <DashboardPill label="Today" value={currentRounds} note="saved rounds" tone="saffron" />
               <DashboardPill label="This week" value={weeklyRounds} note="Monday onward" tone="peacock" />
               <DashboardPill label="Current streak" value={streakNow} note={`best ${streakBest}`} tone="stone" />
@@ -461,12 +461,12 @@ export function HomePage() {
 
       <OnboardingChecklist items={onboardingItems} />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(340px,1.05fr)]">
         <Panel title="Daily focus" icon={<Target size={18} />}>
-          <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-4 text-center">
+          <div className="grid gap-3 lg:grid-cols-[180px_minmax(0,1fr)]">
+            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-3 text-center">
               <p className="text-xs font-black uppercase text-stone-500">Goal progress</p>
-              <p className="mt-2 text-4xl font-black text-saffron-900 sm:text-5xl">{goalPercent}%</p>
+              <p className="mt-2 text-3xl font-black text-saffron-900 sm:text-4xl">{goalPercent}%</p>
               <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
                 <div className="h-full bg-saffron-500" style={{ width: `${goalPercent}%` }} />
               </div>
@@ -485,7 +485,7 @@ export function HomePage() {
             {canEditYesterday && (
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-stone-200"
+                className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2.5 text-sm font-black text-stone-800 ring-1 ring-stone-200"
                 disabled={isBusy}
                 onClick={() => {
                   changeEditableDate(yesterdayKey, yesterdayRounds);
@@ -497,7 +497,7 @@ export function HomePage() {
             {remainingGoalRounds > 0 && (
               <button
                 type="button"
-                className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white"
+                className="rounded-md bg-peacock-600 px-3 py-2.5 text-sm font-black text-white"
                 disabled={isBusy}
                 onClick={() => setPresetTotal(dailyGoal)}
               >
@@ -534,7 +534,7 @@ export function HomePage() {
                 <button
                   key={group.id}
                   type="button"
-                  className="rounded-lg border border-stone-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-saffron-300"
+                  className="rounded-lg border border-stone-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-saffron-300"
                   onClick={() => {
                     setSelectedGroupId(group.id);
                     showActionFeedback({
@@ -631,10 +631,10 @@ export function HomePage() {
         <MetricCard label="All time" value={allTimeRounds} note={`Since ${formatDate(currentUser.joinedAt.slice(0, 10))}`} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div id="daily-goal-panel">
         <Panel title="Daily goal" icon={<Target size={18} />}>
-          <div className="grid gap-4 md:grid-cols-[1fr_260px]">
+          <div className="grid gap-3 md:grid-cols-[1fr_240px]">
             <div>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <p className="font-black text-stone-900">
@@ -660,7 +660,7 @@ export function HomePage() {
               <Field label="Goal rounds" value={goalDraft} onChange={setGoalDraft} type="number" min={0} max={999} />
               <button
                 type="button"
-                className="mt-3 w-full rounded-md bg-peacock-600 px-4 py-3 font-black text-white"
+                className="mt-3 w-full rounded-md bg-peacock-600 px-4 py-2.5 font-black text-white"
                 disabled={isBusy || Number(goalDraft) === (currentUser.dailyGoal || 16)}
                 onClick={saveDailyGoal}
               >
@@ -673,9 +673,9 @@ export function HomePage() {
         <WeeklySummaryCard history={history} weeklyRounds={weeklyRounds} streakNow={streakNow} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Panel title="Vaishnava day note" icon={<Moon size={18} />}>
-          <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="grid gap-3 md:grid-cols-[190px_minmax(0,1fr)]">
             <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
               <p className="text-xs font-black uppercase text-stone-500">Approximate tithi</p>
               <p className="mt-1 text-2xl font-black text-saffron-900">{hinduDay.name}</p>
@@ -723,9 +723,9 @@ export function HomePage() {
         </Panel>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <Panel title="Chanting consistency" icon={<Flame size={18} />}>
-          <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-black text-stone-900">Last 7 days</p>
@@ -834,7 +834,7 @@ function HighRoundGuardrail({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className={`mt-4 rounded-lg border px-4 py-3 text-sm leading-6 ${
+    <div className={`mt-4 rounded-lg border px-3 py-2.5 text-sm leading-6 sm:px-4 ${
       needsConfirmation
         ? "border-saffron-300 bg-saffron-50 text-saffron-950"
         : "border-peacock-200 bg-peacock-50 text-peacock-950"
@@ -876,7 +876,7 @@ function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
   if (allComplete) {
     return (
       <Panel title="Setup complete" icon={<CheckCircle2 size={18} />}>
-        <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <div>
             <p className="font-black text-emerald-900">Your account setup checklist is complete.</p>
             <p className="mt-1 text-sm leading-6 text-stone-700">You have logged rounds, prepared your profile, and connected socially.</p>
@@ -891,7 +891,7 @@ function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
 
   return (
     <Panel title="Setup checklist" icon={<CheckCircle2 size={18} />}>
-      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
         <div>
           <p className="font-black text-stone-950">{completed}/{total} complete</p>
           <p className="mt-1 text-sm leading-6 text-stone-700">Finish these quick steps to get the full leaderboard experience.</p>
@@ -907,7 +907,7 @@ function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
         {items.map((item) => (
           <div
             key={item.id}
-            className={`rounded-lg border px-4 py-3 shadow-sm ${
+            className={`rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${
               item.complete ? "border-emerald-100 bg-emerald-50/70" : "border-stone-200 bg-white"
             }`}
           >
@@ -986,12 +986,12 @@ function StartStep({
   onClick: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 sm:px-4 sm:py-3">
       <p className="font-black text-stone-950">{title}</p>
-      <p className="mt-1 min-h-12 text-sm leading-6 text-stone-600">{text}</p>
+      <p className="mt-1 text-sm leading-6 text-stone-600">{text}</p>
       <button
         type="button"
-        className="mt-3 w-full rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white"
+        className="mt-3 w-full rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white"
         onClick={onClick}
       >
         {action}
@@ -1012,10 +1012,10 @@ function DailyFocusTile({
   compact?: boolean;
 }) {
   return (
-    <div className={`rounded-md border border-stone-100 bg-stone-50 px-3 ${compact ? "py-2" : "py-3"}`}>
+    <div className={`rounded-md border border-stone-100 bg-stone-50 px-3 ${compact ? "py-2" : "py-2.5"}`}>
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className={`${compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"} mt-1 font-black text-stone-950`}>{value}</p>
-      <p className="text-sm text-stone-600">{note}</p>
+      <p className={`${compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"} mt-0.5 font-black text-stone-950`}>{value}</p>
+      <p className="text-xs leading-5 text-stone-600 sm:text-sm">{note}</p>
     </div>
   );
 }
@@ -1036,7 +1036,7 @@ function AchievementSpotlight({
     : 100;
   return (
     <div className="mb-4 grid gap-3 md:grid-cols-2">
-      <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+      <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="mb-2 flex items-center gap-2 text-saffron-900">
           <Medal size={18} />
           <p className="font-black">Achievement progress</p>
@@ -1046,7 +1046,7 @@ function AchievementSpotlight({
           {latestEarned ? `, latest: ${latestEarned.title}.` : "."}
         </p>
       </div>
-      <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3">
+      <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="mb-2 flex items-center gap-2 text-peacock-900">
           <Target size={18} />
           <p className="font-black">{nextMilestone ? "Next milestone" : "All milestones earned"}</p>
@@ -1088,10 +1088,10 @@ function DashboardPill({
         ? "border-peacock-100 bg-white text-peacock-900"
         : "border-stone-200 bg-white text-stone-900";
   return (
-    <div className={`rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${toneClass}`}>
+    <div className={`rounded-lg border px-3 py-2.5 shadow-sm ${toneClass}`}>
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-1 text-2xl font-black sm:text-3xl">{value}</p>
-      <p className="text-sm text-stone-600">{note}</p>
+      <p className="mt-0.5 text-xl font-black sm:text-2xl">{value}</p>
+      <p className="text-xs leading-5 text-stone-600 sm:text-sm">{note}</p>
     </div>
   );
 }

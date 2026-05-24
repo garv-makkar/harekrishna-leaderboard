@@ -100,15 +100,15 @@ export function ActivityPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       <Panel title="Activity summary" icon={<BarChart3 size={18} />}>
-        <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="inline-flex w-fit max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
             {rangeOptions.map((option) => (
               <button
                 key={option.value}
                 type="button"
-                className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                className={`rounded-md px-3 py-1.5 text-sm font-black transition sm:py-2 ${
                   days === option.value ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
                 }`}
                 onClick={() => setDays(option.value)}
@@ -134,7 +134,7 @@ export function ActivityPage() {
           </button>
         </div>
         {importStatus && (
-          <div className="mb-4 rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3 text-sm font-bold text-saffron-900">
+          <div className="mb-4 rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-sm font-bold text-saffron-900 sm:px-4">
             {importStatus}
           </div>
         )}
@@ -152,7 +152,7 @@ export function ActivityPage() {
         ) : (
           <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
             {feedItems.map((item) => (
-              <div key={item.id} className="grid gap-2 border-b border-stone-100 px-4 py-3 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div key={item.id} className="grid gap-2 border-b border-stone-100 px-3 py-2.5 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center sm:px-4 sm:py-3">
                 <div className="flex min-w-0 gap-3">
                   <span className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-md ${feedIconClass(item.tone)}`}>
                     {feedIcon(item)}
@@ -172,7 +172,7 @@ export function ActivityPage() {
       </Panel>
 
       <Panel title={`${days}-day history`} icon={<CalendarDays size={18} />}>
-        <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(72px,1fr))]">
+        <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(68px,1fr))]">
           {history.map((item) => {
             const isToday = item.dateKey === todayKey;
             const barHeight = Math.max(8, Math.round((item.rounds / highestRounds) * 76));
@@ -180,7 +180,7 @@ export function ActivityPage() {
               <button
                 key={item.dateKey}
                 type="button"
-                className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-3 text-center ${
+                className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-2.5 text-center ${
                   isToday ? "border-saffron-400 bg-saffron-50 shadow-sm" : "border-stone-200 bg-white shadow-sm hover:border-saffron-200"
                 }`}
                 onClick={() => {
@@ -189,7 +189,7 @@ export function ActivityPage() {
                 }}
                 title={`${formatDate(item.dateKey)}: ${item.rounds} rounds`}
               >
-                <div className="flex h-20 w-full items-end rounded bg-stone-50 px-1 py-1">
+                <div className="flex h-16 w-full items-end rounded bg-stone-50 px-1 py-1 sm:h-20">
                   <div
                     className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
                     style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
@@ -206,7 +206,7 @@ export function ActivityPage() {
       </Panel>
 
       <Panel title="Logged days" icon={<ListChecks size={18} />}>
-        <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-900">
+        <div className="mb-4 rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:px-4">
           <div className="flex items-center gap-2 font-black">
             <ShieldCheck size={16} />
             Data confidence
@@ -224,7 +224,7 @@ export function ActivityPage() {
               const isEditable = editableDates.includes(entry.localDate);
               const freshness = freshnessLabel(entry.updatedAt);
               return (
-                <div key={entry.localDate} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-stone-100 bg-white px-3 py-3 last:border-b-0 sm:grid-cols-[1fr_90px_90px] sm:px-4">
+                <div key={entry.localDate} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-stone-100 bg-white px-3 py-2.5 last:border-b-0 sm:grid-cols-[1fr_90px_90px] sm:px-4 sm:py-3">
                   <div>
                     <p className="font-black text-stone-900">{formatDate(entry.localDate)}</p>
                     <p className="text-sm text-stone-500">Updated {new Date(entry.updatedAt).toLocaleString()}</p>
@@ -279,9 +279,9 @@ function feedIconClass(tone: ActivityFeedItem["tone"]) {
 
 function SummaryTile({ label, value, note }: { label: string; value: number; note: string }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
       <p className="text-sm font-bold text-stone-600">{label}</p>
-      <p className="mt-1 text-3xl font-black text-stone-900">{value}</p>
+      <p className="mt-0.5 text-xl font-black text-stone-900 sm:text-2xl">{value}</p>
       <p className="text-sm text-stone-600">{note}</p>
     </div>
   );

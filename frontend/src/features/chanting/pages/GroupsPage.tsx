@@ -149,10 +149,10 @@ export function GroupsPage({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="p-3 sm:p-5 lg:p-6">
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="p-3 sm:p-4 lg:p-5">
             <div className="mb-4 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
               <Users size={16} /> {joinedGroups.length} joined
             </div>
@@ -224,14 +224,14 @@ export function GroupsPage({
           >
             <button
               type="button"
-              className="rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white shadow-sm"
+              className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white shadow-sm"
               onClick={() => openActionPanel("join")}
             >
               Join by code
             </button>
             <button
               type="button"
-              className="rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
+              className="rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
               onClick={() => openActionPanel("create")}
             >
               Create group
@@ -243,21 +243,21 @@ export function GroupsPage({
             <label className="min-w-0 flex-1">
               <span className="mb-1 block text-sm font-bold text-stone-700">Search your groups</span>
               <input
-                className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
                 value={groupSearch}
                 onChange={(event) => setGroupSearch(event.target.value)}
                 placeholder="name, code, or role"
                 type="search"
               />
             </label>
-            <span className="rounded-md bg-white px-3 py-3 text-sm font-black text-stone-700 ring-1 ring-stone-200">
+            <span className="rounded-md bg-white px-3 py-2.5 text-sm font-black text-stone-700 ring-1 ring-stone-200">
               Showing {visibleJoinedGroups.length} of {joinedGroups.length}
             </span>
           </div>
           {visibleJoinedGroups.length === 0 ? (
             <EmptyState text={`No joined groups match "${groupSearch.trim()}".`} />
           ) : (
-          <div className="grid gap-3 xl:grid-cols-3">
+          <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
             {visibleJoinedGroups.map((group) => {
               const groupMembers = state.groupMembers.filter((member) => member.groupId === group.id);
               const todayTotal = groupMembers.reduce(
@@ -268,7 +268,7 @@ export function GroupsPage({
               return (
               <div
                 key={group.id}
-                className={`rounded-lg border p-3 shadow-sm sm:p-4 ${
+                className={`rounded-lg border p-3 shadow-sm ${
                   selectedGroup?.id === group.id ? "border-saffron-500 bg-saffron-50" : "border-stone-200 bg-white"
                 }`}
               >
@@ -377,14 +377,14 @@ export function GroupsPage({
             ) : selectedRole === "moderator" ? (
               <GroupOwnerControls group={selectedGroup} role={selectedRole} />
             ) : (
-              <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
                 <div>
                   <p className="font-black text-stone-900">Member controls</p>
                   <p className="text-sm text-stone-600">You can leave this group. Your chanting history stays on your profile.</p>
                 </div>
                 <button
                   type="button"
-                  className="rounded-md bg-stone-900 px-4 py-3 text-sm font-bold text-white"
+                  className="rounded-md bg-stone-900 px-4 py-2.5 text-sm font-bold text-white"
                   disabled={isBusy}
                   onClick={leaveSelectedGroup}
                 >
@@ -445,7 +445,7 @@ function GroupStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-1 text-2xl font-black text-stone-950 sm:text-3xl">{value}</p>
+      <p className="mt-0.5 text-xl font-black text-stone-950 sm:text-2xl">{value}</p>
     </div>
   );
 }
@@ -464,7 +464,7 @@ function GroupSectionJumpBar() {
   };
 
   return (
-    <div className="rounded-lg border border-saffron-200 bg-white/90 p-2 shadow-soft backdrop-blur sm:sticky sm:top-[84px] sm:z-20">
+    <div className="rounded-lg border border-saffron-200 bg-white/90 p-2 shadow-soft backdrop-blur lg:sticky lg:top-[76px] lg:z-20">
       <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
         <span className="shrink-0 px-2 text-xs font-black uppercase text-stone-500">Jump to</span>
         {sections.map((section) => (
@@ -521,7 +521,7 @@ function InviteMembersModal({
   return (
     <div className="fixed inset-0 z-50 bg-stone-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
       <div className="mx-auto mt-4 max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-saffron-200 bg-white shadow-soft">
-        <div className="flex items-start justify-between gap-3 border-b border-saffron-100 p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3 border-b border-saffron-100 p-3 sm:p-4">
           <div className="flex min-w-0 gap-3">
             <Avatar src={group.imageUrl} label={group.name} />
             <div className="min-w-0">
@@ -542,15 +542,15 @@ function InviteMembersModal({
             <X size={18} />
           </button>
         </div>
-        <div className="space-y-4 p-4 sm:p-5">
+        <div className="space-y-3 p-3 sm:p-4">
           <div className="grid gap-3 sm:grid-cols-[1fr_1.2fr]">
-            <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
+            <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 sm:px-4 sm:py-3">
               <p className="text-xs font-black uppercase text-stone-500">Group code</p>
-              <p className="mt-2 rounded-md bg-stone-950 px-4 py-3 text-center text-2xl font-black tracking-normal text-white">
+              <p className="mt-2 rounded-md bg-stone-950 px-4 py-2.5 text-center text-xl font-black tracking-normal text-white sm:text-2xl">
                 {group.code}
               </p>
             </div>
-            <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3">
+            <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 sm:px-4 sm:py-3">
               <p className="text-xs font-black uppercase text-peacock-800">Direct invite link</p>
               <p className="mt-2 break-all rounded-md bg-white px-3 py-2 text-sm font-bold leading-6 text-stone-800 ring-1 ring-peacock-100">
                 {inviteLink}
@@ -558,13 +558,13 @@ function InviteMembersModal({
             </div>
           </div>
 
-          <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+          <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-saffron-900">Message preview</p>
             <p className="mt-2 text-sm font-bold leading-6 text-stone-800">{fullMessage}</p>
           </div>
 
           {group.announcement && (
-            <div className="rounded-md border border-peacock-100 bg-white px-4 py-3 text-sm leading-6 text-stone-700">
+            <div className="rounded-md border border-peacock-100 bg-white px-3 py-2.5 text-sm leading-6 text-stone-700 sm:px-4 sm:py-3">
               <p className="font-black text-stone-950">Pinned group announcement</p>
               <p>{group.announcement}</p>
             </div>
@@ -573,28 +573,28 @@ function InviteMembersModal({
           <div className="grid gap-2 sm:grid-cols-2">
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-3 text-sm font-black text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-2.5 text-sm font-black text-white"
               onClick={onCopyCode}
             >
               <Copy size={16} /> Copy code
             </button>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white"
               onClick={onCopyLink}
             >
               <Link size={16} /> Copy link
             </button>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white"
               onClick={onCopyMessage}
             >
               <MessageSquare size={16} /> Copy full message
             </button>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-stone-200"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 ring-1 ring-stone-200"
               onClick={onCopyShortMessage}
             >
               <Share2 size={16} /> Copy short message

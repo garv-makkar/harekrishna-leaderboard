@@ -101,8 +101,8 @@ export default function ChantingApp() {
 
 function LoadingShell() {
   return (
-    <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto grid min-h-[calc(100vh-2.5rem)] max-w-[1500px] gap-5 lg:grid-cols-[284px_minmax(0,1fr)]">
+    <main className="min-h-screen px-3 py-4 sm:px-5 lg:px-6">
+      <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1360px] gap-4 lg:grid-cols-[264px_minmax(0,1fr)]">
         <aside className="hidden rounded-lg border border-saffron-200 bg-white/90 p-4 shadow-soft lg:block">
           <BrandLockup />
           <div className="space-y-2">
@@ -255,9 +255,9 @@ function AppShell({
         </div>
       )}
 
-      <div className="mx-auto grid min-h-screen max-w-[1500px] lg:grid-cols-[284px_minmax(0,1fr)]">
-        <aside className="hidden border-r border-saffron-200/80 bg-white/65 px-4 py-5 backdrop-blur lg:block">
-          <div className="sticky top-5 flex h-[calc(100vh-2.5rem)] flex-col rounded-lg border border-saffron-200 bg-white/90 p-4 shadow-soft">
+      <div className="mx-auto grid min-h-screen max-w-[1360px] lg:grid-cols-[264px_minmax(0,1fr)]">
+        <aside className="hidden border-r border-saffron-200/80 bg-white/65 px-3 py-4 backdrop-blur lg:block">
+          <div className="sticky top-4 flex h-[calc(100vh-2rem)] flex-col rounded-lg border border-saffron-200 bg-white/90 p-3 shadow-soft">
             <BrandLockup />
             <NavigationList
               activeTab={activeTab}
@@ -282,7 +282,7 @@ function AppShell({
 
         <div className="min-w-0">
           <header className="sticky top-0 z-30 border-b border-saffron-200/80 bg-white/90 backdrop-blur">
-            <div className="flex min-h-[62px] items-center justify-between gap-2 px-3 py-2 sm:min-h-[72px] sm:px-6 sm:py-3 lg:px-8">
+            <div className="flex min-h-[58px] items-center justify-between gap-2 px-3 py-2 sm:min-h-[66px] sm:px-5 sm:py-3 lg:px-6">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
                   type="button"
@@ -297,7 +297,7 @@ function AppShell({
                 </div>
                 <div className="hidden min-w-0 lg:block">
                   <p className="text-sm font-bold text-stone-500">Dashboard</p>
-                  <h1 className="truncate text-2xl font-black tracking-normal text-stone-950">{activeTabLabel}</h1>
+                  <h1 className="truncate text-xl font-black tracking-normal text-stone-950">{activeTabLabel}</h1>
                 </div>
               </div>
               <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
@@ -437,7 +437,7 @@ function AppShell({
             </div>
           </header>
 
-          <section className="min-w-0 px-3 pb-28 pt-4 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+          <section className="min-w-0 px-3 pb-28 pt-4 sm:px-5 sm:py-6 lg:px-6 lg:py-6">
           {(message || actionFeedback) && (
             <FeedbackBanner
               feedback={actionFeedback}
@@ -583,7 +583,7 @@ function NavigationList({
           <button
             key={tab.id}
             type="button"
-            className={`group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-bold transition sm:py-3 ${
+            className={`group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-bold transition ${
               activeTab === tab.id
                 ? "bg-saffron-500 text-white shadow-sm"
                 : "text-stone-700 hover:bg-saffron-50 hover:text-saffron-900"

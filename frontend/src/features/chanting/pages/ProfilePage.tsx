@@ -294,10 +294,10 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="flex min-w-0 flex-row items-center gap-3 p-3 sm:gap-4 sm:p-5 lg:p-6">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="flex min-w-0 flex-row items-center gap-3 p-3 sm:gap-4 sm:p-4 lg:p-5">
             {profileForm.avatarUrl ? (
               <img
                 src={profileForm.avatarUrl}
@@ -369,7 +369,7 @@ export function ProfilePage() {
             />
             <button
               type="button"
-              className="mt-3 w-full rounded-md bg-peacock-600 px-4 py-3 font-black text-white disabled:bg-peacock-200"
+            className="mt-3 w-full rounded-md bg-peacock-600 px-4 py-2.5 font-black text-white disabled:bg-peacock-200"
               disabled={
                 isBusy ||
                 (reminderEnabled === currentUser.reminderEnabled && reminderTime === (currentUser.reminderTime || "20:00"))
@@ -382,17 +382,17 @@ export function ProfilePage() {
         </div>
       </Panel>
 
-      <form className="space-y-6" onSubmit={submit}>
+      <form className="space-y-4 sm:space-y-5" onSubmit={submit}>
         {profileDirty && (
-          <div className="rounded-lg border border-saffron-300 bg-saffron-50 px-4 py-3 text-sm leading-6 text-saffron-950 shadow-sm">
+          <div className="rounded-lg border border-saffron-300 bg-saffron-50 px-3 py-2.5 text-sm leading-6 text-saffron-950 shadow-sm sm:px-4">
             <p className="font-black">Unsaved profile changes</p>
             <p>Review your public profile, contact, and timezone fields, then save them together.</p>
           </div>
         )}
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           <Panel title="Public profile" icon={<UserRound size={18} />}>
             <div className="space-y-4">
-              <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+              <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4 sm:py-3">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     {profileForm.avatarUrl ? (
@@ -423,7 +423,7 @@ export function ProfilePage() {
                     />
                     <button
                       type="button"
-                      className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-bold text-white"
+                      className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white"
                       disabled={isBusy}
                       onClick={() => fileInputRef.current?.click()}
                     >
@@ -432,7 +432,7 @@ export function ProfilePage() {
                     {profileForm.avatarUrl && (
                       <button
                         type="button"
-                        className="rounded-md bg-stone-100 px-4 py-3 font-bold text-stone-700"
+                        className="rounded-md bg-stone-100 px-4 py-2.5 font-bold text-stone-700"
                         disabled={isBusy}
                         onClick={() => {
                           setProfileForm({ ...profileForm, avatarUrl: "" });
@@ -462,14 +462,14 @@ export function ProfilePage() {
                 required
                 helper={`Use a local number for ${profileForm.country}; saved value will include ${countryDialCode(profileForm.country)}.`}
               />
-              <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+              <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4 sm:py-3">
                 <p className="font-black text-stone-900">Phone preview</p>
                 <p>{profileForm.phone.trim() ? normalizePhone(profileForm.phone, profileForm.country) : "Enter a phone number to preview the saved value."}</p>
               </div>
               <label className="block">
                 <span className="mb-1 block text-sm font-bold text-stone-700">Country</span>
                 <select
-                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
                   value={profileForm.country}
                   onChange={(event) => {
                     const country = event.target.value;
@@ -488,7 +488,7 @@ export function ProfilePage() {
               <div className="md:col-span-2">
                 <TimezoneSelect country={profileForm.country} value={profileForm.timezone} onChange={(timezone) => setProfileForm({ ...profileForm, timezone })} />
               </div>
-              <div className="rounded-md border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-900 md:col-span-2">
+              <div className="rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:px-4 md:col-span-2">
                 {localDayBoundaryText(profileForm.timezone)}
               </div>
             </div>
@@ -501,7 +501,7 @@ export function ProfilePage() {
               <Mail size={16} />
               <span>Profile, contact, and timezone changes save together.</span>
             </div>
-            <button className="rounded-md bg-saffron-500 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200" disabled={isBusy || !profileDirty}>
+            <button className="rounded-md bg-saffron-500 px-5 py-2.5 font-bold text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200" disabled={isBusy || !profileDirty}>
               {profileDirty ? "Save profile" : "Profile saved"}
             </button>
           </div>
@@ -521,7 +521,7 @@ export function ProfilePage() {
           <InlineNotice tone="error">
             This permanently deletes your account. Your profile, rounds, group memberships, and friend requests will be removed. Owned groups are also removed.
           </InlineNotice>
-          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-900">
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm leading-6 text-red-900 sm:px-4">
             <p className="font-black">Before deleting</p>
             <p>Make sure this is the account you want to remove: {currentUser.email}</p>
             <p>This cannot be undone from the app.</p>
@@ -537,7 +537,7 @@ export function ProfilePage() {
           />
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-md bg-red-700 px-4 py-3 font-bold text-white"
+            className="inline-flex items-center gap-2 rounded-md bg-red-700 px-4 py-2.5 font-bold text-white"
             disabled={isBusy || deleteConfirmation !== "DELETE"}
             onClick={deleteAccount}
           >
@@ -574,7 +574,7 @@ function PublicProfilePreview() {
             </div>
           )}
           <div className="min-w-0">
-            <p className="truncate text-2xl font-black text-stone-950">{currentUser.displayName || currentUser.username}</p>
+            <p className="truncate text-xl font-black text-stone-950 sm:text-2xl">{currentUser.displayName || currentUser.username}</p>
             <p className="truncate text-sm font-bold text-stone-600">@{currentUser.username}</p>
             <p className="mt-2 text-sm leading-6 text-stone-600">
               {privacy.showCountry ? `${currentUser.country}. ` : ""}Joined {formatDate(currentUser.joinedAt.slice(0, 10))}.
@@ -593,7 +593,7 @@ function PublicProfilePreview() {
         <PrivacyVisibilityPill label="Milestones" visible={privacy.showMilestones} />
         <PrivacyVisibilityPill label="Country" visible={privacy.showCountry} />
       </div>
-      <div className="mt-4 flex flex-col gap-2 rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-2 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
         <div>
           <p className="font-black text-peacock-950">Shareable profile link</p>
           <p className="mt-1 break-all text-sm font-bold text-peacock-900">{publicProfilePath(currentUser.username)}</p>
@@ -655,7 +655,7 @@ function PublicProfilePrivacyPanel({
 
   return (
     <Panel title="Public profile privacy" icon={<ShieldCheck size={18} />}>
-      <div className="mb-4 rounded-lg border border-peacock-100 bg-peacock-50 px-4 py-3 text-sm leading-6 text-peacock-950">
+      <div className="mb-4 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-950 sm:px-4 sm:py-3">
         <p className="font-black">Choose what other users see when they open your profile preview.</p>
         <p>Your username, display name, avatar, and public leaderboard rows stay visible because they identify leaderboard entries.</p>
       </div>
@@ -664,7 +664,7 @@ function PublicProfilePrivacyPanel({
         {items.map((item) => (
           <label
             key={item.key}
-            className="flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm"
+            className="flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3"
           >
             <input
               type="checkbox"
@@ -685,7 +685,7 @@ function PublicProfilePrivacyPanel({
         </span>
         <button
           type="button"
-          className="rounded-md bg-saffron-500 px-4 py-3 font-black text-white disabled:bg-saffron-200"
+          className="rounded-md bg-saffron-500 px-4 py-2.5 font-black text-white disabled:bg-saffron-200"
           disabled={isBusy}
           onClick={() => void onSave()}
         >
@@ -758,7 +758,7 @@ function DataPrivacyPanel() {
           <PrivacyMetric label="Friends" value={friends.length} />
           <PrivacyMetric label="Reports" value={submittedReports.length} />
         </div>
-        <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 text-stone-700">
+        <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm leading-6 text-stone-700 sm:px-4 sm:py-3">
           <p className="font-black text-stone-900">Stored for your account</p>
           <p>Identity fields: username, email, phone, display name, country, timezone, profile picture URL, and join date.</p>
           <p>App activity: daily round totals, group memberships, friend requests, and moderation reports you submit.</p>
@@ -766,7 +766,7 @@ function DataPrivacyPanel() {
         </div>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-bold text-white"
+          className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white"
           onClick={exportAccountData}
         >
           <Download size={18} /> Download my data
@@ -783,7 +783,7 @@ function ProfileCompletionPanel({ items }: { items: { label: string; done: boole
   return (
     <Panel title="Profile completeness" icon={<CheckCircle2 size={18} />}>
       <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+        <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:px-4 sm:py-3">
           <p className="text-sm font-black text-saffron-900">{percent}% complete</p>
           <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
             <div className="h-full bg-saffron-500" style={{ width: `${percent}%` }} />
@@ -812,16 +812,16 @@ function ProfileCompletionPanel({ items }: { items: { label: string; done: boole
 
 function PrivacyMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
       <p className="text-sm font-bold text-stone-600">{label}</p>
-      <p className="mt-1 text-3xl font-black text-stone-900">{value}</p>
+      <p className="mt-0.5 text-xl font-black text-stone-900 sm:text-2xl">{value}</p>
     </div>
   );
 }
 
 function PrivacyHiddenMetric({ label }: { label: string }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 shadow-sm">
+    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
       <p className="text-sm font-bold text-stone-600">{label}</p>
       <p className="mt-1 text-sm font-black text-stone-500">Hidden</p>
     </div>
@@ -846,7 +846,7 @@ function ProfileStatusCard({ label, value, tone }: { label: string; value: strin
         ? "border-saffron-200 bg-white text-saffron-900"
         : "border-stone-200 bg-white text-stone-900";
   return (
-    <div className={`min-w-0 rounded-lg border px-4 py-3 shadow-sm ${toneClass}`}>
+    <div className={`min-w-0 rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${toneClass}`}>
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
       <p className="mt-1 truncate font-black">{value}</p>
     </div>
@@ -930,7 +930,7 @@ function ChangePasswordPanel() {
         </div>
         <PasswordChecklist rules={rules} touched={newPassword.length > 0} />
         {confirmPassword && newPassword !== confirmPassword && <InlineNotice tone="error">New password and confirmation do not match.</InlineNotice>}
-        <button className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-bold text-white" disabled={isBusy || !isPasswordReady || !currentPassword}>
+        <button className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={isBusy || !isPasswordReady || !currentPassword}>
           <ShieldCheck size={18} /> Change password
         </button>
       </form>
