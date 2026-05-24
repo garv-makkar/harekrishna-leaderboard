@@ -39,7 +39,7 @@ alter table if exists public.notifications
   add constraint notifications_action_tab_check
   check (
     action_tab is null
-    or action_tab in ('home', 'groups', 'friends', 'global', 'activity', 'notifications', 'profile', 'about')
+    or action_tab in ('home', 'groups', 'friends', 'global', 'activity', 'milestones', 'notifications', 'profile', 'about')
   );
 
 drop table if exists public.moderation_reports;

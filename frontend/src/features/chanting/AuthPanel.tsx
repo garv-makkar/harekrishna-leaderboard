@@ -358,6 +358,7 @@ function SignUpForm() {
       reminderEnabled: false,
       reminderTime: "20:00",
       privacy: defaultProfilePrivacy,
+      featuredMilestoneIds: [],
       joinedAt: new Date().toISOString()
     };
     saveState({ ...state, users: [...state.users, user], currentUserId: user.id });

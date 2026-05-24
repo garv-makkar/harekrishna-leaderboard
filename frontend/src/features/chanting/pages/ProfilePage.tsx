@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { Award, Bell, CheckCircle2, Circle, Copy, Download, ExternalLink, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Bell, CheckCircle2, Circle, Copy, Download, ExternalLink, ImageUp, KeyRound, Mail, MapPin, ShieldCheck, Star, Trash2, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { ProfilePrivacy } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
@@ -24,7 +24,7 @@ import {
   usernameHelpText,
   usernamePattern
 } from "../domain";
-import { Field, InlineNotice, MilestoneGrid, PageHeader, Panel, PasswordChecklist, StatCard, StatGrid, TimezoneSelect } from "../ui";
+import { EmptyState, Field, InlineNotice, PageHeader, Panel, PasswordChecklist, StatCard, StatGrid, TimezoneSelect } from "../ui";
 
 type ProfileSection = "public" | "account" | "security" | "data";
 
@@ -422,9 +422,6 @@ export function ProfilePage() {
             onSave={savePrivacyPreferences}
           />
           <PublicProfilePreview />
-          <Panel title="Milestones" icon={<Award size={18} />}>
-            <MilestoneGrid milestones={computeMilestones(state, currentUser, todayKey)} limit={6} />
-          </Panel>
         </>
       )}
 
@@ -587,6 +584,10 @@ function PublicProfilePreview() {
       request.status === "accepted" &&
       (request.fromUserId === currentUser.id || request.toUserId === currentUser.id)
   ).length;
+  const featuredMilestones = currentUser.featuredMilestoneIds
+    .map((id) => computeMilestones(state, currentUser, todayKey).find((milestone) => milestone.id === id && milestone.earned))
+    .filter(Boolean)
+    .slice(0, 3) as ReturnType<typeof computeMilestones>;
 
   return (
     <Panel title="Public profile preview" icon={<UserRound size={18} />}>
@@ -618,6 +619,24 @@ function PublicProfilePreview() {
         <PrivacyVisibilityPill label="Recent 7 days" visible={privacy.showRecentHistory} />
         <PrivacyVisibilityPill label="Milestones" visible={privacy.showMilestones} />
         <PrivacyVisibilityPill label="Country" visible={privacy.showCountry} />
+      </div>
+      <div className="mt-4 rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="mb-2 flex items-center gap-2 text-saffron-900">
+          <Star size={17} />
+          <p className="font-black">Featured milestones</p>
+        </div>
+        {featuredMilestones.length === 0 ? (
+          <EmptyState text="Choose up to 3 earned milestones from the Milestones page to show here." />
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-3">
+            {featuredMilestones.map((milestone) => (
+              <div key={milestone.id} className="rounded-md bg-white px-3 py-2 text-sm ring-1 ring-saffron-100">
+                <p className="font-black text-stone-950">{milestone.title}</p>
+                <p className="mt-1 leading-5 text-stone-600">{milestone.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="mt-4 flex flex-col gap-2 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
         <div>
@@ -783,6 +802,7 @@ function DataPrivacyPanel() {
         timezone: currentUser.timezone,
         avatarUrl: currentUser.avatarUrl,
         privacy: currentUser.privacy,
+        featuredMilestoneIds: currentUser.featuredMilestoneIds,
         joinedAt: currentUser.joinedAt
       },
       chantingTotals: state.chantTotals

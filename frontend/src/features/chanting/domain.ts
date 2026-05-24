@@ -68,7 +68,7 @@ export type ActivityFeedItem = {
 };
 
 export type AuthMode = "signin" | "signup" | "forgot" | "otp" | "newPassword" | "checkEmail";
-export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "notifications" | "profile" | "about";
+export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "milestones" | "notifications" | "profile" | "about";
 
 export type ProfileRow = {
   id: string;
@@ -87,6 +87,7 @@ export type ProfileRow = {
   show_streak?: boolean;
   show_recent_history?: boolean;
   show_milestones?: boolean;
+  featured_milestone_ids?: string[];
   joined_at: string;
 };
 
@@ -101,6 +102,7 @@ export const defaultProfilePrivacy: ProfilePrivacy = {
 export function withDefaultProfilePrivacy(user: UserProfile): UserProfile {
   return {
     ...user,
+    featuredMilestoneIds: user.featuredMilestoneIds || [],
     privacy: {
       ...defaultProfilePrivacy,
       ...(user.privacy || {})
@@ -484,6 +486,7 @@ export function createSeedState(): AppState {
       reminderEnabled: false,
       reminderTime: "20:00",
       privacy: defaultProfilePrivacy,
+      featuredMilestoneIds: [],
       joinedAt
     },
     {
@@ -500,6 +503,7 @@ export function createSeedState(): AppState {
       reminderEnabled: false,
       reminderTime: "20:00",
       privacy: defaultProfilePrivacy,
+      featuredMilestoneIds: [],
       joinedAt
     },
     {
@@ -516,6 +520,7 @@ export function createSeedState(): AppState {
       reminderEnabled: false,
       reminderTime: "20:00",
       privacy: defaultProfilePrivacy,
+      featuredMilestoneIds: [],
       joinedAt
     }
   ];
@@ -891,6 +896,7 @@ export function fromProfileRow(row: ProfileRow): UserProfile {
       showRecentHistory: row.show_recent_history ?? true,
       showMilestones: row.show_milestones ?? true
     },
+    featuredMilestoneIds: Array.isArray(row.featured_milestone_ids) ? row.featured_milestone_ids : [],
     joinedAt: row.joined_at
   };
 }

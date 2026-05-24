@@ -23,6 +23,7 @@ export type UserProfile = {
   reminderEnabled: boolean;
   reminderTime: string;
   privacy: ProfilePrivacy;
+  featuredMilestoneIds: string[];
   joinedAt: string;
 };
 
@@ -66,7 +67,7 @@ export type AppNotification = {
   title: string;
   body: string;
   tone: "success" | "info" | "warning";
-  actionTab: "home" | "groups" | "friends" | "global" | "activity" | "notifications" | "profile" | "about" | "";
+  actionTab: "home" | "groups" | "friends" | "global" | "activity" | "milestones" | "notifications" | "profile" | "about" | "";
   dedupeKey: string;
   readAt: string;
   createdAt: string;

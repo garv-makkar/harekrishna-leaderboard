@@ -74,9 +74,11 @@ backend/supabase/migrations/013_public_profile_rpc.sql
 backend/supabase/migrations/014_public_group_invite_rpc.sql
 backend/supabase/migrations/015_notifications.sql
 backend/supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
+backend/supabase/migrations/017_featured_milestones.sql
 ```
 
 Migration `016` removes the temporary admin/reporting tables and changes round edits to allow any date from the user's join date through today.
+Migration `017` adds featured profile milestones and updates the public profile function.
 
 See `SUPABASE_SETUP.md` for dashboard setup, SMTP, OTP, reset password, and redirect URL notes.
 See `DEPLOYMENT_READINESS.md` before going online.

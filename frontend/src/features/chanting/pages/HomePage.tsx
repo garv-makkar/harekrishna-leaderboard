@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, ExternalLink, Flame, History, Medal, Moon, PlusCircle, Target, Users } from "lucide-react";
+import { AlertTriangle, Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, ExternalLink, Flame, History, Moon, PlusCircle, Target, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
   approximateHinduCalendar,
@@ -19,7 +19,7 @@ import {
   sumRounds,
   VAISHNAVA_CALENDAR_REFERENCE
 } from "../domain";
-import { ActionEmptyState, Card, Field, MilestoneGrid, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Card, Field, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 export function HomePage() {
   const {
@@ -607,7 +607,7 @@ export function HomePage() {
         </Panel>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.78fr)_minmax(0,1.22fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.9fr)_minmax(0,1.1fr)]">
         <Panel title="Chanting consistency" icon={<Flame size={18} />}>
           <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -651,14 +651,26 @@ export function HomePage() {
           </div>
         </Panel>
 
-        <Panel title="Milestones" icon={<Award size={18} />}>
-          <AchievementSpotlight
-            earnedCount={earnedMilestoneCount}
-            totalCount={milestones.length}
-            latestEarned={latestEarnedMilestone}
-            nextMilestone={nextMilestone}
-          />
-          <MilestoneGrid milestones={milestones} limit={6} />
+        <Panel title="Milestone progress" icon={<Award size={18} />}>
+          <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)]">
+            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-center">
+              <p className="text-xs font-black uppercase text-stone-500">Completed</p>
+              <p className="mt-1 text-2xl font-black text-saffron-900">{earnedMilestoneCount}/{milestones.length}</p>
+            </div>
+            <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5">
+              <p className="font-black text-stone-950">{nextMilestone ? `Next: ${nextMilestone.title}` : "All current milestones earned"}</p>
+              <p className="mt-1 text-sm leading-6 text-stone-600">
+                {nextMilestone ? nextMilestone.description : latestEarnedMilestone ? `Latest: ${latestEarnedMilestone.title}.` : "New milestones can be added later."}
+              </p>
+              <button
+                type="button"
+                className="mt-3 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white"
+                onClick={() => window.dispatchEvent(new CustomEvent("chanting-open-tab", { detail: "milestones" }))}
+              >
+                View milestones
+              </button>
+            </div>
+          </div>
         </Panel>
       </div>
 
@@ -891,56 +903,6 @@ function DailyFocusTile({
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
       <p className={`${compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"} mt-0.5 font-black text-stone-950`}>{value}</p>
       <p className="text-xs leading-5 text-stone-600 sm:text-sm">{note}</p>
-    </div>
-  );
-}
-
-function AchievementSpotlight({
-  earnedCount,
-  totalCount,
-  latestEarned,
-  nextMilestone
-}: {
-  earnedCount: number;
-  totalCount: number;
-  latestEarned: ReturnType<typeof computeMilestones>[number] | undefined;
-  nextMilestone: ReturnType<typeof computeMilestones>[number] | undefined;
-}) {
-  const nextPercent = nextMilestone
-    ? Math.round((nextMilestone.progress / Math.max(1, nextMilestone.target)) * 100)
-    : 100;
-  return (
-    <div className="mb-4 grid gap-3 md:grid-cols-2">
-      <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="mb-2 flex items-center gap-2 text-saffron-900">
-          <Medal size={18} />
-          <p className="font-black">Achievement progress</p>
-        </div>
-        <p className="text-sm leading-6 text-stone-700">
-          {earnedCount} of {totalCount} unlocked
-          {latestEarned ? `, latest: ${latestEarned.title}.` : "."}
-        </p>
-      </div>
-      <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="mb-2 flex items-center gap-2 text-peacock-900">
-          <Target size={18} />
-          <p className="font-black">{nextMilestone ? "Next milestone" : "All milestones earned"}</p>
-        </div>
-        {nextMilestone ? (
-          <>
-            <p className="text-sm font-black text-stone-900">{nextMilestone.title}</p>
-            <p className="text-sm leading-6 text-stone-700">{nextMilestone.description}</p>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
-              <div className="h-full bg-peacock-500" style={{ width: `${nextPercent}%` }} />
-            </div>
-            <p className="mt-1 text-xs font-bold text-stone-600">
-              {nextMilestone.progress} / {nextMilestone.target}
-            </p>
-          </>
-        ) : (
-          <p className="text-sm leading-6 text-stone-700">Beautiful. You have completed every milestone currently available.</p>
-        )}
-      </div>
     </div>
   );
 }

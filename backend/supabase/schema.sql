@@ -9,6 +9,7 @@ create table public.profiles (
   country text not null,
   timezone text not null,
   avatar_url text not null default '',
+  featured_milestone_ids text[] not null default '{}',
   joined_at timestamptz not null default now()
 );
 

@@ -117,6 +117,7 @@ type ChantingContextValue = {
   copyGroupCode: (code: string) => Promise<void>;
   copyGroupInvite: (group: Group) => Promise<void>;
   updateUserPreferences: (updates: Partial<Pick<UserProfile, "dailyGoal" | "reminderEnabled" | "reminderTime">>) => Promise<void>;
+  updateFeaturedMilestones: (milestoneIds: string[]) => Promise<void>;
   runRemote: (action: () => Promise<void>) => Promise<void>;
   refreshRemoteState: (currentUserId: string, scope?: RemoteScope) => Promise<void>;
   ensureGroupsData: (force?: boolean) => Promise<void>;
@@ -735,6 +736,32 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const updateFeaturedMilestones = async (milestoneIds: string[]) => {
+    if (!currentUser) return;
+    const earnedIds = new Set(computeMilestones(state, currentUser, todayKey).filter((milestone) => milestone.earned).map((milestone) => milestone.id));
+    const cleanIds = Array.from(new Set(milestoneIds.filter((id) => earnedIds.has(id)))).slice(0, 3);
+    if (supabase) {
+      const client = supabase;
+      await runRemote(async () => {
+        const { error } = await client
+          .from("profiles")
+          .update({ featured_milestone_ids: cleanIds })
+          .eq("id", currentUser.id);
+        if (error) throw error;
+        await refreshRemoteState(currentUser.id, "core");
+        showMessage("Featured milestones saved.");
+      }).catch((error: Error) => showMessage(readableError(error, "profile")));
+      return;
+    }
+    saveState({
+      ...state,
+      users: state.users.map((user) =>
+        user.id === currentUser.id ? { ...user, featuredMilestoneIds: cleanIds } : user
+      )
+    });
+    showMessage("Featured milestones saved.");
+  };
+
   const value: ChantingContextValue = {
     state,
     saveState,
@@ -784,6 +811,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     copyGroupCode,
     copyGroupInvite,
     updateUserPreferences,
+    updateFeaturedMilestones,
     runRemote,
     refreshRemoteState,
     ensureGroupsData,

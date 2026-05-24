@@ -14,6 +14,7 @@ import {
   Menu,
   Settings,
   Sparkles,
+  Star,
   Users,
   X
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { FriendsPage } from "@/features/chanting/pages/FriendsPage";
 import { GlobalPage } from "@/features/chanting/pages/GlobalPage";
 import { GroupsPage } from "@/features/chanting/pages/GroupsPage";
 import { HomePage } from "@/features/chanting/pages/HomePage";
+import { MilestonesPage } from "@/features/chanting/pages/MilestonesPage";
 import { ProfilePage } from "@/features/chanting/pages/ProfilePage";
 import { ActivityPage } from "@/features/chanting/pages/ActivityPage";
 import { NotificationsPage } from "@/features/chanting/pages/NotificationsPage";
@@ -40,7 +42,7 @@ import {
   recentChantingHistory,
   sumRounds
 } from "@/features/chanting/domain";
-import { Avatar, MilestoneGrid, SkeletonBlock } from "@/features/chanting/ui";
+import { Avatar, SkeletonBlock } from "@/features/chanting/ui";
 import type { TabId } from "@/features/chanting/domain";
 
 const tabs = [
@@ -49,6 +51,7 @@ const tabs = [
   { id: "friends", label: "Friends", icon: HeartHandshake },
   { id: "global", label: "Global", icon: Globe2 },
   { id: "activity", label: "Activity", icon: LineChart },
+  { id: "milestones", label: "Milestones", icon: Star },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "profile", label: "Profile", icon: Settings },
   { id: "about", label: "About", icon: Sparkles }
@@ -181,6 +184,16 @@ function AppShell({
     setShowMobileNav(false);
     setShowNotifications(false);
   }, [activeTab]);
+
+  useEffect(() => {
+    const openTab = (event: Event) => {
+      const tab = (event as CustomEvent<TabId>).detail;
+      if (!tabs.some((item) => item.id === tab)) return;
+      handleTabChange(tab);
+    };
+    window.addEventListener("chanting-open-tab", openTab);
+    return () => window.removeEventListener("chanting-open-tab", openTab);
+  });
 
   const incomingRequestCount = currentUser
     ? state.friendRequests.filter((request) => request.toUserId === currentUser.id && request.status === "pending").length
@@ -448,6 +461,7 @@ function AppShell({
           {activeTab === "friends" && <FriendsPage />}
           {activeTab === "global" && <GlobalPage />}
           {activeTab === "activity" && <ActivityPage />}
+          {activeTab === "milestones" && <MilestonesPage />}
           {activeTab === "notifications" && <NotificationsPage onOpenTab={handleTabChange} />}
           {activeTab === "profile" && <ProfilePage />}
           {activeTab === "about" && <AboutPage />}
@@ -651,6 +665,10 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
       (request.fromUserId === user.id || request.toUserId === user.id)
   ).length;
   const milestones = computeMilestones(state, user, todayKey);
+  const featuredMilestones = user.featuredMilestoneIds
+    .map((id) => milestones.find((milestone) => milestone.id === id && milestone.earned))
+    .filter(Boolean)
+    .slice(0, 3) as typeof milestones;
   const recentHistory = recentChantingHistory(state.chantTotals, user.id, todayKey, 7);
   const sevenDayRounds = recentHistory.reduce((sum, item) => sum + item.rounds, 0);
   const earnedMilestones = milestones.filter((milestone) => milestone.earned).length;
@@ -745,9 +763,25 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
             </div>
           </div>
         )}
-        {privacy.showMilestones ? (
-          <MilestoneGrid milestones={milestones} limit={4} />
-        ) : (
+        {privacy.showMilestones && featuredMilestones.length > 0 && (
+          <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
+            <p className="mb-2 font-black text-saffron-900">Featured milestones</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {featuredMilestones.map((milestone) => (
+                <div key={milestone.id} className="rounded-md bg-white px-3 py-2 text-sm ring-1 ring-saffron-100">
+                  <p className="font-black text-stone-950">{milestone.title}</p>
+                  <p className="mt-1 leading-5 text-stone-600">{milestone.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {privacy.showMilestones && featuredMilestones.length === 0 && (
+          <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-bold text-stone-600">
+            No featured milestones selected yet.
+          </div>
+        )}
+        {!privacy.showMilestones && (
           <div className="rounded-md border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-bold text-stone-600">
             Milestones are hidden by this user's privacy settings.
           </div>

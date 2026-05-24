@@ -62,6 +62,7 @@ backend/supabase/migrations/013_public_profile_rpc.sql
 backend/supabase/migrations/014_public_group_invite_rpc.sql
 backend/supabase/migrations/015_notifications.sql
 backend/supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
+backend/supabase/migrations/017_featured_milestones.sql
 ```
 
 Quick checks in Supabase after running SQL:
@@ -213,7 +214,8 @@ Profile:
 - Update phone.
 - Upload profile picture.
 - Export account data JSON.
-- Check milestones.
+- Choose featured milestones.
+- Check public profile featured milestones.
 
 ## 10. Known Production Decisions
 

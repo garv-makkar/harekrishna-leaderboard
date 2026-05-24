@@ -6,7 +6,7 @@ create table if not exists public.notifications (
   tone text not null default 'info' check (tone in ('success', 'info', 'warning')),
   action_tab text check (
     action_tab is null
-    or action_tab in ('home', 'groups', 'friends', 'global', 'activity', 'notifications', 'profile', 'about')
+    or action_tab in ('home', 'groups', 'friends', 'global', 'activity', 'milestones', 'notifications', 'profile', 'about')
   ),
   dedupe_key text,
   read_at timestamptz,

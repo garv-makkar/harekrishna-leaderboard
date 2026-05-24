@@ -17,7 +17,7 @@ import {
   roundsForDate,
   sumRounds
 } from "../domain";
-import { Avatar, EmptyState, MilestoneGrid, Panel } from "../ui";
+import { Avatar, EmptyState, Panel } from "../ui";
 
 type PublicProfilePayload = {
   profile: {
@@ -27,6 +27,7 @@ type PublicProfilePayload = {
     country: string | null;
     joinedAt: string;
     privacy: ProfilePrivacy;
+    featuredMilestoneIds: string[];
   };
   todayKey: string;
   stats: {
@@ -94,6 +95,16 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
     [payload, privacy.showMilestones, privacy.showStreak]
   );
   const milestones = useMemo(() => (payload && privacy.showMilestones ? publicMilestones(payload, streakBest) : []), [payload, privacy.showMilestones, streakBest]);
+  const featuredMilestones = useMemo(
+    () =>
+      payload && privacy.showMilestones
+        ? (payload.profile.featuredMilestoneIds || [])
+            .map((id) => milestones.find((milestone) => milestone.id === id && milestone.earned))
+            .filter(Boolean)
+            .slice(0, 3) as typeof milestones
+        : [],
+    [milestones, payload, privacy.showMilestones]
+  );
   const highestRecentRounds = Math.max(1, ...(payload?.recentHistory || []).map((item) => item.rounds));
 
   return (
@@ -219,8 +230,19 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
               {privacy.showMilestones ? (
-                <Panel title="Milestones" icon={<Award size={18} />}>
-                  <MilestoneGrid milestones={milestones} />
+                <Panel title="Featured milestones" icon={<Award size={18} />}>
+                  {featuredMilestones.length === 0 ? (
+                    <EmptyState text="No featured milestones selected yet." />
+                  ) : (
+                    <div className="space-y-2">
+                      {featuredMilestones.map((milestone) => (
+                        <div key={milestone.id} className="rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2.5">
+                          <p className="font-black text-stone-950">{milestone.title}</p>
+                          <p className="mt-1 text-sm leading-5 text-stone-600">{milestone.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </Panel>
               ) : (
                 <HiddenBlock text="Milestones are hidden by this user's privacy settings." />
@@ -279,7 +301,8 @@ function loadDemoProfile(username: string) {
       avatarUrl: user.avatarUrl,
       country: privacy.showCountry ? user.country : null,
       joinedAt: user.joinedAt,
-      privacy
+      privacy,
+      featuredMilestoneIds: user.featuredMilestoneIds || []
     },
     todayKey,
     stats: {
@@ -361,6 +384,7 @@ function publicMilestones(payload: PublicProfilePayload, streakBest: number) {
       reminderEnabled: false,
       reminderTime: "20:00",
       privacy: payload.profile.privacy,
+      featuredMilestoneIds: payload.profile.featuredMilestoneIds || [],
       joinedAt: payload.profile.joinedAt
     },
     payload.todayKey
