@@ -221,8 +221,8 @@ function AppShell({
             aria-label="Close menu"
             onClick={() => setShowMobileNav(false)}
           />
-          <aside className="relative flex h-full w-[min(340px,88vw)] flex-col border-r border-saffron-200 bg-white shadow-soft">
-            <div className="flex items-center justify-between border-b border-saffron-100 px-4 py-4">
+          <aside className="relative flex h-full w-[min(320px,88vw)] flex-col border-r border-saffron-200 bg-white shadow-soft">
+            <div className="flex items-center justify-between border-b border-saffron-100 px-3 py-3 sm:px-4 sm:py-4">
               <BrandLockup compact />
               <button
                 type="button"
@@ -281,18 +281,18 @@ function AppShell({
         </aside>
 
         <div className="min-w-0">
-          <header className="sticky top-0 z-30 border-b border-saffron-200/80 bg-white/82 backdrop-blur">
-            <div className="flex min-h-[72px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-              <div className="flex min-w-0 items-center gap-3">
+          <header className="sticky top-0 z-30 border-b border-saffron-200/80 bg-white/90 backdrop-blur">
+            <div className="flex min-h-[62px] items-center justify-between gap-2 px-3 py-2 sm:min-h-[72px] sm:px-6 sm:py-3 lg:px-8">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
                   type="button"
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-saffron-200 bg-white text-stone-800 shadow-sm lg:hidden"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-saffron-200 bg-white text-stone-800 shadow-sm sm:h-11 sm:w-11 lg:hidden"
                   onClick={() => setShowMobileNav(true)}
                   aria-label="Open menu"
                 >
                   <Menu size={22} />
                 </button>
-                <div className="lg:hidden">
+                <div className="min-w-0 lg:hidden">
                   <BrandLockup compact />
                 </div>
                 <div className="hidden min-w-0 lg:block">
@@ -300,7 +300,7 @@ function AppShell({
                   <h1 className="truncate text-2xl font-black tracking-normal text-stone-950">{activeTabLabel}</h1>
                 </div>
               </div>
-              <div className="flex min-w-0 items-center justify-end gap-2">
+              <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
                 <span
                   className={`hidden rounded-md px-3 py-2 text-xs font-black sm:inline-flex ${
                     publicSupabaseConfig.mode === "supabase"
@@ -319,7 +319,7 @@ function AppShell({
                 <div className="relative">
                   <button
                     type="button"
-                    className="inline-flex h-11 items-center gap-2 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm"
+                    className="inline-flex h-10 items-center gap-2 rounded-md border border-stone-200 bg-white px-2 text-sm font-semibold text-stone-800 shadow-sm sm:h-11 sm:px-3"
                     onClick={() => setShowNotifications((value) => !value)}
                   >
                     <Bell size={17} />
@@ -331,7 +331,7 @@ function AppShell({
                     )}
                   </button>
                   {showNotifications && (
-                    <div className="absolute right-0 z-30 mt-3 w-[min(380px,calc(100vw-2rem))] rounded-lg border border-saffron-200 bg-white p-3 shadow-soft">
+                    <div className="fixed left-3 right-3 top-[66px] z-30 max-h-[calc(100vh-84px)] overflow-y-auto rounded-lg border border-saffron-200 bg-white p-3 shadow-soft sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[min(380px,calc(100vw-2rem))]">
                       <div className="mb-2 flex items-center justify-between gap-2">
                         <div>
                           <p className="font-black text-stone-900">Notifications</p>
@@ -437,7 +437,7 @@ function AppShell({
             </div>
           </header>
 
-          <section className="min-w-0 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+          <section className="min-w-0 px-3 pb-28 pt-4 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
           {(message || actionFeedback) && (
             <FeedbackBanner
               feedback={actionFeedback}
@@ -538,15 +538,15 @@ function FeedbackBanner({
 
 function BrandLockup({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={`flex min-w-0 items-center gap-3 ${compact ? "" : "mb-5"}`}>
-      <div className={`${compact ? "h-10 w-10 text-sm" : "h-12 w-12 text-lg"} lotus-mark grid shrink-0 place-items-center rounded-lg font-black text-white shadow-soft`}>
+    <div className={`flex min-w-0 items-center gap-2 sm:gap-3 ${compact ? "" : "mb-5"}`}>
+      <div className={`${compact ? "h-9 w-9 text-xs sm:h-10 sm:w-10 sm:text-sm" : "h-12 w-12 text-lg"} lotus-mark grid shrink-0 place-items-center rounded-lg font-black text-white shadow-soft`}>
         HK
       </div>
       <div className="min-w-0">
-        <p className={`${compact ? "text-base" : "text-lg"} truncate font-black tracking-normal text-saffron-900`}>
+        <p className={`${compact ? "text-sm sm:text-base" : "text-lg"} truncate font-black tracking-normal text-saffron-900`}>
           Hare Krishna
         </p>
-        <p className="truncate text-xs font-bold uppercase text-stone-500">Leaderboard</p>
+        <p className="truncate text-[10px] font-bold uppercase text-stone-500 sm:text-xs">Leaderboard</p>
       </div>
     </div>
   );
@@ -570,7 +570,7 @@ function NavigationList({
   onTabChange: (tab: TabId) => void;
 }) {
   return (
-    <nav className="mt-4 space-y-1 overflow-y-auto px-4 pb-4 lg:mt-0 lg:px-0">
+    <nav className="mt-3 space-y-1 overflow-y-auto px-3 pb-4 lg:mt-0 lg:px-0">
       {tabs.filter((tab) => !("adminOnly" in tab) || isAdmin).map((tab) => {
         const Icon = tab.icon;
         const badgeValue =
@@ -583,7 +583,7 @@ function NavigationList({
           <button
             key={tab.id}
             type="button"
-            className={`group flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm font-bold transition ${
+            className={`group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-bold transition sm:py-3 ${
               activeTab === tab.id
                 ? "bg-saffron-500 text-white shadow-sm"
                 : "text-stone-700 hover:bg-saffron-50 hover:text-saffron-900"

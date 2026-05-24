@@ -29,7 +29,7 @@ import { Field, InlineNotice, PasswordChecklist, TimezoneSelect } from "./ui";
 function AuthHeader({ title, body }: { title: string; body: string }) {
   return (
     <div className="space-y-2">
-      <h2 className="text-2xl font-black tracking-normal text-saffron-900">{title}</h2>
+      <h2 className="text-xl font-black tracking-normal text-saffron-900 sm:text-2xl">{title}</h2>
       <p className="text-sm leading-6 text-stone-600">{body}</p>
     </div>
   );
@@ -39,15 +39,15 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
   const { authMode, message } = useChanting();
 
   return (
-    <main className="grid min-h-screen place-items-center px-4 py-6 sm:px-6 lg:py-10">
+    <main className="grid min-h-screen place-items-center px-3 py-4 sm:px-6 lg:py-10">
       <div className="grid w-full max-w-6xl overflow-hidden rounded-lg border border-saffron-200 bg-white/95 shadow-soft lg:grid-cols-[minmax(360px,0.95fr)_minmax(420px,1fr)]">
-        <section className="relative overflow-hidden bg-saffron-500 p-6 text-white sm:p-8 lg:p-10">
+        <section className="relative overflow-hidden bg-saffron-500 p-4 text-white sm:p-8 lg:p-10">
           <div className="relative z-10">
-            <div className="lotus-mark mb-4 grid h-12 w-12 place-items-center rounded-lg text-base font-black shadow-soft sm:h-14 sm:w-14 sm:text-lg">
+            <div className="lotus-mark mb-3 grid h-11 w-11 place-items-center rounded-lg text-sm font-black shadow-soft sm:mb-4 sm:h-14 sm:w-14 sm:text-lg">
               HK
             </div>
-            <h1 className="max-w-md text-3xl font-black tracking-normal lg:text-4xl">Hare Krishna Leaderboard</h1>
-            <p className="mt-3 max-w-md leading-7 text-saffron-50 sm:mt-4">
+            <h1 className="max-w-md text-2xl font-black tracking-normal sm:text-3xl lg:text-4xl">Hare Krishna Leaderboard</h1>
+            <p className="mt-2 max-w-md text-sm leading-6 text-saffron-50 sm:mt-4 sm:text-base sm:leading-7">
               Track chanting rounds with groups, friends, and global leaderboards.
             </p>
             <div className="mt-7 hidden gap-3 sm:grid sm:grid-cols-3 lg:grid-cols-1">
@@ -57,7 +57,7 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
             </div>
           </div>
         </section>
-        <section className="p-5 sm:p-8 lg:p-10">
+        <section className="p-4 sm:p-8 lg:p-10">
           {inviteCode && <SignedOutInviteNotice inviteCode={inviteCode} />}
           <AuthModeTabs />
           {message && (
@@ -72,7 +72,7 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
           {authMode === "forgot" && <ForgotForm />}
           {authMode === "newPassword" && <NewPasswordForm />}
           {authMode === "checkEmail" && <CheckEmailScreen />}
-          <p className="mt-5 rounded-md border border-stone-100 bg-stone-50 px-4 py-3 text-xs leading-5 text-stone-600">
+          <p className="mt-4 rounded-md border border-stone-100 bg-stone-50 px-3 py-3 text-xs leading-5 text-stone-600 sm:mt-5 sm:px-4">
             {supabase
               ? `${runtimeLabel(publicSupabaseConfig.mode)}. Email confirmation, password reset, and OTP use Supabase.`
               : `${runtimeLabel(publicSupabaseConfig.mode)}. Demo login: demo@example.com or gauranga_das, password HareKrishna108. Data is stored in this browser.`}

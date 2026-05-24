@@ -287,18 +287,18 @@ export function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
         <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="flex min-w-0 flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5 lg:p-6">
+          <div className="flex min-w-0 flex-row items-center gap-3 p-3 sm:gap-4 sm:p-5 lg:p-6">
             {profileForm.avatarUrl ? (
               <img
                 src={profileForm.avatarUrl}
                 alt=""
-                className="h-20 w-20 rounded-lg border border-stone-200 object-cover shadow-sm"
+                className="h-16 w-16 shrink-0 rounded-lg border border-stone-200 object-cover shadow-sm sm:h-20 sm:w-20"
               />
             ) : (
-              <div className="lotus-mark grid h-20 w-20 shrink-0 place-items-center rounded-lg text-xl font-black text-white shadow-soft">
+              <div className="lotus-mark grid h-16 w-16 shrink-0 place-items-center rounded-lg text-lg font-black text-white shadow-soft sm:h-20 sm:w-20 sm:text-xl">
                 {(profileForm.displayName || profileForm.username || "HK").slice(0, 2).toUpperCase()}
               </div>
             )}
@@ -306,7 +306,7 @@ export function ProfilePage() {
               <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
                 <UserRound size={16} /> @{currentUser.username}
               </div>
-              <h2 className="truncate text-2xl font-black tracking-normal text-stone-950">
+              <h2 className="truncate text-xl font-black tracking-normal text-stone-950 sm:text-2xl">
                 {currentUser.displayName || currentUser.username}
               </h2>
               <p className="mt-1 text-sm leading-6 text-stone-600">
@@ -314,7 +314,7 @@ export function ProfilePage() {
               </p>
             </div>
           </div>
-          <div className="grid gap-3 border-t border-saffron-100 bg-saffron-50/70 p-4 sm:grid-cols-2 lg:grid-cols-1 lg:border-l lg:border-t-0">
+          <div className="grid grid-cols-2 gap-2 border-t border-saffron-100 bg-saffron-50/70 p-3 sm:gap-3 sm:p-4 lg:grid-cols-1 lg:border-l lg:border-t-0">
             <ProfileStatusCard label="Email status" value={emailVerified ? "Verified" : "Unverified"} tone={emailVerified ? "peacock" : "saffron"} />
             <ProfileStatusCard label="Timezone" value={currentUser.timezone} tone="stone" />
           </div>
@@ -488,7 +488,7 @@ export function ProfilePage() {
           </Panel>
         </div>
 
-        <div className="sticky bottom-4 z-10 rounded-lg border border-saffron-200 bg-white/95 px-4 py-3 shadow-soft backdrop-blur">
+        <div className="sticky bottom-20 z-10 rounded-lg border border-saffron-200 bg-white/95 px-3 py-3 shadow-soft backdrop-blur sm:bottom-4 sm:px-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-stone-600">
               <Mail size={16} />

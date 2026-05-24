@@ -135,12 +135,12 @@ export function PasswordChecklist({
 
 export function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-4 shadow-soft sm:p-5">
-      <div className="mb-4 flex items-center gap-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100">
+    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-3 shadow-soft sm:p-5">
+      <div className="mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100 sm:h-9 sm:w-9">
           {icon}
         </span>
-        <h2 className="min-w-0 truncate text-lg font-black tracking-normal text-stone-900">{title}</h2>
+        <h2 className="min-w-0 truncate text-base font-black tracking-normal text-stone-900 sm:text-lg">{title}</h2>
       </div>
       {children}
     </section>
@@ -218,11 +218,11 @@ export function LeaderboardSkeleton() {
 
 export function MetricCard({ label, value, note }: { label: string; value: number; note: string }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/90 p-4 shadow-soft sm:p-5">
+    <div className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/90 p-3 shadow-soft sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold capitalize text-stone-500">{label}</p>
-          <p className="mt-2 text-3xl font-black text-saffron-900 sm:text-4xl">{value}</p>
+          <p className="mt-1 text-2xl font-black text-saffron-900 sm:mt-2 sm:text-4xl">{value}</p>
         </div>
         <span className="mt-1 h-3 w-3 shrink-0 rounded-full bg-peacock-400" />
       </div>
@@ -244,7 +244,7 @@ export function MilestoneGrid({ milestones, limit }: { milestones: Milestone[]; 
           {Math.round((earnedCount / Math.max(1, milestones.length)) * 100)}%
         </span>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
         {visible.map((milestone) => {
           const percent = Math.round((milestone.progress / Math.max(1, milestone.target)) * 100);
           return (
@@ -441,8 +441,8 @@ export function Leaderboard({
           <EmptyState text={emptyText} />
         </div>
       )}
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm">
-        <label className="min-w-[220px] flex-1">
+      <div className="mb-4 grid gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm sm:flex sm:flex-wrap sm:items-center">
+        <label className="min-w-0 sm:min-w-[220px] sm:flex-1">
           <span className="sr-only">Search leaderboard</span>
           <input
             className="w-full rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm font-bold text-stone-900 outline-none transition focus:border-saffron-500 focus:bg-white focus:ring-2 focus:ring-saffron-100"
@@ -452,30 +452,32 @@ export function Leaderboard({
             type="search"
           />
         </label>
-        <button
-          type="button"
-          className={`rounded-md px-3 py-2 text-sm font-black transition ${onlyUpdatedToday ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
-          onClick={() => setOnlyUpdatedToday((value) => !value)}
-        >
-          Updated today
-        </button>
-        <button
-          type="button"
-          className={`rounded-md px-3 py-2 text-sm font-black transition ${showZeroEntries ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
-          onClick={() => setShowZeroEntries((value) => !value)}
-        >
-          Show zero entries
-        </button>
-        <button
-          type="button"
-          className={`rounded-md px-3 py-2 text-sm font-black transition ${showAllRows ? "bg-peacock-600 text-white" : "bg-stone-100 text-stone-700 hover:bg-peacock-50"}`}
-          onClick={() => setShowAllRows((value) => !value)}
-        >
-          {showAllRows ? "Top 10" : "All rows"}
-        </button>
-        <span className="ml-auto rounded-md bg-stone-50 px-3 py-2 text-sm font-bold text-stone-600">
-          Showing {visibleRows.length} of {filteredRows.length}
-        </span>
+        <div className="grid grid-cols-2 gap-2 sm:contents">
+          <button
+            type="button"
+            className={`rounded-md px-3 py-2 text-sm font-black transition ${onlyUpdatedToday ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
+            onClick={() => setOnlyUpdatedToday((value) => !value)}
+          >
+            Updated today
+          </button>
+          <button
+            type="button"
+            className={`rounded-md px-3 py-2 text-sm font-black transition ${showZeroEntries ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
+            onClick={() => setShowZeroEntries((value) => !value)}
+          >
+            Zero entries
+          </button>
+          <button
+            type="button"
+            className={`rounded-md px-3 py-2 text-sm font-black transition ${showAllRows ? "bg-peacock-600 text-white" : "bg-stone-100 text-stone-700 hover:bg-peacock-50"}`}
+            onClick={() => setShowAllRows((value) => !value)}
+          >
+            {showAllRows ? "Top 10" : "All rows"}
+          </button>
+          <span className="rounded-md bg-stone-50 px-3 py-2 text-center text-sm font-bold text-stone-600 sm:ml-auto">
+            {visibleRows.length} / {filteredRows.length}
+          </span>
+        </div>
         {(searchText || onlyUpdatedToday || showZeroEntries || showAllRows) && (
           <button
             type="button"
@@ -497,7 +499,7 @@ export function Leaderboard({
         </div>
       )}
       {leaderRows.length > 0 && (
-        <div className="mb-4 grid gap-3 lg:grid-cols-3">
+        <div className="mb-4 hidden gap-3 sm:grid lg:grid-cols-3">
           {leaderRows.map((row) => {
             const isCurrent = row.user.id === currentUserId;
             return (
@@ -541,7 +543,7 @@ export function Leaderboard({
         </div>
       )}
       {currentRow && (
-        <div className="mb-4 grid gap-3 md:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-4">
           <div className="rounded-md border border-saffron-200 bg-saffron-50 px-4 py-3">
             <p className="text-xs font-black uppercase text-stone-500">Your rank</p>
             <p className="mt-1 text-2xl font-black text-saffron-900">{currentRow.rounds > 0 ? `#${currentRow.rank}` : "-"}</p>
@@ -609,7 +611,7 @@ export function Leaderboard({
             <div
               key={row.user.id}
               ref={isCurrent ? currentRowRef : undefined}
-              className={`grid grid-cols-[52px_1fr] items-start gap-3 border-b border-stone-100 px-3 py-3 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:items-center sm:px-4 ${
+              className={`grid grid-cols-[44px_1fr] items-start gap-2 border-b border-stone-100 px-2 py-3 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:items-center sm:gap-3 sm:px-4 ${
                 isCurrent
                   ? "bg-saffron-50/90 shadow-[inset_4px_0_0_#d98f08]"
                   : isTopRank
@@ -618,12 +620,12 @@ export function Leaderboard({
               }`}
             >
               <div>
-                <p className={`inline-flex min-w-11 justify-center rounded-md px-2 py-1 text-lg font-black ${rankBadgeClass(row.rank)}`}>
+                <p className={`inline-flex min-w-10 justify-center rounded-md px-2 py-1 text-base font-black sm:min-w-11 sm:text-lg ${rankBadgeClass(row.rank)}`}>
                   {rankLabel(row.rank)}
                 </p>
-                {isTied && <p className="mt-1 text-xs font-bold text-peacock-700">Tied with {rowTieCount}</p>}
+                {isTied && <p className="mt-1 text-[11px] font-bold text-peacock-700 sm:text-xs">Tied with {rowTieCount}</p>}
               </div>
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
                 <div className="min-w-0">
                   <button
@@ -639,15 +641,15 @@ export function Leaderboard({
                     <span className={`rounded-md px-2 py-1 text-xs font-black ${row.hasEntry ? "bg-peacock-50 text-peacock-900" : "bg-stone-100 text-stone-600"}`}>
                       {entryStatusText(row)}
                     </span>
-                    <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600">
+                    <span className="hidden rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-600 sm:inline-flex">
                       {lastUpdatedText(row)}
                     </span>
                     {row.lastUpdatedAt && (
-                      <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800">
+                      <span className="hidden rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800 sm:inline-flex">
                         {freshnessText(row)}
                       </span>
                     )}
-                    <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-bold text-saffron-900">
+                    <span className="hidden rounded-md bg-saffron-50 px-2 py-1 text-xs font-bold text-saffron-900 sm:inline-flex">
                       Self-entered
                     </span>
                     {isTied && (
@@ -797,7 +799,7 @@ export function ActionEmptyState({
             <p className="mt-1 text-sm leading-6 text-stone-600">{text}</p>
           </div>
         </div>
-        {children && <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">{children}</div>}
+        {children && <div className="grid shrink-0 gap-2 sm:flex sm:flex-wrap sm:justify-end">{children}</div>}
       </div>
     </div>
   );

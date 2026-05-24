@@ -146,14 +146,14 @@ export function GroupsPage({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
         <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="p-4 sm:p-5 lg:p-6">
+          <div className="p-3 sm:p-5 lg:p-6">
             <div className="mb-4 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
               <Users size={16} /> {joinedGroups.length} joined
             </div>
-            <h2 className="text-2xl font-black tracking-normal text-stone-950">
+            <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">
               {selectedGroup ? selectedGroup.name : "Your chanting groups"}
             </h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">
@@ -182,7 +182,7 @@ export function GroupsPage({
               </p>
             )}
           </div>
-          <div className="grid gap-3 border-t border-saffron-100 bg-saffron-50/70 p-4 sm:grid-cols-2 xl:grid-cols-1 xl:border-l xl:border-t-0">
+          <div className="grid grid-cols-2 gap-2 border-t border-saffron-100 bg-saffron-50/70 p-3 sm:gap-3 sm:p-4 xl:grid-cols-1 xl:border-l xl:border-t-0">
             <GroupStat label="Created groups" value={state.groups.filter((group) => group.ownerId === currentUser.id).length} />
             <GroupStat label="Memberships" value={joinedGroups.length} />
           </div>
@@ -265,7 +265,7 @@ export function GroupsPage({
               return (
               <div
                 key={group.id}
-                className={`rounded-lg border p-4 shadow-sm ${
+                className={`rounded-lg border p-3 shadow-sm sm:p-4 ${
                   selectedGroup?.id === group.id ? "border-saffron-500 bg-saffron-50" : "border-stone-200 bg-white"
                 }`}
               >
@@ -440,9 +440,9 @@ export function GroupsPage({
 
 function GroupStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
+    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-1 text-3xl font-black text-stone-950">{value}</p>
+      <p className="mt-1 text-2xl font-black text-stone-950 sm:text-3xl">{value}</p>
     </div>
   );
 }
@@ -461,14 +461,14 @@ function GroupSectionJumpBar() {
   };
 
   return (
-    <div className="sticky top-[84px] z-20 rounded-lg border border-saffron-200 bg-white/90 p-2 shadow-soft backdrop-blur">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="px-2 text-xs font-black uppercase text-stone-500">Jump to</span>
+    <div className="rounded-lg border border-saffron-200 bg-white/90 p-2 shadow-soft backdrop-blur sm:sticky sm:top-[84px] sm:z-20">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+        <span className="shrink-0 px-2 text-xs font-black uppercase text-stone-500">Jump to</span>
         {sections.map((section) => (
           <button
             key={section.id}
             type="button"
-            className="rounded-md bg-stone-100 px-3 py-2 text-sm font-black text-stone-700 transition hover:bg-saffron-50 hover:text-saffron-900"
+            className="shrink-0 rounded-md bg-stone-100 px-3 py-2 text-sm font-black text-stone-700 transition hover:bg-saffron-50 hover:text-saffron-900"
             onClick={() => jumpTo(section.id)}
           >
             {section.label}

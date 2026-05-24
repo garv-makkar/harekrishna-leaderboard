@@ -257,24 +257,26 @@ export function HomePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <section className="overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft">
         <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="p-4 sm:p-5 lg:p-6">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="p-3 sm:p-5 lg:p-6">
+            <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="mb-2 inline-flex items-center gap-2 rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
                   <CalendarDays size={16} /> {selectedDateLabel}
                 </div>
-                <h2 className="text-2xl font-black tracking-normal text-stone-950">Add chanting rounds</h2>
+                <h2 className="text-xl font-black tracking-normal text-stone-950 sm:text-2xl">Add chanting rounds</h2>
                 <p className="mt-1 text-sm leading-6 text-stone-600">
                   Save the exact total for today or any of the last 7 editable days.
                 </p>
               </div>
-              <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-5 py-4 text-right shadow-sm">
+              <div className="flex items-center justify-between rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3 text-left shadow-sm sm:block sm:px-5 sm:py-4 sm:text-right">
                 <p className="text-xs font-black uppercase text-stone-500">Saved total</p>
-                <p className="mt-1 text-5xl font-black text-saffron-900">{currentRounds}</p>
-                <p className="text-sm text-stone-600">rounds</p>
+                <div className="text-right">
+                  <p className="text-4xl font-black text-saffron-900 sm:mt-1 sm:text-5xl">{currentRounds}</p>
+                  <p className="text-sm text-stone-600">rounds</p>
+                </div>
               </div>
             </div>
 
@@ -312,12 +314,12 @@ export function HomePage() {
 
             <div className="mt-4">
               <p className="mb-2 text-sm font-bold text-stone-700">Quick totals</p>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
                 {[1, 4, 8, 16, 32, 64].map((value) => (
                   <button
                     key={value}
                     type="button"
-                    className={`rounded-md px-3 py-3 text-sm font-black ring-1 transition ${
+                    className={`rounded-md px-2 py-2.5 text-sm font-black ring-1 transition sm:px-3 sm:py-3 ${
                       draftRounds === value
                         ? "bg-saffron-500 text-white ring-saffron-500"
                         : "bg-white text-stone-800 ring-stone-200 hover:bg-saffron-50"
@@ -332,12 +334,12 @@ export function HomePage() {
             </div>
 
             <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto]">
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
                 {[-1, 1, 4, 8, 16].map((amount) => (
                   <button
                     key={amount}
                     type="button"
-                    className={`rounded-md px-3 py-3 font-black ring-1 transition ${
+                    className={`rounded-md px-2 py-2.5 text-sm font-black ring-1 transition sm:px-3 sm:py-3 sm:text-base ${
                       amount < 0
                         ? "bg-stone-100 text-stone-800 ring-stone-200 hover:bg-stone-200"
                         : "bg-peacock-50 text-peacock-900 ring-peacock-100 hover:bg-peacock-100"
@@ -353,7 +355,7 @@ export function HomePage() {
                 ))}
                 <button
                   type="button"
-                  className="rounded-md bg-stone-100 px-3 py-3 font-black text-stone-800 ring-1 ring-stone-200 transition hover:bg-stone-200"
+                  className="rounded-md bg-stone-100 px-2 py-2.5 text-sm font-black text-stone-800 ring-1 ring-stone-200 transition hover:bg-stone-200 sm:px-3 sm:py-3 sm:text-base"
                   onClick={() => {
                     if (previousDraft === null) return;
                     setRoundInput(String(previousDraft));
@@ -415,9 +417,9 @@ export function HomePage() {
             )}
           </div>
 
-          <aside className="border-t border-saffron-100 bg-saffron-50/70 p-4 sm:p-5 xl:border-l xl:border-t-0">
+          <aside className="border-t border-saffron-100 bg-saffron-50/70 p-3 sm:p-5 xl:border-l xl:border-t-0">
             <p className="text-sm font-black uppercase text-stone-500">Today at a glance</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:grid-cols-3 sm:gap-3 xl:grid-cols-1">
               <DashboardPill label="Today" value={currentRounds} note="saved rounds" tone="saffron" />
               <DashboardPill label="This week" value={weeklyRounds} note="Monday onward" tone="peacock" />
               <DashboardPill label="Current streak" value={streakNow} note={`best ${streakBest}`} tone="stone" />
@@ -473,7 +475,7 @@ export function HomePage() {
           <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
             <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-4 text-center">
               <p className="text-xs font-black uppercase text-stone-500">Goal progress</p>
-              <p className="mt-2 text-5xl font-black text-saffron-900">{goalPercent}%</p>
+              <p className="mt-2 text-4xl font-black text-saffron-900 sm:text-5xl">{goalPercent}%</p>
               <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
                 <div className="h-full bg-saffron-500" style={{ width: `${goalPercent}%` }} />
               </div>
@@ -481,7 +483,7 @@ export function HomePage() {
                 {remainingGoalRounds === 0 ? "Goal complete today" : `${remainingGoalRounds} left today`}
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <DailyFocusTile label="Current streak" value={streakNow} note={`Best streak ${streakBest}`} />
               <DailyFocusTile label="Last 7 days" value={sevenDayRounds} note={`${history.filter((item) => item.rounds > 0).length} active days`} />
               <DailyFocusTile label="Yesterday" value={yesterdayRounds} note={canEditYesterday ? "Still editable" : "Edit window closed"} />
@@ -576,7 +578,7 @@ export function HomePage() {
 
       {isFirstRun && (
         <Panel title="Start in three steps" icon={<PlusCircle size={18} />}>
-          <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-2 sm:gap-3 md:grid-cols-3">
             <StartStep
               title="Log rounds"
               text="Save your first round total for today."
@@ -631,7 +633,7 @@ export function HomePage() {
         </ActionEmptyState>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         <MetricCard label="Today" value={currentRounds} note="Saved rounds" />
         <MetricCard label="This week" value={weeklyRounds} note="Weeks start Monday" />
         <MetricCard label="This month" value={monthlyRounds} note={`${monthDays} active day${monthDays === 1 ? "" : "s"}`} />
@@ -742,7 +744,7 @@ export function HomePage() {
                 {sevenDayRounds} rounds
               </span>
             </div>
-            <div className="grid gap-2 [grid-template-columns:repeat(7,minmax(42px,1fr))]">
+            <div className="grid gap-1 [grid-template-columns:repeat(7,minmax(0,1fr))] sm:gap-2">
               {history.map((item) => {
                 const barHeight = Math.max(10, Math.round((item.rounds / highestHistoryRounds) * 104));
                 const isToday = item.dateKey === todayKey;
@@ -750,20 +752,20 @@ export function HomePage() {
                   <button
                     key={item.dateKey}
                     type="button"
-                    className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-1 py-2 transition ${
+                    className={`flex min-w-0 flex-col items-center gap-1 rounded-md border px-0.5 py-2 transition sm:gap-2 sm:px-1 ${
                       isToday ? "border-saffron-300 bg-saffron-50" : "border-transparent hover:border-stone-200 hover:bg-stone-50"
                     }`}
                     onClick={() => {
                       changeEditableDate(item.dateKey, item.rounds);
                     }}
                   >
-                    <div className="flex h-28 w-full items-end rounded-md bg-stone-50 px-1 py-1">
+                    <div className="flex h-20 w-full items-end rounded-md bg-stone-50 px-0.5 py-1 sm:h-28 sm:px-1">
                       <div
                         className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
                         style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
                       />
                     </div>
-                    <p className="text-sm font-black text-stone-900">{item.rounds}</p>
+                    <p className="text-xs font-black text-stone-900 sm:text-sm">{item.rounds}</p>
                     <p className={`max-w-full truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
                       {isToday ? "Today" : formatDate(item.dateKey).replace(/,.*$/, "")}
                     </p>
@@ -1082,7 +1084,7 @@ function DailyFocusTile({
   return (
     <div className={`rounded-md border border-stone-100 bg-stone-50 px-3 ${compact ? "py-2" : "py-3"}`}>
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className={`${compact ? "text-xl" : "text-2xl"} mt-1 font-black text-stone-950`}>{value}</p>
+      <p className={`${compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"} mt-1 font-black text-stone-950`}>{value}</p>
       <p className="text-sm text-stone-600">{note}</p>
     </div>
   );
@@ -1156,9 +1158,9 @@ function DashboardPill({
         ? "border-peacock-100 bg-white text-peacock-900"
         : "border-stone-200 bg-white text-stone-900";
   return (
-    <div className={`rounded-lg border px-4 py-3 shadow-sm ${toneClass}`}>
+    <div className={`rounded-lg border px-3 py-2.5 shadow-sm sm:px-4 sm:py-3 ${toneClass}`}>
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-1 text-3xl font-black">{value}</p>
+      <p className="mt-1 text-2xl font-black sm:text-3xl">{value}</p>
       <p className="text-sm text-stone-600">{note}</p>
     </div>
   );

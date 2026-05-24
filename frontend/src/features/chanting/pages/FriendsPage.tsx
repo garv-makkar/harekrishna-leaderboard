@@ -68,7 +68,7 @@ export function FriendsPage() {
   const jumpToSearch = () => searchPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {!isLoadingFriends && !hasFriendData && (
         <ActionEmptyState
           icon={<UserRoundSearch size={20} />}
@@ -90,18 +90,18 @@ export function FriendsPage() {
       {isLoadingFriends && !hasFriendData ? (
         <MetricSkeletonGrid />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-saffron-200 bg-white/90 p-4 shadow-soft">
-          <p className="text-sm font-bold text-stone-500">Accepted friends</p>
-          <p className="mt-1 text-3xl font-black text-saffron-900">{acceptedRequests.length}</p>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="rounded-lg border border-saffron-200 bg-white/90 p-3 shadow-soft sm:p-4">
+          <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Friends</span><span className="hidden sm:inline">Accepted friends</span></p>
+          <p className="mt-1 text-2xl font-black text-saffron-900 sm:text-3xl">{acceptedRequests.length}</p>
         </div>
-        <div className="rounded-lg border border-peacock-100 bg-peacock-50 p-4 shadow-soft">
-          <p className="text-sm font-bold text-stone-500">Incoming requests</p>
-          <p className="mt-1 text-3xl font-black text-peacock-900">{incomingRequests.length}</p>
+        <div className="rounded-lg border border-peacock-100 bg-peacock-50 p-3 shadow-soft sm:p-4">
+          <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Incoming</span><span className="hidden sm:inline">Incoming requests</span></p>
+          <p className="mt-1 text-2xl font-black text-peacock-900 sm:text-3xl">{incomingRequests.length}</p>
         </div>
-        <div className="rounded-lg border border-stone-200 bg-white/90 p-4 shadow-soft">
-          <p className="text-sm font-bold text-stone-500">Outgoing requests</p>
-          <p className="mt-1 text-3xl font-black text-stone-900">{outgoingRequests.length}</p>
+        <div className="rounded-lg border border-stone-200 bg-white/90 p-3 shadow-soft sm:p-4">
+          <p className="text-xs font-bold text-stone-500 sm:text-sm"><span className="sm:hidden">Outgoing</span><span className="hidden sm:inline">Outgoing requests</span></p>
+          <p className="mt-1 text-2xl font-black text-stone-900 sm:text-3xl">{outgoingRequests.length}</p>
         </div>
       </div>
       )}
