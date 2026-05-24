@@ -45,7 +45,7 @@ type PendingAuthNotice = {
   title: string;
   body: string;
   email: string;
-  next: "signin" | "signup" | "forgot" | "otp";
+  next: "signin" | "signup";
 };
 
 type ProfileForm = {
@@ -201,7 +201,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
             title: "Link could not be used",
             body: readableError(new Error(authError), "reset"),
             email: "",
-            next: "forgot"
+            next: "signin"
           });
           setAuthMode("checkEmail");
         }

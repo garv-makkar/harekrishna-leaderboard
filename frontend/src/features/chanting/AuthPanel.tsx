@@ -68,13 +68,11 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
           <ConfigNotice />
           {authMode === "signin" && <SignInForm />}
           {authMode === "signup" && <SignUpForm />}
-          {authMode === "otp" && <EmailOtpForm />}
-          {authMode === "forgot" && <ForgotForm />}
           {authMode === "newPassword" && <NewPasswordForm />}
           {authMode === "checkEmail" && <CheckEmailScreen />}
           <p className="mt-4 rounded-md border border-stone-100 bg-stone-50 px-3 py-3 text-xs leading-5 text-stone-600 sm:mt-5 sm:px-4">
             {supabase
-              ? `${runtimeLabel(publicSupabaseConfig.mode)}. Email confirmation, password reset, and OTP use Supabase.`
+              ? `${runtimeLabel(publicSupabaseConfig.mode)}. Email confirmation and email OTP use Supabase.`
               : `${runtimeLabel(publicSupabaseConfig.mode)}. Demo login: demo@example.com or gauranga_das, password HareKrishna108. Data is stored in this browser.`}
           </p>
         </section>
@@ -158,8 +156,8 @@ function AuthModeTabs() {
   const { authMode, setAuthMode } = useChanting();
   if (authMode === "checkEmail" || authMode === "newPassword") return null;
   return (
-    <div className="mb-6 grid grid-cols-2 gap-1 rounded-lg border border-saffron-100 bg-saffron-50 p-1 sm:grid-cols-4">
-      {(["signin", "signup", "forgot", "otp"] as const).map((mode) => (
+    <div className="mb-6 grid grid-cols-2 gap-1 rounded-lg border border-saffron-100 bg-saffron-50 p-1">
+      {(["signin", "signup"] as const).map((mode) => (
         <button
           key={mode}
           type="button"
@@ -168,7 +166,7 @@ function AuthModeTabs() {
           }`}
           onClick={() => setAuthMode(mode)}
         >
-          {mode === "forgot" ? "Reset" : mode === "otp" ? "Email OTP" : mode}
+          {mode === "signin" ? "Sign in" : "Sign up"}
         </button>
       ))}
     </div>
@@ -226,19 +224,116 @@ function SignInForm() {
   };
 
   return (
-    <form className="space-y-4" onSubmit={submit}>
+    <div className="space-y-5">
       <AuthHeader title="Welcome back" body="Sign in with your username, email, or phone number and your password." />
       <InlineNotice tone="info">
-        New here? Use Signup first. If your email is not confirmed, open the confirmation email before signing in.
+        New here? Use Sign up first. If you prefer not to use your password, request an email OTP below.
       </InlineNotice>
-      {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
+      <form className="space-y-4" onSubmit={submit}>
+        {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
+        <Card level="section" className="space-y-3">
+          <Field label="Username, email, or phone" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
+          <Field label="Password" name="signin-password" value={password} onChange={setPassword} type="password" required autoComplete="current-password" />
+        </Card>
+        <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={localBusy}>
+          <ShieldCheck size={18} /> Sign in with password
+        </button>
+      </form>
+      <div className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.18em] text-stone-400">
+        <span className="h-px flex-1 bg-stone-200" />
+        Or
+        <span className="h-px flex-1 bg-stone-200" />
+      </div>
+      <EmailOtpSignInSection />
+    </div>
+  );
+}
+
+function EmailOtpSignInSection() {
+  const { refreshRemoteState, showMessage } = useChanting();
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
+  const [hasSent, setHasSent] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [formStatus, setFormStatus] = useState("");
+  const [localBusy, setLocalBusy] = useState(false);
+
+  const sendOtp = async () => {
+    setFormError("");
+    setFormStatus("");
+    if (!email.includes("@")) {
+      setFormError("Enter the email address linked to your account.");
+      return;
+    }
+    if (!supabase) {
+      setFormError("Email OTP requires Supabase.");
+      return;
+    }
+    const client = supabase;
+    setLocalBusy(true);
+    try {
+      setFormStatus(`Sending email OTP to ${email.trim().toLowerCase()}...`);
+      const { error } = await client.auth.signInWithOtp({
+        email: email.trim().toLowerCase(),
+        options: { shouldCreateUser: false, emailRedirectTo: window.location.origin }
+      });
+      if (error) throw error;
+      setFormStatus("");
+      setHasSent(true);
+    } catch (error) {
+      setFormStatus("");
+      setFormError(readableError(error, "otp"));
+    } finally {
+      setLocalBusy(false);
+    }
+  };
+
+  const verifyOtp = async (event: FormEvent) => {
+    event.preventDefault();
+    setFormError("");
+    if (!supabase) return;
+    const client = supabase;
+    setLocalBusy(true);
+    try {
+      const { data, error } = await client.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: token.trim(),
+        type: "email"
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error("OTP verification failed.");
+      await refreshRemoteState(data.user.id);
+      showMessage("Signed in with email OTP.");
+    } catch (error) {
+      setFormError(readableError(error, "otp"));
+    } finally {
+      setLocalBusy(false);
+    }
+  };
+
+  return (
+    <form className="space-y-4" onSubmit={verifyOtp}>
       <Card level="section" className="space-y-3">
-        <Field label="Username, email, or phone" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
-        <Field label="Password" name="signin-password" value={password} onChange={setPassword} type="password" required autoComplete="current-password" />
+        <div>
+          <p className="text-sm font-black text-stone-900">Email OTP</p>
+          <p className="mt-1 text-sm leading-5 text-stone-600">Get a one-time code for an existing confirmed account.</p>
+        </div>
+        {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
+        {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
+        {hasSent && <InlineNotice tone="success">Code sent to {email.trim().toLowerCase()}. Keep this tab open and enter the code from your email.</InlineNotice>}
+        <Field label="Account email" name="signin-otp-email" value={email} onChange={setEmail} type="email" required autoComplete="email" placeholder="you@example.com" />
+        <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 font-bold text-peacock-900 ring-1 ring-peacock-200" disabled={localBusy} onClick={sendOtp}>
+          <ShieldCheck size={18} /> Send email OTP
+        </button>
+        {hasSent && (
+          <>
+            <Field label="OTP code" name="signin-otp-code" value={token} onChange={setToken} required autoComplete="one-time-code" inputMode="numeric" placeholder="123456" />
+            <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={localBusy || token.trim().length < 6}>
+              <ShieldCheck size={18} /> Verify and sign in
+            </button>
+          </>
+        )}
       </Card>
-      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={localBusy}>
-        <ShieldCheck size={18} /> Sign in
-      </button>
     </form>
   );
 }
@@ -417,90 +512,6 @@ function SignUpForm() {
   );
 }
 
-function ForgotForm() {
-  const { state, saveState, resolveLoginEmail, setPendingAuthNotice, setAuthMode } = useChanting();
-  const [identifier, setIdentifier] = useState("");
-  const [password, setPassword] = useState("");
-  const [formError, setFormError] = useState("");
-  const [formStatus, setFormStatus] = useState("");
-  const [localBusy, setLocalBusy] = useState(false);
-  const rules = passwordRules(password);
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setFormError("");
-    setFormStatus("");
-    const target = identifier.trim().toLowerCase();
-    if (supabase) {
-      const client = supabase;
-      setLocalBusy(true);
-      try {
-        setFormStatus("Looking up account...");
-        const email = await resolveLoginEmail(target);
-        setFormStatus(`Sending password reset email to ${email}...`);
-        const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
-        if (error) throw error;
-        setFormStatus("");
-        setPendingAuthNotice({
-          title: "Password reset email sent",
-          body: "Open the reset link in your inbox. The app will show a new password form after the link opens.",
-          email,
-          next: "forgot"
-        });
-        setAuthMode("checkEmail");
-      } catch (error) {
-        setFormStatus("");
-        setFormError(readableError(error, "reset"));
-      } finally {
-        setLocalBusy(false);
-      }
-      return;
-    }
-    const user = state.users.find(
-      (item) =>
-        item.username.toLowerCase() === target ||
-        item.email.toLowerCase() === target ||
-        item.phone.toLowerCase() === target
-    );
-    if (!user) {
-      setFormError("No account found for that identifier. Please create an account first.");
-      setAuthMode("signup");
-      return;
-    }
-    const passwordError = passwordProblem(password);
-    if (passwordError) {
-      setFormError(`Password is not strong enough. ${passwordError}`);
-      return;
-    }
-    saveState({
-      ...state,
-      users: state.users.map((item) =>
-        item.id === user.id ? { ...item, passwordHash: hashPassword(password) } : item
-      )
-    });
-    setAuthMode("signin");
-  };
-
-  return (
-    <form className="space-y-4" onSubmit={submit}>
-      <AuthHeader title="Reset password" body="Enter your email, username, or phone number. We will send a secure reset link to your email." />
-      <InlineNotice tone="info">Keep this tab open until the email arrives. The reset link will bring you back here.</InlineNotice>
-      {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
-      {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
-      <Field label="Username, email, or phone" name="reset-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
-      {!supabase && (
-        <>
-          <Field label="New password" name="reset-password" value={password} onChange={setPassword} type="password" required autoComplete="new-password" />
-          <PasswordChecklist rules={rules} touched={password.length > 0} />
-        </>
-      )}
-      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={localBusy}>
-        <ShieldCheck size={18} /> {supabase ? "Send reset email" : "Update password"}
-      </button>
-    </form>
-  );
-}
-
 function NewPasswordForm() {
   const { pendingAuthNotice, setPendingAuthNotice, setAuthMode, showMessage } = useChanting();
   const [password, setPassword] = useState("");
@@ -549,91 +560,6 @@ function NewPasswordForm() {
       <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={localBusy || !isPasswordReady}>
         <ShieldCheck size={18} /> Save new password
       </button>
-    </form>
-  );
-}
-
-function EmailOtpForm() {
-  const { refreshRemoteState, showMessage } = useChanting();
-  const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
-  const [hasSent, setHasSent] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [formStatus, setFormStatus] = useState("");
-  const [localBusy, setLocalBusy] = useState(false);
-
-  const sendOtp = async () => {
-    setFormError("");
-    setFormStatus("");
-    if (!email.includes("@")) {
-      setFormError("Enter the email address linked to your account.");
-      return;
-    }
-    if (!supabase) {
-      setFormError("Email OTP requires Supabase.");
-      return;
-    }
-    const client = supabase;
-    setLocalBusy(true);
-    try {
-      setFormStatus(`Sending email OTP to ${email.trim().toLowerCase()}...`);
-      const { error } = await client.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: { shouldCreateUser: false, emailRedirectTo: window.location.origin }
-      });
-      if (error) throw error;
-      setFormStatus("");
-      setHasSent(true);
-    } catch (error) {
-      setFormStatus("");
-      setFormError(readableError(error, "otp"));
-    } finally {
-      setLocalBusy(false);
-    }
-  };
-
-  const verifyOtp = async (event: FormEvent) => {
-    event.preventDefault();
-    setFormError("");
-    if (!supabase) return;
-    const client = supabase;
-    setLocalBusy(true);
-    try {
-      const { data, error } = await client.auth.verifyOtp({
-        email: email.trim().toLowerCase(),
-        token: token.trim(),
-        type: "email"
-      });
-      if (error) throw error;
-      if (!data.user) throw new Error("OTP verification failed.");
-      await refreshRemoteState(data.user.id);
-      showMessage("Signed in with email OTP.");
-    } catch (error) {
-      setFormError(readableError(error, "otp"));
-    } finally {
-      setLocalBusy(false);
-    }
-  };
-
-  return (
-    <form className="space-y-4" onSubmit={verifyOtp}>
-      <AuthHeader title="Email OTP" body="Receive a one-time code by email and use it to sign in without a password." />
-      <InlineNotice tone="info">This works for existing confirmed accounts. Do not refresh this page after requesting the code.</InlineNotice>
-      {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
-      {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
-      {hasSent && <InlineNotice tone="success">Code sent to {email.trim().toLowerCase()}. Keep this tab open and enter the code from your email.</InlineNotice>}
-      <Field label="Account email" name="otp-email" value={email} onChange={setEmail} type="email" required autoComplete="email" placeholder="you@example.com" />
-      <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={localBusy} onClick={sendOtp}>
-        <ShieldCheck size={18} /> Send email OTP
-      </button>
-      {hasSent && (
-        <>
-          <Field label="OTP code" name="otp-code" value={token} onChange={setToken} required autoComplete="one-time-code" inputMode="numeric" placeholder="123456" />
-          <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={localBusy || token.trim().length < 6}>
-            <ShieldCheck size={18} /> Verify and sign in
-          </button>
-        </>
-      )}
     </form>
   );
 }

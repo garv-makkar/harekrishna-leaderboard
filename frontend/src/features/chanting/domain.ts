@@ -67,7 +67,7 @@ export type ActivityFeedItem = {
   tone: "saffron" | "peacock" | "emerald" | "stone";
 };
 
-export type AuthMode = "signin" | "signup" | "forgot" | "otp" | "newPassword" | "checkEmail";
+export type AuthMode = "signin" | "signup" | "newPassword" | "checkEmail";
 export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "milestones" | "notifications" | "profile" | "about";
 
 export type ProfileRow = {
@@ -309,7 +309,7 @@ export function readableError(error: unknown, context?: "signin" | "signup" | "o
     text.includes("user already registered") ||
     (text.includes("email") && text.includes("duplicate"))
   ) {
-    return "That email is already registered. Try signing in or reset your password.";
+    return "That email is already registered. Try signing in or use email OTP.";
   }
   if (text.includes("profiles_phone_key") || (text.includes("phone") && text.includes("duplicate"))) {
     return "That phone number is already registered. Try signing in with it.";
@@ -327,7 +327,7 @@ export function readableError(error: unknown, context?: "signin" | "signup" | "o
     return "That OTP is invalid or expired. Request a new code and keep this tab open.";
   }
   if (context === "reset" && (text.includes("expired") || text.includes("invalid") || text.includes("session missing"))) {
-    return "That reset link is invalid or expired. Send yourself a fresh reset email.";
+    return "That password link is invalid or expired. Sign in with email OTP, then change your password from Profile.";
   }
   if (
     context === "rounds" &&
