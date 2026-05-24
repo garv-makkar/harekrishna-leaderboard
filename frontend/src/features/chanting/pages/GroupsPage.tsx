@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { CheckCircle2, ChevronRight, Clock3, Copy, ImageUp, Link, MessageSquare, Plus, RefreshCw, Search, Settings, Share2, Trash2, Trophy, UserPlus, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
@@ -69,6 +70,11 @@ export function GroupsPage({
     ? state.groupMembers.filter((member) => member.groupId === selectedGroup.id).map((member) => member.userId)
     : [];
   const selectedLastUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, selectedMemberIds, range.start, range.end));
+  const selectedTodayTotal = selectedMemberIds.reduce(
+    (sum, userId) => sum + sumRounds(state.chantTotals, userId, "daily", todayKey),
+    0
+  );
+  const selectedActiveToday = selectedMemberIds.filter((userId) => sumRounds(state.chantTotals, userId, "daily", todayKey) > 0).length;
   const openActionPanel = (mode: "join" | "create") => {
     setActionMode(mode);
     window.requestAnimationFrame(() => actionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -305,7 +311,15 @@ export function GroupsPage({
       </Panel>
       {selectedGroup && (
         <>
-        <GroupSectionJumpBar />
+        <GroupOverviewPanel
+          group={selectedGroup}
+          role={selectedRole}
+          memberCount={selectedMemberCount}
+          activeToday={selectedActiveToday}
+          todayTotal={selectedTodayTotal}
+          lastUpdated={selectedLastUpdated}
+          onInvite={() => setInviteModalGroup(selectedGroup)}
+        />
         <div id="group-leaderboard">
           <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
             {isLoadingGroups && selectedMemberCount === 0 ? (
@@ -339,59 +353,57 @@ export function GroupsPage({
             )}
           </Panel>
         </div>
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
-          <div className="space-y-4">
-            <div id="group-invite">
-              <GroupInviteCard
-                group={selectedGroup}
-                role={selectedRole}
-                memberCount={selectedMemberCount}
-                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-              />
+        <GroupDetailsSection title="Invite and group info" icon={<Share2 size={18} />} defaultOpen={false}>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <GroupInviteCard
+              group={selectedGroup}
+              role={selectedRole}
+              memberCount={selectedMemberCount}
+              onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+            />
+            <div className="space-y-4">
+              {selectedRole === "owner" && (
+                <GroupOwnerDashboard
+                  group={selectedGroup}
+                  onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+                  onRefresh={() => refreshRemoteState(currentUser.id)}
+                />
+              )}
+              <GroupTargetPanel group={selectedGroup} />
             </div>
-            {selectedRole === "owner" && (
-              <GroupOwnerDashboard
-                group={selectedGroup}
-                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-                onRefresh={() => refreshRemoteState(currentUser.id)}
-              />
-            )}
-            <GroupTargetPanel group={selectedGroup} />
           </div>
-          <div className="space-y-4">
-            <div id="group-activity">
-              <GroupActivityFeed group={selectedGroup} />
-            </div>
-            <div id="group-members">
+        </GroupDetailsSection>
+        <GroupDetailsSection title="Members and activity" icon={<Users size={18} />} defaultOpen={false}>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <GroupActivityFeed group={selectedGroup} />
+            <div className="space-y-4">
               <GroupMemberRoster group={selectedGroup} />
+              <GroupAccountabilityPanel group={selectedGroup} />
             </div>
-            <GroupAccountabilityPanel group={selectedGroup} />
           </div>
-        </div>
-        <div id="group-controls">
-          <Panel title={`${selectedGroup.name} controls`} icon={<Settings size={18} />}>
-            {selectedRole === "owner" ? (
-              <GroupOwnerControls group={selectedGroup} role={selectedRole} />
-            ) : selectedRole === "moderator" ? (
-              <GroupOwnerControls group={selectedGroup} role={selectedRole} />
-            ) : (
-              <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
-                <div>
-                  <p className="font-black text-stone-900">Member controls</p>
-                  <p className="text-sm text-stone-600">You can leave this group. Your chanting history stays on your profile.</p>
-                </div>
-                <button
-                  type="button"
-                  className="rounded-md bg-stone-900 px-4 py-2.5 text-sm font-bold text-white"
-                  disabled={isBusy}
-                  onClick={leaveSelectedGroup}
-                >
-                  Leave group
-                </button>
+        </GroupDetailsSection>
+        <GroupDetailsSection title="Settings and controls" icon={<Settings size={18} />} defaultOpen={false}>
+          {selectedRole === "owner" ? (
+            <GroupOwnerControls group={selectedGroup} role={selectedRole} />
+          ) : selectedRole === "moderator" ? (
+            <GroupOwnerControls group={selectedGroup} role={selectedRole} />
+          ) : (
+            <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
+              <div>
+                <p className="font-black text-stone-900">Member controls</p>
+                <p className="text-sm text-stone-600">You can leave this group. Your chanting history stays on your profile.</p>
               </div>
-            )}
-          </Panel>
-        </div>
+              <button
+                type="button"
+                className="rounded-md bg-stone-900 px-4 py-2.5 text-sm font-bold text-white"
+                disabled={isBusy}
+                onClick={leaveSelectedGroup}
+              >
+                Leave group
+              </button>
+            </div>
+          )}
+        </GroupDetailsSection>
         </>
       )}
       <div ref={actionPanelRef}>
@@ -448,35 +460,82 @@ function GroupStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function GroupSectionJumpBar() {
-  const sections = [
-    { id: "group-invite", label: "Invite" },
-    { id: "group-activity", label: "Activity" },
-    { id: "group-members", label: "Members" },
-    { id: "group-leaderboard", label: "Leaderboard" },
-    { id: "group-controls", label: "Controls" }
-  ];
-
-  const jumpTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
+function GroupOverviewPanel({
+  group,
+  role,
+  memberCount,
+  activeToday,
+  todayTotal,
+  lastUpdated,
+  onInvite
+}: {
+  group: Group;
+  role: GroupRole | undefined;
+  memberCount: number;
+  activeToday: number;
+  todayTotal: number;
+  lastUpdated: string;
+  onInvite: () => void;
+}) {
   return (
-    <div className="rounded-lg border border-saffron-200 bg-white/90 p-2 shadow-soft backdrop-blur lg:sticky lg:top-[76px] lg:z-20">
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-        <span className="shrink-0 px-2 text-xs font-black uppercase text-stone-500">Jump to</span>
-        {sections.map((section) => (
+    <Panel title="Group overview" icon={<Users size={18} />}>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <GroupStat label="Members" value={memberCount} />
+          <GroupStat label="Active today" value={activeToday} />
+          <GroupStat label="Today total" value={todayTotal} />
+          <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3">
+            <p className="text-xs font-black uppercase text-stone-500">Role</p>
+            <p className="mt-0.5 truncate text-xl font-black capitalize text-stone-950 sm:text-2xl">{role || "member"}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 lg:justify-end">
           <button
-            key={section.id}
             type="button"
-            className="shrink-0 rounded-md bg-stone-100 px-3 py-2 text-sm font-black text-stone-700 transition hover:bg-saffron-50 hover:text-saffron-900"
-            onClick={() => jumpTo(section.id)}
+            className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white"
+            onClick={onInvite}
           >
-            {section.label}
+            <Share2 size={16} /> Invite
           </button>
-        ))}
+          <span className="rounded-md bg-stone-50 px-3 py-2.5 text-sm font-bold text-stone-600 ring-1 ring-stone-200">
+            Last update {lastUpdated || "none"}
+          </span>
+        </div>
       </div>
-    </div>
+      {group.announcement && (
+        <div className="mt-3 rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-sm leading-6 text-saffron-950 sm:px-4">
+          <p className="font-black">Pinned announcement</p>
+          <p>{group.announcement}</p>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function GroupDetailsSection({
+  title,
+  icon,
+  defaultOpen,
+  children
+}: {
+  title: string;
+  icon: ReactNode;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft" open={defaultOpen}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 sm:px-4">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100">
+            {icon}
+          </span>
+          <span className="truncate font-black text-stone-950">{title}</span>
+        </span>
+        <ChevronRight className="shrink-0 text-stone-400 transition group-open:rotate-90" size={18} />
+      </summary>
+      <div className="border-t border-saffron-100 p-3 sm:p-4">{children}</div>
+    </details>
   );
 }
 

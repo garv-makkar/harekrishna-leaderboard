@@ -575,7 +575,7 @@ export function Leaderboard({
         </div>
       )}
       <div className="mb-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-bold leading-5 text-stone-600 sm:mb-4">
-        Self-entered totals. Rows include entry status and last update when available.
+        Status guide: <b>0 saved</b> means the user intentionally saved zero rounds. <b>No entry</b> means no total has been saved for this period.
       </div>
       {activeRows.length === 0 && (
         <div className="mb-4">
@@ -606,7 +606,7 @@ export function Leaderboard({
             className={`rounded-md px-3 py-2 text-sm font-black transition ${showZeroEntries ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700 hover:bg-saffron-50"}`}
             onClick={() => setShowZeroEntries((value) => !value)}
           >
-            Zero entries
+            Show 0 saved
           </button>
           <button
             type="button"
@@ -710,7 +710,7 @@ export function Leaderboard({
                 : currentRow.rounds > 0
                   ? "Ranked"
                   : currentRow.hasEntry
-                    ? "Zero logged"
+                    ? "0 saved"
                     : "No entry"}
             </p>
             <p className="text-sm text-stone-600">
@@ -719,7 +719,7 @@ export function Leaderboard({
                 : currentRow.rounds > 0
                   ? lastUpdatedText(currentRow)
                   : currentRow.hasEntry
-                    ? lastUpdatedText(currentRow)
+                    ? "You saved zero rounds"
                     : "Add rounds to appear"}
             </p>
           </div>
@@ -854,7 +854,7 @@ function LeaderboardRefreshMeta({
 
 function entryStatusText(row: RankedUser) {
   if (!row.hasEntry) return "No entry";
-  if (row.rounds === 0) return "0 logged";
+  if (row.rounds === 0) return "0 saved";
   if (row.entryCount === 1) return "1 entry";
   return `${row.entryCount} entries`;
 }

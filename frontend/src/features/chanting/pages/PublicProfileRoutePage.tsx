@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Award, CalendarDays, ExternalLink, Flame, Home, Loader2, ShieldCheck, Trophy, Users } from "lucide-react";
+import { Award, CalendarDays, ExternalLink, Home, Loader2, ShieldCheck, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import type { ProfilePrivacy } from "@/lib/types";
@@ -109,7 +109,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#fff7ed,transparent_32%),linear-gradient(135deg,#fffaf0,#f5fffb_48%,#fff7ed)] px-4 py-5 text-stone-900 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-4xl">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/"
@@ -139,40 +139,36 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
 
         {payload && (
           <div className="space-y-4 sm:space-y-5">
-            <section className="overflow-hidden rounded-lg border border-saffron-200 bg-white/92 shadow-soft">
-              <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div className="p-4 sm:p-5">
-                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
-                    <Avatar src={payload.profile.avatarUrl} label={payload.profile.displayName || payload.profile.username} />
-                    <div className="min-w-0">
-                      <h1 className="truncate text-2xl font-black tracking-normal text-stone-950 sm:text-3xl">
-                        {payload.profile.displayName || payload.profile.username}
-                      </h1>
-                      <p className="mt-1 truncate text-sm font-bold text-stone-600">@{payload.profile.username}</p>
-                      <p className="mt-2 text-sm leading-6 text-stone-600">
-                        {payload.profile.country ? `${payload.profile.country}. ` : ""}
-                        Joined {formatDate(payload.profile.joinedAt.slice(0, 10))}.
-                      </p>
+            <section className="overflow-hidden rounded-lg border border-saffron-200 bg-white/94 text-center shadow-soft">
+              <div className="border-b border-saffron-100 bg-saffron-50/80 px-4 py-5 sm:px-6">
+                <div className="mx-auto mb-3 h-20 w-20 overflow-hidden rounded-lg ring-1 ring-saffron-200">
+                  {payload.profile.avatarUrl ? (
+                    <img src={payload.profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="lotus-mark grid h-full w-full place-items-center text-xl font-black text-white">
+                      {(payload.profile.displayName || payload.profile.username).slice(0, 2).toUpperCase()}
                     </div>
-                  </div>
+                  )}
                 </div>
-                <div className="border-t border-saffron-100 bg-saffron-50/80 p-4 lg:border-l lg:border-t-0">
-                  <p className="text-sm font-black uppercase text-stone-500">Today</p>
-                  <p className="mt-1 text-4xl font-black text-saffron-900 sm:text-5xl">{payload.stats.todayRounds}</p>
-                  <p className="text-sm font-bold text-stone-600">rounds logged</p>
-                </div>
+                <h1 className="text-2xl font-black tracking-normal text-stone-950 sm:text-3xl">
+                  {payload.profile.displayName || payload.profile.username}
+                </h1>
+                <p className="mt-1 text-sm font-bold text-stone-600">@{payload.profile.username}</p>
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-stone-600">
+                  {payload.profile.country ? `${payload.profile.country}. ` : ""}
+                  Joined {formatDate(payload.profile.joinedAt.slice(0, 10))}. Public chanting summary.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-0 sm:grid-cols-4">
+                <PublicHeroMetric label="Today" value={payload.stats.todayRounds} />
+                <PublicHeroMetric label="Week" value={payload.stats.weeklyRounds} />
+                <PublicHeroMetric label="Month" value={payload.stats.monthlyRounds} />
+                <PublicHeroMetric label="All time" value={payload.stats.allTimeRounds} />
               </div>
             </section>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <PublicMetric label="Today" value={payload.stats.todayRounds} note={formatDate(payload.todayKey)} />
-              <PublicMetric label="This week" value={payload.stats.weeklyRounds} note="Monday onward" />
-              <PublicMetric label="This month" value={payload.stats.monthlyRounds} note="Current month" />
-              <PublicMetric label="All time" value={payload.stats.allTimeRounds} note={`Since ${formatDate(payload.profile.joinedAt.slice(0, 10))}`} />
-            </div>
-
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-              <Panel title="Public stats" icon={<Trophy size={18} />}>
+              <Panel title="Stats" icon={<Trophy size={18} />}>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {privacy.showStreak ? (
                     <>
@@ -429,6 +425,15 @@ function PublicMetric({ label, value, note, compact = false }: { label: string; 
       <p className="text-sm font-bold text-stone-600">{label}</p>
       <p className={`${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"} mt-0.5 font-black text-saffron-900`}>{value}</p>
       <p className="text-sm text-stone-600">{note}</p>
+    </div>
+  );
+}
+
+function PublicHeroMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border-r border-t border-saffron-100 px-3 py-3 last:border-r-0 even:border-r-0 sm:even:border-r sm:last:border-r-0">
+      <p className="text-2xl font-black text-saffron-900 sm:text-3xl">{value}</p>
+      <p className="mt-0.5 text-xs font-black uppercase text-stone-500">{label}</p>
     </div>
   );
 }

@@ -28,7 +28,7 @@ import {
 } from "../domain";
 import { EmptyState, Field, InlineNotice, PageHeader, Panel, PasswordChecklist, PrivacyVisibilitySummary, PublicUserCard, StatCard, StatGrid, TimezoneSelect } from "../ui";
 
-type ProfileSection = "public" | "account" | "security" | "data";
+type ProfileSection = "public" | "account" | "privacy" | "security" | "danger";
 
 export function ProfilePage() {
   const {
@@ -308,7 +308,7 @@ export function ProfilePage() {
         eyebrow={`@${currentUser.username}`}
         icon={<UserRound size={16} />}
         title={currentUser.displayName || currentUser.username}
-        description={`Joined ${formatDate(currentUser.joinedAt.slice(0, 10))}. Your public profile uses this name, picture, country, and timezone.`}
+        description={`Joined ${formatDate(currentUser.joinedAt.slice(0, 10))}. Manage what people see, how your account works, and your data.`}
         stats={
           <StatGrid columns={2}>
             <StatCard label="Email status" value={emailVerified ? "Verified" : "Unverified"} tone={emailVerified ? "peacock" : "saffron"} />
@@ -420,14 +420,6 @@ export function ProfilePage() {
               </div>
             </div>
           </form>
-          <PublicProfilePrivacyPanel
-            isBusy={isBusy}
-            privacy={privacyDraft}
-            status={privacyStatus}
-            onChange={setPrivacyDraft}
-            onSave={savePrivacyPreferences}
-          />
-          <PublicProfilePreview />
         </>
       )}
 
@@ -537,9 +529,22 @@ export function ProfilePage() {
         </>
       )}
 
+      {profileSection === "privacy" && (
+        <>
+          <PublicProfilePrivacyPanel
+            isBusy={isBusy}
+            privacy={privacyDraft}
+            status={privacyStatus}
+            onChange={setPrivacyDraft}
+            onSave={savePrivacyPreferences}
+          />
+          <PublicProfilePreview />
+        </>
+      )}
+
       {profileSection === "security" && <ChangePasswordPanel />}
 
-      {profileSection === "data" && (
+      {profileSection === "danger" && (
         <>
           <DataPrivacyPanel />
           <Panel title="Delete account" icon={<Trash2 size={18} />}>
@@ -676,14 +681,15 @@ function ProfileSectionTabs({
   onChange: (section: ProfileSection) => void;
 }) {
   const sections: { id: ProfileSection; label: string }[] = [
-    { id: "public", label: "Public profile" },
+    { id: "public", label: "Public" },
     { id: "account", label: "Account" },
+    { id: "privacy", label: "Privacy" },
     { id: "security", label: "Security" },
-    { id: "data", label: "Data" }
+    { id: "danger", label: "Danger" }
   ];
   return (
     <div className="rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
-      <div className="grid gap-1 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-5">
         {sections.map((section) => (
           <button
             key={section.id}

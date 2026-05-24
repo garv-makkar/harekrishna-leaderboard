@@ -253,9 +253,7 @@ function SignInForm() {
       } catch (error) {
         const messageText = error instanceof Error ? error.message : "Signin failed.";
         if (isAccountNotFoundError(messageText)) {
-          setFormError("No account found for this username or email. Please create an account first.");
-          setAuthMode("signup");
-          showMessage("Create your account first.");
+          setFormError("No account found for this username or email. Create an account first, or check the spelling and try again.");
           return;
         }
         setFormError(readableError(error, "signin"));
@@ -270,8 +268,7 @@ function SignInForm() {
         item.email.toLowerCase() === target
     );
     if (!user || user.passwordHash !== hashPassword(password)) {
-      setFormError("No matching account found, or the password is incorrect. Please create an account if you are new.");
-      setAuthMode("signup");
+      setFormError("No matching account found, or the password is incorrect. Create an account first if you are new.");
       return;
     }
     saveState({ ...state, currentUserId: user.id });
@@ -281,7 +278,22 @@ function SignInForm() {
   return (
     <div className="space-y-3">
       <AuthHeader title="Welcome back" body="Use password, or use email OTP if you do not want to enter your password." />
-      {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
+      {formError && (
+        <InlineNotice tone="error">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span>{formError}</span>
+            {formError.toLowerCase().includes("create an account") && (
+              <button
+                type="button"
+                className="shrink-0 rounded-md bg-white px-3 py-1.5 text-sm font-black text-red-800 ring-1 ring-red-200"
+                onClick={() => setAuthMode("signup")}
+              >
+                Create account
+              </button>
+            )}
+          </div>
+        </InlineNotice>
+      )}
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">
         <form className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 shadow-sm" onSubmit={submit}>
           <p className="text-sm font-black text-stone-900">Password</p>
@@ -373,7 +385,7 @@ function EmailOtpSignInSection() {
         {hasSent && <InlineNotice tone="success">Code sent to {email.trim().toLowerCase()}. Keep this tab open and enter the code from your email.</InlineNotice>}
         <CompactField label="Account email" name="signin-otp-email" value={email} onChange={setEmail} type="email" required autoComplete="email" placeholder="you@example.com" />
         <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-peacock-900 ring-1 ring-peacock-200" disabled={localBusy} onClick={sendOtp}>
-          <ShieldCheck size={16} /> Send email OTP
+          <ShieldCheck size={16} /> {localBusy ? "Sending..." : hasSent ? "Send again" : "Send email OTP"}
         </button>
         {hasSent && (
           <>

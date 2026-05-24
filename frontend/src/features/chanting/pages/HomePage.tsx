@@ -412,35 +412,32 @@ export function HomePage() {
             )}
       </PageHeader>
 
-      {!hasStartedChanting && (
-        <ActionEmptyState
-          icon={<PlusCircle size={20} />}
-          title="Start your leaderboard with today's first entry"
-          text="Save even 1 round to unlock your streak, milestones, global ranking, and weekly totals."
-        >
-          <button
-            type="button"
-            className="rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600"
-            disabled={isBusy}
-            onClick={() => {
-              changeEditableDate(todayKey, 1);
-              setRoundInput("1");
-            }}
-          >
-            Set draft to 1
-          </button>
-          <button
-            type="button"
-            className="rounded-md bg-white px-4 py-3 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
-            disabled={isBusy}
-            onClick={() => setDailyRounds(todayKey, 1)}
-          >
-            Save 1 round
-          </button>
-        </ActionEmptyState>
+      {isFirstRun ? (
+        <FirstRunPanel
+          isBusy={isBusy}
+          onDraftOne={() => {
+            changeEditableDate(todayKey, 1);
+            setRoundInput("1");
+          }}
+          onSaveOne={() => setDailyRounds(todayKey, 1)}
+          onGroups={() =>
+            showActionFeedback({
+              title: "Open Groups",
+              body: "Create a group or join one with a code.",
+              action: { label: "Go to Groups", tab: "groups" }
+            })
+          }
+          onFriends={() =>
+            showActionFeedback({
+              title: "Open Friends",
+              body: "Search by username and send a friend request.",
+              action: { label: "Go to Friends", tab: "friends" }
+            })
+          }
+        />
+      ) : (
+        <OnboardingChecklist items={onboardingItems} />
       )}
-
-      <OnboardingChecklist items={onboardingItems} />
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <Panel title="Daily focus" icon={<Target size={18} />}>
@@ -566,46 +563,6 @@ export function HomePage() {
           )}
         </Panel>
       </div>
-
-      {isFirstRun && (
-        <Panel title="Start in three steps" icon={<PlusCircle size={18} />}>
-            <div className="grid gap-2 sm:gap-3 md:grid-cols-3">
-            <StartStep
-              title="Log rounds"
-              text="Save your first round total for today."
-              action="Set draft to 1"
-              onClick={() => {
-                setSelectedDate(todayKey);
-                setRoundInput("1");
-              }}
-            />
-            <StartStep
-              title="Join a group"
-              text="Create a group or join one with a code."
-              action="Open groups"
-              onClick={() =>
-                showActionFeedback({
-                  title: "Open Groups",
-                  body: "Use the button below to create or join a chanting group.",
-                  action: { label: "Go to Groups", tab: "groups" }
-                })
-              }
-            />
-            <StartStep
-              title="Add a friend"
-              text="Search by username to build a private leaderboard."
-              action="Open friends"
-              onClick={() =>
-                showActionFeedback({
-                  title: "Open Friends",
-                  body: "Use the button below to search usernames and send friend requests.",
-                  action: { label: "Go to Friends", tab: "friends" }
-                })
-              }
-            />
-          </div>
-        </Panel>
-      )}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.9fr)_minmax(0,1.1fr)]">
         <Panel title="Chanting consistency" icon={<Flame size={18} />}>
@@ -861,16 +818,70 @@ function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
   );
 }
 
+function FirstRunPanel({
+  isBusy,
+  onDraftOne,
+  onSaveOne,
+  onGroups,
+  onFriends
+}: {
+  isBusy: boolean;
+  onDraftOne: () => void;
+  onSaveOne: () => void;
+  onGroups: () => void;
+  onFriends: () => void;
+}) {
+  return (
+    <Panel title="Start in three steps" icon={<PlusCircle size={18} />}>
+      <div className="mb-3 rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-sm leading-6 text-saffron-950 sm:px-4">
+        <p className="font-black">Your leaderboard starts after your first saved round.</p>
+        <p>After that, groups, friends, streaks, and milestones begin to feel useful.</p>
+      </div>
+      <div className="grid gap-2 sm:gap-3 md:grid-cols-3">
+        <StartStep
+          title="1. Log rounds"
+          text="Save your first round total for today."
+          action="Set draft to 1"
+          disabled={isBusy}
+          onClick={onDraftOne}
+          secondaryAction="Save 1 now"
+          onSecondaryClick={onSaveOne}
+        />
+        <StartStep
+          title="2. Join a group"
+          text="Create a group or join one with a code."
+          action="Open groups"
+          disabled={isBusy}
+          onClick={onGroups}
+        />
+        <StartStep
+          title="3. Add a friend"
+          text="Search by username to build a private leaderboard."
+          action="Open friends"
+          disabled={isBusy}
+          onClick={onFriends}
+        />
+      </div>
+    </Panel>
+  );
+}
+
 function StartStep({
   title,
   text,
   action,
-  onClick
+  onClick,
+  disabled = false,
+  secondaryAction,
+  onSecondaryClick
 }: {
   title: string;
   text: string;
   action: string;
   onClick: () => void;
+  disabled?: boolean;
+  secondaryAction?: string;
+  onSecondaryClick?: () => void;
 }) {
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 sm:px-4 sm:py-3">
@@ -879,10 +890,21 @@ function StartStep({
       <button
         type="button"
         className="mt-3 w-full rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white"
+        disabled={disabled}
         onClick={onClick}
       >
         {action}
       </button>
+      {secondaryAction && onSecondaryClick && (
+        <button
+          type="button"
+          className="mt-2 w-full rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
+          disabled={disabled}
+          onClick={onSecondaryClick}
+        >
+          {secondaryAction}
+        </button>
+      )}
     </div>
   );
 }
