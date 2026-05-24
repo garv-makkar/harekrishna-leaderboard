@@ -42,7 +42,7 @@ import {
   recentChantingHistory,
   sumRounds
 } from "@/features/chanting/domain";
-import { Avatar, SkeletonBlock } from "@/features/chanting/ui";
+import { Avatar, PrivacyVisibilitySummary, PublicUserCard, SkeletonBlock } from "@/features/chanting/ui";
 import type { TabId } from "@/features/chanting/domain";
 
 const tabs = [
@@ -677,12 +677,15 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
     <div className="fixed inset-0 z-40 bg-stone-950/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
       <div className="mx-auto mt-6 max-h-[calc(100vh-3rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-saffron-200 bg-white p-5 shadow-soft">
         <div className="mb-5 flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <Avatar src={user.avatarUrl} label={user.displayName || user.username} />
-            <div className="min-w-0">
-              <p className="truncate text-xl font-black text-stone-900">{user.displayName || user.username}</p>
-              <p className="truncate text-sm text-stone-600">@{user.username}</p>
-            </div>
+          <div className="min-w-0 flex-1">
+            <PublicUserCard
+              user={user}
+              currentUserId={currentUser.id}
+              meta={`Joined ${formatDate(user.joinedAt.slice(0, 10))}`}
+              stats={[{ label: "today", value: sumRounds(state.chantTotals, user.id, "daily", todayKey), tone: "saffron" }]}
+              showCountry={privacy.showCountry}
+              compact
+            />
           </div>
           <button
             type="button"
@@ -719,6 +722,9 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
           >
             <ExternalLink size={16} /> Open shareable profile
           </a>
+        </div>
+        <div className="mb-5">
+          <PrivacyVisibilitySummary privacy={privacy} />
         </div>
         {(privacy.showRecentHistory || privacy.showMilestones) && (
         <div className="mb-5 grid gap-4 lg:grid-cols-[1fr_220px]">

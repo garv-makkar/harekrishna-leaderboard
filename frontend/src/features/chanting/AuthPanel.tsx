@@ -1,36 +1,30 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Flame, Plus, ShieldCheck, Trophy, Users } from "lucide-react";
+import { Plus, ShieldCheck, Users } from "lucide-react";
 import { publicSupabaseConfig, runtimeLabel } from "@/lib/config";
 import { supabase } from "@/lib/supabase";
 import type { UserProfile } from "@/lib/types";
 import { useChanting } from "./ChantingContext";
 import {
-  countries,
-  countryDialCode,
-  countryPhoneExample,
   defaultProfilePrivacy,
   detectTimezone,
   hashPassword,
-  normalizedOptionalPhone,
   isAccountNotFoundError,
-  localDayBoundaryText,
   passwordProblem,
   passwordRules,
   readableError,
-  timezoneForCountry,
   uid,
   usernameHelpText,
   usernamePattern
 } from "./domain";
-import { Card, Field, InlineNotice, PasswordChecklist, TimezoneSelect } from "./ui";
+import { Field, InlineNotice, PasswordChecklist } from "./ui";
 
 function AuthHeader({ title, body }: { title: string; body: string }) {
   return (
-    <div className="space-y-2">
-      <h2 className="text-xl font-black tracking-normal text-saffron-900 sm:text-2xl">{title}</h2>
-      <p className="text-sm leading-6 text-stone-600">{body}</p>
+    <div>
+      <h2 className="text-lg font-black tracking-normal text-saffron-900 sm:text-xl">{title}</h2>
+      <p className="mt-1 text-sm leading-5 text-stone-600">{body}</p>
     </div>
   );
 }
@@ -39,29 +33,14 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
   const { authMode, message } = useChanting();
 
   return (
-    <main className="grid min-h-screen place-items-center px-3 py-4 sm:px-6 lg:py-10">
-      <div className="grid w-full max-w-6xl overflow-hidden rounded-lg border border-saffron-200 bg-white/95 shadow-soft lg:grid-cols-[minmax(360px,0.95fr)_minmax(420px,1fr)]">
-        <section className="relative overflow-hidden bg-saffron-500 p-4 text-white sm:p-8 lg:p-10">
-          <div className="relative z-10">
-            <div className="lotus-mark mb-3 grid h-11 w-11 place-items-center rounded-lg text-sm font-black shadow-soft sm:mb-4 sm:h-14 sm:w-14 sm:text-lg">
-              HK
-            </div>
-            <h1 className="max-w-md text-2xl font-black tracking-normal sm:text-3xl lg:text-4xl">Hare Krishna Leaderboard</h1>
-            <p className="mt-2 max-w-md text-sm leading-6 text-saffron-50 sm:mt-4 sm:text-base sm:leading-7">
-              Track chanting rounds with groups, friends, and global leaderboards.
-            </p>
-            <div className="mt-7 hidden gap-3 sm:grid sm:grid-cols-3 lg:grid-cols-1">
-              <AuthFeature icon={<Flame size={18} />} title="Daily rounds" body="Log today and recent days." />
-              <AuthFeature icon={<Users size={18} />} title="Groups" body="Create circles with invite codes." />
-              <AuthFeature icon={<Trophy size={18} />} title="Leaderboards" body="View daily, weekly, and monthly rankings." />
-            </div>
-          </div>
-        </section>
-        <section className="p-4 sm:p-6 lg:p-8">
+    <main className="grid min-h-dvh place-items-center px-3 py-2 sm:px-6 sm:py-5">
+      <div className="w-full max-w-4xl overflow-hidden rounded-lg border border-saffron-200 bg-white/96 shadow-soft">
+        <CompactAuthBrand />
+        <section className="p-3 sm:p-4 lg:p-5">
           {inviteCode && <SignedOutInviteNotice inviteCode={inviteCode} />}
           <AuthModeTabs />
           {message && (
-            <div className="mb-4 rounded-md border border-peacock-200 bg-peacock-50 px-4 py-3 text-sm font-semibold text-peacock-900">
+            <div className="mb-3 rounded-md border border-peacock-200 bg-peacock-50 px-3 py-2 text-sm font-semibold text-peacock-900">
               {message}
             </div>
           )}
@@ -70,14 +49,26 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
           {authMode === "signup" && <SignUpForm />}
           {authMode === "newPassword" && <NewPasswordForm />}
           {authMode === "checkEmail" && <CheckEmailScreen />}
-          <p className="mt-4 rounded-md border border-stone-100 bg-stone-50 px-3 py-3 text-xs leading-5 text-stone-600 sm:mt-5 sm:px-4">
-            {supabase
-              ? `${runtimeLabel(publicSupabaseConfig.mode)}. Email confirmation and email OTP use Supabase.`
-              : `${runtimeLabel(publicSupabaseConfig.mode)}. Demo login: demo@example.com or gauranga_das, password HareKrishna108. Data is stored in this browser.`}
-          </p>
+          {!supabase && (
+            <p className="mt-3 text-center text-xs leading-5 text-stone-500">
+              {`${runtimeLabel(publicSupabaseConfig.mode)}. Demo login: demo@example.com or gauranga_das, password HareKrishna108. Data is stored in this browser.`}
+            </p>
+          )}
         </section>
       </div>
     </main>
+  );
+}
+
+function CompactAuthBrand() {
+  return (
+    <section className="flex items-center gap-3 border-b border-saffron-100 bg-saffron-500 px-3 py-3 text-white sm:px-4">
+      <div className="lotus-mark grid h-10 w-10 shrink-0 place-items-center rounded-lg text-sm font-black shadow-soft">HK</div>
+      <div className="min-w-0">
+        <h1 className="truncate text-lg font-black tracking-normal sm:text-xl">Hare Krishna Leaderboard</h1>
+        <p className="hidden truncate text-xs font-bold text-saffron-50 sm:block sm:text-sm">Track rounds with groups, friends, and leaderboards.</p>
+      </div>
+    </section>
   );
 }
 
@@ -119,23 +110,13 @@ function SignedOutInviteNotice({ inviteCode }: { inviteCode: string }) {
   );
 }
 
-function AuthFeature({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
-  return (
-    <div className="rounded-lg border border-white/20 bg-white/12 p-3 backdrop-blur">
-      <div className="mb-2 grid h-9 w-9 place-items-center rounded-md bg-white/18">{icon}</div>
-      <p className="font-black">{title}</p>
-      <p className="mt-1 text-sm leading-5 text-saffron-50">{body}</p>
-    </div>
-  );
-}
-
 function ConfigNotice() {
-  if (publicSupabaseConfig.mode === "supabase" && publicSupabaseConfig.warnings.length === 0) return null;
+  if (publicSupabaseConfig.mode === "supabase") return null;
   const tone = publicSupabaseConfig.mode === "misconfigured" ? "error" : "info";
   return (
-    <div className="mb-4">
+    <div className="mb-3">
       <InlineNotice tone={tone}>
-        <div className="space-y-1">
+        <div>
           <p className="font-black">{runtimeLabel(publicSupabaseConfig.mode)}</p>
           {publicSupabaseConfig.mode === "demo" && (
             <p>Supabase env vars are empty, so the app is using browser-only demo data.</p>
@@ -156,7 +137,7 @@ function AuthModeTabs() {
   const { authMode, setAuthMode } = useChanting();
   if (authMode === "checkEmail" || authMode === "newPassword") return null;
   return (
-    <div className="mb-6 grid grid-cols-2 gap-1 rounded-lg border border-saffron-100 bg-saffron-50 p-1">
+    <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg border border-saffron-100 bg-saffron-50 p-1">
       {(["signin", "signup"] as const).map((mode) => (
         <button
           key={mode}
@@ -169,6 +150,81 @@ function AuthModeTabs() {
           {mode === "signin" ? "Sign in" : "Sign up"}
         </button>
       ))}
+    </div>
+  );
+}
+
+function CompactField({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+  required = false,
+  autoComplete,
+  placeholder,
+  inputMode,
+  helper
+}: {
+  label: string;
+  name?: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+  autoComplete?: string;
+  placeholder?: string;
+  inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
+  helper?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-bold text-stone-700">{label}</span>
+      <input
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+        name={name}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        type={type}
+        required={required}
+        autoComplete={autoComplete}
+        placeholder={placeholder}
+        inputMode={inputMode}
+      />
+      {helper && <span className="mt-1 block text-xs leading-4 text-stone-500">{helper}</span>}
+    </label>
+  );
+}
+
+function CompactPasswordChecklist({
+  rules,
+  touched
+}: {
+  rules: { label: string; met: boolean }[];
+  touched: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-stone-200 bg-stone-50/90 px-3 py-2">
+      <p className="mb-1.5 text-xs font-black uppercase text-stone-500">Password requirements</p>
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+        {rules.map((rule) => (
+          <div
+            key={rule.label}
+            className={`flex items-center gap-1.5 text-xs font-semibold leading-4 ${
+              rule.met ? "text-emerald-700" : touched ? "text-red-700" : "text-stone-500"
+            }`}
+          >
+            <span
+              className={`grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] font-black ${
+                rule.met ? "bg-emerald-100" : "bg-stone-200"
+              }`}
+            >
+              {rule.met ? "OK" : "-"}
+            </span>
+            <span className="min-w-0">{rule.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -224,27 +280,20 @@ function SignInForm() {
   };
 
   return (
-    <div className="space-y-5">
-      <AuthHeader title="Welcome back" body="Sign in with your username, email, or optional phone number and your password." />
-      <InlineNotice tone="info">
-        New here? Use Sign up first. If you prefer not to use your password, request an email OTP below.
-      </InlineNotice>
-      <form className="space-y-4" onSubmit={submit}>
-        {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
-        <Card level="section" className="space-y-3">
-          <Field label="Username, email, or phone" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
-          <Field label="Password" name="signin-password" value={password} onChange={setPassword} type="password" required autoComplete="current-password" />
-        </Card>
-        <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={localBusy}>
-          <ShieldCheck size={18} /> Sign in with password
-        </button>
-      </form>
-      <div className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.18em] text-stone-400">
-        <span className="h-px flex-1 bg-stone-200" />
-        Or
-        <span className="h-px flex-1 bg-stone-200" />
+    <div className="space-y-3">
+      <AuthHeader title="Welcome back" body="Use password, or use email OTP if you do not want to enter your password." />
+      {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">
+        <form className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 shadow-sm" onSubmit={submit}>
+          <p className="text-sm font-black text-stone-900">Password</p>
+          <CompactField label="Username, email, or phone" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
+          <CompactField label="Password" name="signin-password" value={password} onChange={setPassword} type="password" required autoComplete="current-password" />
+          <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white" disabled={localBusy}>
+            <ShieldCheck size={16} /> Sign in with password
+          </button>
+        </form>
+        <EmailOtpSignInSection />
       </div>
-      <EmailOtpSignInSection />
     </div>
   );
 }
@@ -312,28 +361,29 @@ function EmailOtpSignInSection() {
   };
 
   return (
-    <form className="space-y-4" onSubmit={verifyOtp}>
-      <Card level="section" className="space-y-3">
-        <div>
-          <p className="text-sm font-black text-stone-900">Email OTP</p>
-          <p className="mt-1 text-sm leading-5 text-stone-600">Get a one-time code for an existing confirmed account.</p>
+    <form className="space-y-3 rounded-lg border border-peacock-100 bg-peacock-50/65 p-3 shadow-sm" onSubmit={verifyOtp}>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-sm font-black text-stone-900">Email OTP</p>
+            <p className="mt-0.5 text-xs leading-5 text-stone-600">One-time code for existing confirmed accounts.</p>
+          </div>
+          <span className="rounded-md bg-white px-2 py-1 text-xs font-black text-peacock-900 ring-1 ring-peacock-100">OR</span>
         </div>
         {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
         {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
         {hasSent && <InlineNotice tone="success">Code sent to {email.trim().toLowerCase()}. Keep this tab open and enter the code from your email.</InlineNotice>}
-        <Field label="Account email" name="signin-otp-email" value={email} onChange={setEmail} type="email" required autoComplete="email" placeholder="you@example.com" />
-        <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 font-bold text-peacock-900 ring-1 ring-peacock-200" disabled={localBusy} onClick={sendOtp}>
-          <ShieldCheck size={18} /> Send email OTP
+        <CompactField label="Account email" name="signin-otp-email" value={email} onChange={setEmail} type="email" required autoComplete="email" placeholder="you@example.com" />
+        <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-peacock-900 ring-1 ring-peacock-200" disabled={localBusy} onClick={sendOtp}>
+          <ShieldCheck size={16} /> Send email OTP
         </button>
         {hasSent && (
           <>
-            <Field label="OTP code" name="signin-otp-code" value={token} onChange={setToken} required autoComplete="one-time-code" inputMode="numeric" placeholder="123456" />
-            <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={localBusy || token.trim().length < 6}>
-              <ShieldCheck size={18} /> Verify and sign in
+            <CompactField label="OTP code" name="signin-otp-code" value={token} onChange={setToken} required autoComplete="one-time-code" inputMode="numeric" placeholder="123456" />
+            <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white" disabled={localBusy || token.trim().length < 6}>
+              <ShieldCheck size={16} /> Verify and sign in
             </button>
           </>
         )}
-      </Card>
     </form>
   );
 }
@@ -345,7 +395,6 @@ function SignUpForm() {
     email: "",
     phone: "",
     password: "",
-    country: "India",
     timezone: detectTimezone()
   });
   const [formError, setFormError] = useState("");
@@ -360,7 +409,7 @@ function SignUpForm() {
     setFormStatus("");
     const username = form.username.trim().toLowerCase();
     const email = form.email.trim().toLowerCase();
-    const phone = normalizedOptionalPhone(form.phone, form.country);
+    const phone = "";
     if (username.includes("@")) {
       setFormError("Username cannot be an email address. Use something like garv_makkar or garv108.");
       return;
@@ -371,10 +420,6 @@ function SignUpForm() {
     }
     if (!email || !email.includes("@")) {
       setFormError("Enter your email address in the Email field.");
-      return;
-    }
-    if (phone && phone.length < 6) {
-      setFormError("Enter a valid phone number, or leave phone blank.");
       return;
     }
     const passwordError = passwordProblem(form.password);
@@ -390,15 +435,11 @@ function SignUpForm() {
       setFormError("That email is already registered. Try signing in instead.");
       return;
     }
-    if (phone && state.users.some((user) => user.phone === phone)) {
-      setFormError("That phone number is already registered. Leave phone blank or use a different number.");
-      return;
-    }
     if (supabase) {
       const client = supabase;
       setLocalBusy(true);
       try {
-        setFormStatus(phone ? "Checking username, email, and phone..." : "Checking username and email...");
+        setFormStatus("Checking username and email...");
         await checkIdentityConflicts(username, email, phone);
         setFormStatus("Creating account in Supabase...");
         const { data, error } = await client.auth.signUp({
@@ -409,7 +450,7 @@ function SignUpForm() {
             data: {
               username,
               phone: phone || null,
-              country: form.country,
+              country: "India",
               timezone: form.timezone || detectTimezone(),
               display_name: username
             }
@@ -445,7 +486,7 @@ function SignUpForm() {
       email,
       phone,
       passwordHash: hashPassword(form.password),
-      country: form.country,
+      country: "India",
       timezone: form.timezone || detectTimezone(),
       displayName: username,
       avatarUrl: "",
@@ -461,51 +502,22 @@ function SignUpForm() {
   };
 
   return (
-    <form className="space-y-4" onSubmit={submit}>
-      <AuthHeader title="Create account" body="Choose a public username, verify your email, and start tracking rounds from your local timezone." />
-      <InlineNotice tone="info">After signup, check your inbox for the confirmation email. You will sign in after confirming.</InlineNotice>
+    <form className="space-y-3" onSubmit={submit}>
+      <AuthHeader title="Create account" body="Email is required. Phone and country can be added later in Profile." />
       {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
       {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
-      <Card level="section" className="space-y-3">
-        <Field label="Username" name="signup-username" value={form.username} onChange={(value) => setForm({ ...form, username: value })} required autoComplete="username" placeholder="garv_makkar" helper={`${usernameHelpText()} Do not use your email here.`} />
-        <Field label="Email" name="signup-email" value={form.email} onChange={(value) => setForm({ ...form, email: value })} type="email" required autoComplete="email" placeholder="you@example.com" />
-        <Field
-          label={`Phone number (${countryDialCode(form.country)})`}
-          name="signup-phone"
-          value={form.phone}
-          onChange={(value) => setForm({ ...form, phone: value })}
-          autoComplete="tel"
-          inputMode="tel"
-          placeholder={countryPhoneExample(form.country)}
-          helper={form.country === "Other" ? "Optional. Include your country code, for example +491701234567." : `Optional. Enter local number only; if added, we store it as ${countryDialCode(form.country)} plus your number.`}
-        />
-      </Card>
-      {form.phone.trim() && <InlineNotice tone="info">Phone will be saved as {normalizedOptionalPhone(form.phone, form.country)}.</InlineNotice>}
-      <Card level="section" className="space-y-3">
-        <Field label="Password" name="signup-password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} type="password" required autoComplete="new-password" />
-        <PasswordChecklist rules={rules} touched={form.password.length > 0} />
-      </Card>
-      <Card level="section" className="space-y-3">
-        <label className="block">
-          <span className="mb-1 block text-sm font-bold text-stone-700">Country</span>
-          <select
-            className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
-            value={form.country}
-            onChange={(event) => {
-              const country = event.target.value;
-              setForm({ ...form, country, timezone: timezoneForCountry(country, form.timezone) });
-            }}
-          >
-            {countries.map((country) => (
-              <option key={country.name} value={country.name}>{country.name}</option>
-            ))}
-          </select>
-        </label>
-        <TimezoneSelect country={form.country} value={form.timezone} onChange={(timezone) => setForm({ ...form, timezone })} />
-      </Card>
-      <InlineNotice tone="info">{localDayBoundaryText(form.timezone)}</InlineNotice>
-      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={localBusy || !isPasswordReady}>
-        <Plus size={18} /> Create account
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 shadow-sm">
+          <CompactField label="Username" name="signup-username" value={form.username} onChange={(value) => setForm({ ...form, username: value })} required autoComplete="username" placeholder="garv_makkar" />
+          <CompactField label="Email" name="signup-email" value={form.email} onChange={(value) => setForm({ ...form, email: value })} type="email" required autoComplete="email" placeholder="you@example.com" />
+        </div>
+        <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 shadow-sm">
+          <CompactField label="Password" name="signup-password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} type="password" required autoComplete="new-password" />
+          <CompactPasswordChecklist rules={rules} touched={form.password.length > 0} />
+        </div>
+      </div>
+      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white" disabled={localBusy || !isPasswordReady}>
+        <Plus size={16} /> Create account
       </button>
     </form>
   );

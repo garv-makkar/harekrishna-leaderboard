@@ -6,7 +6,7 @@ import { Check, HeartHandshake, Search, Trophy, UserRoundSearch, Users } from "l
 import { supabase } from "@/lib/supabase";
 import { makeFriendRequest, useChanting } from "../ChantingContext";
 import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange, readableError } from "../domain";
-import { ActionEmptyState, Avatar, EmptyState, Field, FilterBar, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Avatar, EmptyState, Field, FilterBar, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, PublicUserCard, StatCard, StatGrid } from "../ui";
 
 export function FriendsPage() {
   const {
@@ -230,31 +230,24 @@ export function FriendsPage() {
                     .reduce((sum, total) => sum + total.rounds, 0)
                 : 0;
               return (
-                <div key={request.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar src={friend?.avatarUrl || ""} label={friend?.displayName || friend?.username || "Friend"} />
-                    <div className="min-w-0">
-                      <p className="truncate font-bold">{friend?.displayName || friend?.username}</p>
-                      <p className="truncate text-sm text-stone-600">@{friend?.username}</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900">
-                          {friendToday} today
-                        </span>
-                        <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
-                          Friends since {new Date(request.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 sm:justify-end">
-                    {friend && (
+                friend ? (
+                <PublicUserCard
+                  key={request.id}
+                  user={friend}
+                  currentUserId={currentUser.id}
+                  meta={`Friends since ${new Date(request.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`}
+                  stats={[{ label: "today", value: friendToday, tone: "peacock" }]}
+                  onOpenProfile={() => setSelectedPublicUserId(friend.id)}
+                  showCountry={friend.privacy?.showCountry ?? true}
+                  compact
+                  actions={
+                    <>
                       <button
                         className="rounded-md bg-white px-3 py-2 text-sm font-bold text-peacock-900 ring-1 ring-peacock-100"
                         onClick={() => setSelectedPublicUserId(friend.id)}
                       >
                         Profile
                       </button>
-                    )}
                     <button
                       className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
                       disabled={isBusy}
@@ -262,8 +255,12 @@ export function FriendsPage() {
                     >
                       Remove
                     </button>
-                  </div>
-                </div>
+                    </>
+                  }
+                />
+                ) : (
+                  <EmptyState key={request.id} text="Friend profile is not loaded yet. Refresh friends and try again." />
+                )
               );
             })}
           </div>
@@ -442,27 +439,16 @@ function FriendSearch() {
             const isExact = user.username.toLowerCase() === cleanQuery;
             const alreadyRelated = relatedUserIds.has(user.id);
             return (
-              <div key={user.id} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar src={user.avatarUrl} label={user.displayName || user.username} />
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate font-bold">{user.displayName || user.username}</p>
-                      {isExact && (
-                        <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900">
-                          Exact
-                        </span>
-                      )}
-                      {alreadyRelated && (
-                        <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-black text-stone-600">
-                          Connected
-                        </span>
-                      )}
-                    </div>
-                    <p className="truncate text-sm text-stone-600">@{user.username} | {user.country}</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 sm:justify-end">
+              <PublicUserCard
+                key={user.id}
+                user={user}
+                currentUserId={currentUser.id}
+                badges={[isExact ? "Exact" : "", alreadyRelated ? "Connected" : ""].filter(Boolean)}
+                onOpenProfile={() => setSelectedPublicUserId(user.id)}
+                showCountry={user.privacy?.showCountry ?? true}
+                compact
+                actions={
+                  <>
                   <button
                     className="rounded-md bg-white px-3 py-2 text-sm font-bold text-peacock-900 ring-1 ring-peacock-100"
                     onClick={() => setSelectedPublicUserId(user.id)}
@@ -478,8 +464,9 @@ function FriendSearch() {
                   >
                     {alreadyRelated ? "Added" : "Add"}
                   </button>
-                </div>
-              </div>
+                  </>
+                }
+              />
             );
           })
         )}

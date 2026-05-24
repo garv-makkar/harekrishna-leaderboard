@@ -17,7 +17,7 @@ import {
   roundsForDate,
   sumRounds
 } from "../domain";
-import { Avatar, EmptyState, Panel } from "../ui";
+import { Avatar, EmptyState, Panel, PrivacyVisibilitySummary } from "../ui";
 
 type PublicProfilePayload = {
   profile: {
@@ -203,6 +203,8 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
                 </Link>
               </Panel>
             </div>
+
+            <PrivacyVisibilitySummary privacy={privacy} />
 
             {privacy.showRecentHistory ? (
               <Panel title="Recent 7 days" icon={<CalendarDays size={18} />}>

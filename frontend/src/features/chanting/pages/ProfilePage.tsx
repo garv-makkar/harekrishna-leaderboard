@@ -26,7 +26,7 @@ import {
   usernameHelpText,
   usernamePattern
 } from "../domain";
-import { EmptyState, Field, InlineNotice, PageHeader, Panel, PasswordChecklist, StatCard, StatGrid, TimezoneSelect } from "../ui";
+import { EmptyState, Field, InlineNotice, PageHeader, Panel, PasswordChecklist, PrivacyVisibilitySummary, PublicUserCard, StatCard, StatGrid, TimezoneSelect } from "../ui";
 
 type ProfileSection = "public" | "account" | "security" | "data";
 
@@ -596,23 +596,15 @@ function PublicProfilePreview() {
 
   return (
     <Panel title="Public profile preview" icon={<UserRound size={18} />}>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex min-w-0 flex-col gap-4 rounded-lg border border-stone-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center">
-          {currentUser.avatarUrl ? (
-            <img src={currentUser.avatarUrl} alt="" className="h-20 w-20 rounded-lg border border-stone-200 object-cover" />
-          ) : (
-            <div className="lotus-mark grid h-20 w-20 shrink-0 place-items-center rounded-lg text-xl font-black text-white">
-              {(currentUser.displayName || currentUser.username).slice(0, 2).toUpperCase()}
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-xl font-black text-stone-950 sm:text-2xl">{currentUser.displayName || currentUser.username}</p>
-            <p className="truncate text-sm font-bold text-stone-600">@{currentUser.username}</p>
-            <p className="mt-2 text-sm leading-6 text-stone-600">
-              {privacy.showCountry ? `${currentUser.country}. ` : ""}Joined {formatDate(currentUser.joinedAt.slice(0, 10))}.
-            </p>
-          </div>
-        </div>
+      <PrivacyVisibilitySummary privacy={privacy} />
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <PublicUserCard
+          user={currentUser}
+          currentUserId={currentUser.id}
+          meta={`Joined ${formatDate(currentUser.joinedAt.slice(0, 10))}`}
+          stats={[{ label: "all time", value: allTimeRounds, tone: "saffron" }]}
+          showCountry={privacy.showCountry}
+        />
         <div className="grid gap-3 sm:grid-cols-2">
           <PrivacyMetric label="All-time rounds" value={allTimeRounds} />
           {privacy.showStreak ? <PrivacyMetric label="Current streak" value={streak} /> : <PrivacyHiddenMetric label="Current streak" />}
@@ -738,9 +730,8 @@ function PublicProfilePrivacyPanel({
 
   return (
     <Panel title="Public profile privacy" icon={<ShieldCheck size={18} />}>
-      <div className="mb-4 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-950 sm:px-4 sm:py-3">
-        <p className="font-black">Choose what other users see when they open your profile preview.</p>
-        <p>Your username, display name, avatar, and public leaderboard rows stay visible because they identify leaderboard entries.</p>
+      <div className="mb-4">
+        <PrivacyVisibilitySummary privacy={privacy} />
       </div>
       {status && <p className="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{status}</p>}
       <div className="grid gap-3 lg:grid-cols-2">

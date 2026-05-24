@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { LeaderboardPeriod } from "@/lib/types";
+import type { LeaderboardPeriod, ProfilePrivacy, UserProfile } from "@/lib/types";
 import type { Milestone, RankedUser } from "./domain";
 import { detectTimezone, periodLabel, timezoneOptions } from "./domain";
 import { useChanting } from "./ChantingContext";
@@ -910,6 +910,122 @@ export function Avatar({ src, label }: { src: string; label: string }) {
       {label.slice(0, 2).toUpperCase()}
     </div>
   );
+}
+
+export function PublicUserCard({
+  user,
+  currentUserId = "",
+  meta,
+  badges = [],
+  stats,
+  onOpenProfile,
+  actions,
+  compact = false,
+  showCountry = true
+}: {
+  user: Pick<UserProfile, "id" | "username" | "displayName" | "avatarUrl" | "country">;
+  currentUserId?: string;
+  meta?: string;
+  badges?: string[];
+  stats?: { label: string; value: string | number; tone?: "saffron" | "peacock" | "stone" }[];
+  onOpenProfile?: () => void;
+  actions?: React.ReactNode;
+  compact?: boolean;
+  showCountry?: boolean;
+}) {
+  const displayName = user.displayName || user.username;
+  return (
+    <div className={`rounded-lg border border-stone-200 bg-white shadow-sm ${compact ? "p-3" : "p-4"}`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar src={user.avatarUrl} label={displayName} />
+          <div className="min-w-0">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {onOpenProfile ? (
+                <button
+                  type="button"
+                  className="max-w-full truncate text-left font-black text-stone-950 hover:text-saffron-800"
+                  onClick={onOpenProfile}
+                >
+                  {displayName}
+                </button>
+              ) : (
+                <span className="max-w-full truncate font-black text-stone-950">{displayName}</span>
+              )}
+              {user.id === currentUserId && (
+                <span className="rounded-sm bg-saffron-500 px-1.5 py-0.5 text-xs font-black text-white">You</span>
+              )}
+            </div>
+            <p className="truncate text-sm font-bold text-stone-600">@{user.username}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {meta && (
+                <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
+                  {meta}
+                </span>
+              )}
+              {badges.map((badge) => (
+                <span key={badge} className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900">
+                  {badge}
+                </span>
+              ))}
+              {showCountry && user.country && (
+                <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-bold text-saffron-900">
+                  {user.country}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        {(stats?.length || actions) && (
+          <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+            {stats?.map((stat) => (
+              <span key={stat.label} className={`rounded-md px-2.5 py-1.5 text-sm font-black ${publicUserStatClass(stat.tone || "stone")}`}>
+                {stat.value} <span className="font-bold">{stat.label}</span>
+              </span>
+            ))}
+            {actions}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function PrivacyVisibilitySummary({ privacy }: { privacy: ProfilePrivacy }) {
+  const visible = [
+    privacy.showCountry ? "country" : "",
+    privacy.showGroups ? "groups" : "",
+    privacy.showStreak ? "streak" : "",
+    privacy.showRecentHistory ? "recent history" : "",
+    privacy.showMilestones ? "milestones" : ""
+  ].filter(Boolean);
+  const hidden = [
+    !privacy.showCountry ? "country" : "",
+    !privacy.showGroups ? "groups" : "",
+    !privacy.showStreak ? "streak" : "",
+    !privacy.showRecentHistory ? "recent history" : "",
+    !privacy.showMilestones ? "milestones" : ""
+  ].filter(Boolean);
+
+  return (
+    <div className="grid gap-3 rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-950 sm:px-4 sm:py-3 lg:grid-cols-[1fr_1fr]">
+      <div>
+        <p className="font-black">Always visible</p>
+        <p>Username, display name, avatar, leaderboard rows, and public round totals.</p>
+      </div>
+      <div>
+        <p className="font-black">Optional sections</p>
+        <p>{visible.length ? `Visible: ${visible.join(", ")}.` : "No optional sections visible."}</p>
+        {hidden.length > 0 && <p className="text-stone-700">Hidden: {hidden.join(", ")}.</p>}
+      </div>
+    </div>
+  );
+}
+
+function publicUserStatClass(tone: "saffron" | "peacock" | "stone") {
+  if (tone === "saffron") return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100";
+  if (tone === "peacock") return "bg-peacock-50 text-peacock-900 ring-1 ring-peacock-100";
+  return "bg-stone-100 text-stone-700 ring-1 ring-stone-200";
 }
 
 export function EmptyState({ text }: { text: string }) {
