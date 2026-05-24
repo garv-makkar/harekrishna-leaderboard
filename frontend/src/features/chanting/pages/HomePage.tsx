@@ -19,7 +19,7 @@ import {
   sumRounds,
   VAISHNAVA_CALENDAR_REFERENCE
 } from "../domain";
-import { ActionEmptyState, Field, MetricCard, MilestoneGrid, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Card, Field, MilestoneGrid, PageHeader, Panel, SectionHeading, StatCard, StatGrid } from "../ui";
 
 export function HomePage() {
   const {
@@ -445,19 +445,19 @@ export function HomePage() {
 
       <OnboardingChecklist items={onboardingItems} />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(340px,1.05fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
         <Panel title="Daily focus" icon={<Target size={18} />}>
           <div className="grid gap-3 lg:grid-cols-[180px_minmax(0,1fr)]">
-            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-3 text-center">
+            <Card level="primary" className="text-center">
               <p className="text-xs font-black uppercase text-stone-500">Goal progress</p>
-              <p className="mt-2 text-3xl font-black text-saffron-900 sm:text-4xl">{goalPercent}%</p>
+              <p className="mt-2 text-3xl font-black text-saffron-900">{goalPercent}%</p>
               <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
                 <div className="h-full bg-saffron-500" style={{ width: `${goalPercent}%` }} />
               </div>
               <p className="mt-3 text-sm font-bold text-stone-700">
                 {remainingGoalRounds === 0 ? "Goal complete today" : `${remainingGoalRounds} left today`}
               </p>
-            </div>
+            </Card>
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <DailyFocusTile label="Current streak" value={streakNow} note={`Best streak ${streakBest}`} />
               <DailyFocusTile label="Last 7 days" value={sevenDayRounds} note={`${history.filter((item) => item.rounds > 0).length} active days`} />
@@ -608,12 +608,14 @@ export function HomePage() {
         </ActionEmptyState>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-        <MetricCard label="Today" value={currentRounds} note="Saved rounds" />
-        <MetricCard label="This week" value={weeklyRounds} note="Weeks start Monday" />
-        <MetricCard label="This month" value={monthlyRounds} note={`${monthDays} active day${monthDays === 1 ? "" : "s"}`} />
-        <MetricCard label="All time" value={allTimeRounds} note={`Since ${formatDate(currentUser.joinedAt.slice(0, 10))}`} />
-      </div>
+      <Panel title="Practice totals" icon={<Flame size={18} />}>
+        <StatGrid columns={4}>
+          <StatCard label="Today" value={currentRounds} note="Saved rounds" tone="saffron" />
+          <StatCard label="This week" value={weeklyRounds} note="Weeks start Monday" tone="peacock" />
+          <StatCard label="This month" value={monthlyRounds} note={`${monthDays} active day${monthDays === 1 ? "" : "s"}`} tone="stone" />
+          <StatCard label="All time" value={allTimeRounds} note={`Since ${formatDate(currentUser.joinedAt.slice(0, 10))}`} tone="saffron" />
+        </StatGrid>
+      </Panel>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div id="daily-goal-panel">

@@ -135,7 +135,7 @@ export function PasswordChecklist({
 
 export function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-saffron-200/80 bg-white/90 p-3 shadow-soft sm:p-4">
+    <section className="rounded-lg border border-saffron-200/80 bg-white/92 p-3 shadow-soft sm:p-4">
       <div className="mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3">
         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100 sm:h-9 sm:w-9">
           {icon}
@@ -144,6 +144,44 @@ export function Panel({ title, icon, children }: { title: string; icon: React.Re
       </div>
       {children}
     </section>
+  );
+}
+
+export function Card({
+  children,
+  level = "section",
+  className = ""
+}: {
+  children: React.ReactNode;
+  level?: "primary" | "section" | "list";
+  className?: string;
+}) {
+  const levelClass =
+    level === "primary"
+      ? "border-saffron-200 bg-saffron-50/75 shadow-soft"
+      : level === "list"
+        ? "border-stone-200 bg-white shadow-sm"
+        : "border-stone-200 bg-stone-50/70 shadow-sm";
+  return <div className={`rounded-lg border p-3 sm:p-4 ${levelClass} ${className}`}>{children}</div>;
+}
+
+export function SectionHeading({
+  title,
+  description,
+  action
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <h3 className="text-base font-black text-stone-950 sm:text-lg">{title}</h3>
+        {description && <p className="mt-0.5 text-sm leading-6 text-stone-600">{description}</p>}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
   );
 }
 
@@ -536,8 +574,8 @@ export function Leaderboard({
           <LeaderboardRefreshMeta periodText={periodText || periodLabel(period)} lastUpdated={lastUpdated} isRefreshing={isRefreshing} onRefresh={onRefresh} />
         </div>
       )}
-      <div className="mb-3 rounded-md border border-peacock-100 bg-peacock-50/90 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:mb-4 sm:px-4">
-        Leaderboard totals are self-entered by users. Rows show whether a user logged an entry for this period and when their visible total was last updated.
+      <div className="mb-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-bold leading-5 text-stone-600 sm:mb-4">
+        Self-entered totals. Rows include entry status and last update when available.
       </div>
       {activeRows.length === 0 && (
         <div className="mb-4">
@@ -636,7 +674,7 @@ export function Leaderboard({
                     <p className="text-2xl font-black text-stone-950">{row.rounds}</p>
                     <p className="text-sm font-bold text-stone-600">rounds</p>
                   </div>
-                  <span className="rounded-md bg-white/70 px-2 py-1 text-xs font-black text-stone-700 ring-1 ring-white">
+                  <span className="rounded-md bg-white/75 px-2 py-1 text-xs font-black text-stone-700 ring-1 ring-white">
                     {entryStatusText(row)}
                   </span>
                 </div>
@@ -714,9 +752,9 @@ export function Leaderboard({
             <div
               key={row.user.id}
               ref={isCurrent ? currentRowRef : undefined}
-              className={`grid grid-cols-[44px_1fr] items-start gap-2 border-b border-stone-100 px-2 py-2.5 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:items-center sm:gap-3 sm:px-4 sm:py-3 ${
+              className={`grid grid-cols-[44px_minmax(0,1fr)_72px] items-center gap-2 border-b border-stone-100 px-2 py-2.5 last:border-b-0 sm:grid-cols-[76px_1fr_112px] sm:gap-3 sm:px-4 sm:py-3 ${
                 isCurrent
-                  ? "bg-saffron-50/90 shadow-[inset_4px_0_0_#d98f08]"
+                  ? "bg-saffron-50/90 shadow-[inset_3px_0_0_#d98f08]"
                   : isTopRank
                     ? "bg-white"
                     : "bg-white"
@@ -763,14 +801,13 @@ export function Leaderboard({
                   </div>
                 </div>
               </div>
-              <div className="col-span-2 flex items-center justify-between gap-3 rounded-md bg-stone-50 px-3 py-2 text-left sm:col-span-1 sm:block sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
-                <p className="text-xs font-black uppercase text-stone-500 sm:hidden">Rounds</p>
-                <div className={`rounded-md px-3 py-2 font-black ring-1 ${
+              <div className="text-right">
+                <div className={`inline-flex min-w-14 justify-center rounded-md px-3 py-2 font-black ring-1 ${
                   row.rounds > 0 ? "bg-peacock-50 text-peacock-900 ring-peacock-100" : row.hasEntry ? "bg-stone-100 text-stone-700 ring-stone-200" : "bg-stone-50 text-stone-500 ring-stone-100"
                 }`}>
                   {row.rounds}
                 </div>
-                <p className="mt-1 text-xs text-stone-500">rounds</p>
+                <p className="mt-1 hidden text-xs text-stone-500 sm:block">rounds</p>
               </div>
             </div>
           );
@@ -876,7 +913,11 @@ export function Avatar({ src, label }: { src: string; label: string }) {
 }
 
 export function EmptyState({ text }: { text: string }) {
-  return <p className="rounded-md border border-dashed border-stone-200 bg-stone-50/80 px-4 py-5 text-sm text-stone-600">{text}</p>;
+  return (
+    <div className="rounded-lg border border-dashed border-stone-200 bg-stone-50/80 px-4 py-5 text-center">
+      <p className="mx-auto max-w-lg text-sm leading-6 text-stone-600">{text}</p>
+    </div>
+  );
 }
 
 export function ActionEmptyState({
@@ -891,10 +932,10 @@ export function ActionEmptyState({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-saffron-200 bg-saffron-50/70 p-3 sm:p-4">
+    <div className="rounded-lg border border-dashed border-saffron-200 bg-white/90 p-4 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-white text-saffron-700 ring-1 ring-saffron-100">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100">
             {icon}
           </span>
           <div className="min-w-0">

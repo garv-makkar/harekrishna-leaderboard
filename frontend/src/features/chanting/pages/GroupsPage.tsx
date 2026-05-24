@@ -7,7 +7,7 @@ import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import { addDays, currentStreak, formatDate, groupCodeProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
 import { ModerationReportButton } from "../ModerationReportButton";
-import { ActionEmptyState, Avatar, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Avatar, Card, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function GroupsPage({
   inviteCode = "",
@@ -307,27 +307,33 @@ export function GroupsPage({
       {selectedGroup && (
         <>
         <GroupSectionJumpBar />
-        <div id="group-invite">
-          <GroupInviteCard
-            group={selectedGroup}
-            role={selectedRole}
-            memberCount={selectedMemberCount}
-            onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-          />
-        </div>
-        {selectedRole === "owner" && (
-          <GroupOwnerDashboard
-            group={selectedGroup}
-            onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-            onRefresh={() => refreshRemoteState(currentUser.id)}
-          />
-        )}
-        <GroupTargetPanel group={selectedGroup} />
-        <div id="group-activity">
-          <GroupActivityFeed group={selectedGroup} />
-        </div>
-        <div id="group-members">
-          <GroupMemberRoster group={selectedGroup} />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
+          <div className="space-y-4">
+            <div id="group-invite">
+              <GroupInviteCard
+                group={selectedGroup}
+                role={selectedRole}
+                memberCount={selectedMemberCount}
+                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+              />
+            </div>
+            {selectedRole === "owner" && (
+              <GroupOwnerDashboard
+                group={selectedGroup}
+                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+                onRefresh={() => refreshRemoteState(currentUser.id)}
+              />
+            )}
+            <GroupTargetPanel group={selectedGroup} />
+          </div>
+          <div className="space-y-4">
+            <div id="group-activity">
+              <GroupActivityFeed group={selectedGroup} />
+            </div>
+            <div id="group-members">
+              <GroupMemberRoster group={selectedGroup} />
+            </div>
+          </div>
         </div>
         <GroupAccountabilityPanel group={selectedGroup} />
         <div id="group-leaderboard">
@@ -1127,7 +1133,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={17} />
               <input
-                className="w-full rounded-md border border-stone-300 bg-white py-3 pl-10 pr-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                className="w-full rounded-md border border-stone-300 bg-white py-2.5 pl-10 pr-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
                 placeholder="username, name, or role"
@@ -1138,7 +1144,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-stone-700">Role</span>
             <select
-              className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+              className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
               value={roleFilter}
               onChange={(event) => setRoleFilter(event.target.value as GroupRole | "all")}
             >
@@ -1151,7 +1157,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-stone-700">Activity</span>
             <select
-              className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+              className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
               value={activityFilter}
               onChange={(event) => setActivityFilter(event.target.value as typeof activityFilter)}
             >
@@ -1188,7 +1194,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
           {visibleRows.map((row) => (
-            <div key={row.user.id} className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+            <div key={row.user.id} className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex min-w-0 gap-3">
                   <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
@@ -1904,17 +1910,19 @@ function CreateGroupForm({ embedded = false }: { embedded?: boolean }) {
   const content = (
       <form className="space-y-3" onSubmit={submit}>
         {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
-        <Field label="Group name" value={name} onChange={setName} required />
-        <Field
-          label="Unique group code"
-          value={code}
-          onChange={(value) => setCode(normalizeGroupCode(value))}
-          required
-          placeholder="JAPA108"
-          helper="At least 6 characters with letters and numbers. Use this code to invite members."
-        />
+        <Card level="section" className="space-y-3">
+          <Field label="Group name" value={name} onChange={setName} required />
+          <Field
+            label="Unique group code"
+            value={code}
+            onChange={(value) => setCode(normalizeGroupCode(value))}
+            required
+            placeholder="JAPA108"
+            helper="At least 6 characters with letters and numbers. Use this code to invite members."
+          />
+        </Card>
         <GroupImagePicker imageUrl={imageUrl} setImageUrl={setImageUrl} label={name || "Group"} />
-        <button className="rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" disabled={isBusy}>
+        <button className="rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={isBusy}>
           Create group
         </button>
       </form>
@@ -2021,15 +2029,17 @@ function JoinGroupForm({
   const content = (
       <form className="space-y-3" onSubmit={submit}>
         {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
-        <Field
-          label="Group code"
-          value={code}
-          onChange={(value) => setCode(normalizeGroupCode(value))}
-          required
-          placeholder="JAPA108"
-          helper="Ask the group owner for the exact code."
-        />
-        <button className="rounded-md bg-peacock-600 px-4 py-3 font-bold text-white" disabled={isBusy}>
+        <Card level="section">
+          <Field
+            label="Group code"
+            value={code}
+            onChange={(value) => setCode(normalizeGroupCode(value))}
+            required
+            placeholder="JAPA108"
+            helper="Ask the group owner for the exact code."
+          />
+        </Card>
+        <button className="rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={isBusy}>
           Join group
         </button>
       </form>

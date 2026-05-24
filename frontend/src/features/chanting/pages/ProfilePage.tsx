@@ -26,6 +26,8 @@ import {
 } from "../domain";
 import { Field, InlineNotice, MilestoneGrid, PageHeader, Panel, PasswordChecklist, StatCard, StatGrid, TimezoneSelect } from "../ui";
 
+type ProfileSection = "public" | "account" | "security" | "data";
+
 export function ProfilePage() {
   const {
     state,
@@ -53,6 +55,7 @@ export function ProfilePage() {
   const [reminderStatus, setReminderStatus] = useState("");
   const [privacyDraft, setPrivacyDraft] = useState<ProfilePrivacy>(defaultProfilePrivacy);
   const [privacyStatus, setPrivacyStatus] = useState("");
+  const [profileSection, setProfileSection] = useState<ProfileSection>("public");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const refreshedUserRef = useRef("");
 
@@ -326,17 +329,167 @@ export function ProfilePage() {
         </div>
       </PageHeader>
 
-      <ProfileCompletionPanel items={profileCompletionItems} />
+      <ProfileSectionTabs value={profileSection} onChange={setProfileSection} />
 
-      <PublicProfilePrivacyPanel
-        isBusy={isBusy}
-        privacy={privacyDraft}
-        status={privacyStatus}
-        onChange={setPrivacyDraft}
-        onSave={savePrivacyPreferences}
-      />
+      {profileSection === "public" && (
+        <>
+          <ProfileCompletionPanel items={profileCompletionItems} />
+          <form className="space-y-4 sm:space-y-5" onSubmit={submit}>
+            {profileDirty && (
+              <div className="rounded-lg border border-saffron-300 bg-saffron-50 px-3 py-2.5 text-sm leading-6 text-saffron-950 shadow-sm sm:px-4">
+                <p className="font-black">Unsaved profile changes</p>
+                <p>Review your public profile fields, then save them together.</p>
+              </div>
+            )}
+            <Panel title="Public profile" icon={<UserRound size={18} />}>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4 sm:py-3">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      {profileForm.avatarUrl ? (
+                        <img
+                          src={profileForm.avatarUrl}
+                          alt=""
+                          className="h-16 w-16 rounded-md border border-stone-200 object-cover"
+                        />
+                      ) : (
+                        <div className="lotus-mark grid h-16 w-16 place-items-center rounded-md text-sm font-black text-white">
+                          {(profileForm.displayName || profileForm.username || "HK").slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-black text-stone-900">Profile picture</p>
+                        <p>Shown in leaderboards, groups, and your profile.</p>
+                        {avatarStatus && <p className="mt-1 font-bold text-peacock-900">{avatarStatus}</p>}
+                        {avatarError && <p className="mt-1 font-bold text-red-700">{avatarError}</p>}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={uploadAvatar}
+                      />
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white"
+                        disabled={isBusy}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <ImageUp size={18} /> Upload
+                      </button>
+                      {profileForm.avatarUrl && (
+                        <button
+                          type="button"
+                          className="rounded-md bg-stone-100 px-4 py-2.5 font-bold text-stone-700"
+                          disabled={isBusy}
+                          onClick={() => {
+                            setProfileForm({ ...profileForm, avatarUrl: "" });
+                            setAvatarStatus("Profile picture removed. Save profile to apply it.");
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Username" value={profileForm.username} onChange={(value) => setProfileForm({ ...profileForm, username: value })} required helper={usernameHelpText()} />
+                  <Field label="Display name" value={profileForm.displayName} onChange={(value) => setProfileForm({ ...profileForm, displayName: value })} />
+                </div>
+              </div>
+            </Panel>
+            <div className="rounded-lg border border-saffron-200 bg-white/95 px-3 py-3 shadow-soft backdrop-blur sm:px-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm text-stone-600">
+                  <Mail size={16} />
+                  <span>Public profile changes save together.</span>
+                </div>
+                <button className="rounded-md bg-saffron-500 px-5 py-2.5 font-bold text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200" disabled={isBusy || !profileDirty}>
+                  {profileDirty ? "Save profile" : "Profile saved"}
+                </button>
+              </div>
+            </div>
+          </form>
+          <PublicProfilePrivacyPanel
+            isBusy={isBusy}
+            privacy={privacyDraft}
+            status={privacyStatus}
+            onChange={setPrivacyDraft}
+            onSave={savePrivacyPreferences}
+          />
+          <PublicProfilePreview />
+          <Panel title="Milestones" icon={<Award size={18} />}>
+            <MilestoneGrid milestones={computeMilestones(state, currentUser, todayKey)} />
+          </Panel>
+        </>
+      )}
 
-      <PublicProfilePreview />
+      {profileSection === "account" && (
+        <>
+          <form className="space-y-4 sm:space-y-5" onSubmit={submit}>
+            {profileDirty && (
+              <div className="rounded-lg border border-saffron-300 bg-saffron-50 px-3 py-2.5 text-sm leading-6 text-saffron-950 shadow-sm sm:px-4">
+                <p className="font-black">Unsaved account changes</p>
+                <p>Review contact and local-day fields, then save them together.</p>
+              </div>
+            )}
+            <Panel title="Contact and local day" icon={<MapPin size={18} />}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Email" value={profileForm.email} onChange={(value) => setProfileForm({ ...profileForm, email: value })} type="email" required helper="Changing email may require confirmation before it becomes active." />
+                <Field
+                  label={`Phone (${countryDialCode(profileForm.country)})`}
+                  value={profileForm.phone}
+                  onChange={(value) => setProfileForm({ ...profileForm, phone: value })}
+                  required
+                  helper={`Use a local number for ${profileForm.country}; saved value will include ${countryDialCode(profileForm.country)}.`}
+                />
+                <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4 sm:py-3">
+                  <p className="font-black text-stone-900">Phone preview</p>
+                  <p>{profileForm.phone.trim() ? normalizePhone(profileForm.phone, profileForm.country) : "Enter a phone number to preview the saved value."}</p>
+                </div>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-bold text-stone-700">Country</span>
+                  <select
+                    className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                    value={profileForm.country}
+                    onChange={(event) => {
+                      const country = event.target.value;
+                      setProfileForm({
+                        ...profileForm,
+                        country,
+                        timezone: timezoneForCountry(country, profileForm.timezone)
+                      });
+                    }}
+                  >
+                    {countries.map((country) => (
+                      <option key={country.name} value={country.name}>{country.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="md:col-span-2">
+                  <TimezoneSelect country={profileForm.country} value={profileForm.timezone} onChange={(timezone) => setProfileForm({ ...profileForm, timezone })} />
+                </div>
+                <div className="rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:px-4 md:col-span-2">
+                  {localDayBoundaryText(profileForm.timezone)}
+                </div>
+              </div>
+            </Panel>
+            <div className="rounded-lg border border-saffron-200 bg-white/95 px-3 py-3 shadow-soft backdrop-blur sm:px-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm text-stone-600">
+                  <Mail size={16} />
+                  <span>Contact and timezone changes save together.</span>
+                </div>
+                <button className="rounded-md bg-saffron-500 px-5 py-2.5 font-bold text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200" disabled={isBusy || !profileDirty}>
+                  {profileDirty ? "Save account" : "Account saved"}
+                </button>
+              </div>
+            </div>
+          </form>
 
       <Panel title="Notification preferences" icon={<Bell size={18} />}>
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
@@ -379,142 +532,15 @@ export function ProfilePage() {
           </div>
         </div>
       </Panel>
+        </>
+      )}
 
-      <form className="space-y-4 sm:space-y-5" onSubmit={submit}>
-        {profileDirty && (
-          <div className="rounded-lg border border-saffron-300 bg-saffron-50 px-3 py-2.5 text-sm leading-6 text-saffron-950 shadow-sm sm:px-4">
-            <p className="font-black">Unsaved profile changes</p>
-            <p>Review your public profile, contact, and timezone fields, then save them together.</p>
-          </div>
-        )}
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <Panel title="Public profile" icon={<UserRound size={18} />}>
-            <div className="space-y-4">
-              <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4 sm:py-3">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    {profileForm.avatarUrl ? (
-                      <img
-                        src={profileForm.avatarUrl}
-                        alt=""
-                        className="h-16 w-16 rounded-md border border-stone-200 object-cover"
-                      />
-                    ) : (
-                      <div className="lotus-mark grid h-16 w-16 place-items-center rounded-md text-sm font-black text-white">
-                        {(profileForm.displayName || profileForm.username || "HK").slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-black text-stone-900">Profile picture</p>
-                      <p>Shown in leaderboards, groups, and your profile.</p>
-                      {avatarStatus && <p className="mt-1 font-bold text-peacock-900">{avatarStatus}</p>}
-                      {avatarError && <p className="mt-1 font-bold text-red-700">{avatarError}</p>}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={uploadAvatar}
-                    />
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white"
-                      disabled={isBusy}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <ImageUp size={18} /> Upload
-                    </button>
-                    {profileForm.avatarUrl && (
-                      <button
-                        type="button"
-                        className="rounded-md bg-stone-100 px-4 py-2.5 font-bold text-stone-700"
-                        disabled={isBusy}
-                        onClick={() => {
-                          setProfileForm({ ...profileForm, avatarUrl: "" });
-                          setAvatarStatus("Profile picture removed. Save profile to apply it.");
-                        }}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
-                <Field label="Username" value={profileForm.username} onChange={(value) => setProfileForm({ ...profileForm, username: value })} required helper={usernameHelpText()} />
-                <Field label="Display name" value={profileForm.displayName} onChange={(value) => setProfileForm({ ...profileForm, displayName: value })} />
-              </div>
-            </div>
-          </Panel>
+      {profileSection === "security" && <ChangePasswordPanel />}
 
-          <Panel title="Contact and local day" icon={<MapPin size={18} />}>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Email" value={profileForm.email} onChange={(value) => setProfileForm({ ...profileForm, email: value })} type="email" required helper="Changing email may require confirmation before it becomes active." />
-              <Field
-                label={`Phone (${countryDialCode(profileForm.country)})`}
-                value={profileForm.phone}
-                onChange={(value) => setProfileForm({ ...profileForm, phone: value })}
-                required
-                helper={`Use a local number for ${profileForm.country}; saved value will include ${countryDialCode(profileForm.country)}.`}
-              />
-              <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4 sm:py-3">
-                <p className="font-black text-stone-900">Phone preview</p>
-                <p>{profileForm.phone.trim() ? normalizePhone(profileForm.phone, profileForm.country) : "Enter a phone number to preview the saved value."}</p>
-              </div>
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold text-stone-700">Country</span>
-                <select
-                  className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
-                  value={profileForm.country}
-                  onChange={(event) => {
-                    const country = event.target.value;
-                    setProfileForm({
-                      ...profileForm,
-                      country,
-                      timezone: timezoneForCountry(country, profileForm.timezone)
-                    });
-                  }}
-                >
-                  {countries.map((country) => (
-                    <option key={country.name} value={country.name}>{country.name}</option>
-                  ))}
-                </select>
-              </label>
-              <div className="md:col-span-2">
-                <TimezoneSelect country={profileForm.country} value={profileForm.timezone} onChange={(timezone) => setProfileForm({ ...profileForm, timezone })} />
-              </div>
-              <div className="rounded-md border border-peacock-100 bg-peacock-50 px-3 py-2.5 text-sm leading-6 text-peacock-900 sm:px-4 md:col-span-2">
-                {localDayBoundaryText(profileForm.timezone)}
-              </div>
-            </div>
-          </Panel>
-        </div>
-
-        <div className="sticky bottom-20 z-10 rounded-lg border border-saffron-200 bg-white/95 px-3 py-3 shadow-soft backdrop-blur sm:bottom-4 sm:px-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-stone-600">
-              <Mail size={16} />
-              <span>Profile, contact, and timezone changes save together.</span>
-            </div>
-            <button className="rounded-md bg-saffron-500 px-5 py-2.5 font-bold text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200" disabled={isBusy || !profileDirty}>
-              {profileDirty ? "Save profile" : "Profile saved"}
-            </button>
-          </div>
-        </div>
-      </form>
-
-      <Panel title="Milestones" icon={<Award size={18} />}>
-        <MilestoneGrid milestones={computeMilestones(state, currentUser, todayKey)} />
-      </Panel>
-
-      <DataPrivacyPanel />
-
-      <ChangePasswordPanel />
-
-      <Panel title="Delete account" icon={<Trash2 size={18} />}>
+      {profileSection === "data" && (
+        <>
+          <DataPrivacyPanel />
+          <Panel title="Delete account" icon={<Trash2 size={18} />}>
         <div className="space-y-4">
           <InlineNotice tone="error">
             This permanently deletes your account. Your profile, rounds, group memberships, and friend requests will be removed. Owned groups are also removed.
@@ -542,7 +568,9 @@ export function ProfilePage() {
             <Trash2 size={18} /> Delete my account
           </button>
         </div>
-      </Panel>
+          </Panel>
+        </>
+      )}
     </div>
   );
 }
@@ -621,6 +649,39 @@ function PublicProfilePreview() {
         </div>
       </div>
     </Panel>
+  );
+}
+
+function ProfileSectionTabs({
+  value,
+  onChange
+}: {
+  value: ProfileSection;
+  onChange: (section: ProfileSection) => void;
+}) {
+  const sections: { id: ProfileSection; label: string }[] = [
+    { id: "public", label: "Public profile" },
+    { id: "account", label: "Account" },
+    { id: "security", label: "Security" },
+    { id: "data", label: "Data" }
+  ];
+  return (
+    <div className="rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+      <div className="grid gap-1 sm:grid-cols-4">
+        {sections.map((section) => (
+          <button
+            key={section.id}
+            type="button"
+            className={`rounded-md px-3 py-2 text-sm font-black transition ${
+              value === section.id ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+            }`}
+            onClick={() => onChange(section.id)}
+          >
+            {section.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

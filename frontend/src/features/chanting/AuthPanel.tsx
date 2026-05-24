@@ -24,7 +24,7 @@ import {
   usernameHelpText,
   usernamePattern
 } from "./domain";
-import { Field, InlineNotice, PasswordChecklist, TimezoneSelect } from "./ui";
+import { Card, Field, InlineNotice, PasswordChecklist, TimezoneSelect } from "./ui";
 
 function AuthHeader({ title, body }: { title: string; body: string }) {
   return (
@@ -57,7 +57,7 @@ export function AuthPanel({ inviteCode = "" }: { inviteCode?: string }) {
             </div>
           </div>
         </section>
-        <section className="p-4 sm:p-8 lg:p-10">
+        <section className="p-4 sm:p-6 lg:p-8">
           {inviteCode && <SignedOutInviteNotice inviteCode={inviteCode} />}
           <AuthModeTabs />
           {message && (
@@ -104,14 +104,14 @@ function SignedOutInviteNotice({ inviteCode }: { inviteCode: string }) {
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 text-sm font-black text-white"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white"
           onClick={() => setAuthMode("signup")}
         >
           <Plus size={16} /> Create account
         </button>
         <button
           type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-black text-peacock-900 ring-1 ring-peacock-200"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-black text-peacock-900 ring-1 ring-peacock-200"
           onClick={() => setAuthMode("signin")}
         >
           <ShieldCheck size={16} /> Sign in
@@ -232,9 +232,11 @@ function SignInForm() {
         New here? Use Signup first. If your email is not confirmed, open the confirmation email before signing in.
       </InlineNotice>
       {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
-      <Field label="Username, email, or phone" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
-      <Field label="Password" name="signin-password" value={password} onChange={setPassword} type="password" required autoComplete="current-password" />
-      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" disabled={localBusy}>
+      <Card level="section" className="space-y-3">
+        <Field label="Username, email, or phone" name="signin-identifier" value={identifier} onChange={setIdentifier} required autoComplete="username" />
+        <Field label="Password" name="signin-password" value={password} onChange={setPassword} type="password" required autoComplete="current-password" />
+      </Card>
+      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={localBusy}>
         <ShieldCheck size={18} /> Sign in
       </button>
     </form>
@@ -368,40 +370,46 @@ function SignUpForm() {
       <InlineNotice tone="info">After signup, check your inbox for the confirmation email. You will sign in after confirming.</InlineNotice>
       {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
       {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
-      <Field label="Username" name="signup-username" value={form.username} onChange={(value) => setForm({ ...form, username: value })} required autoComplete="username" placeholder="garv_makkar" helper={`${usernameHelpText()} Do not use your email here.`} />
-      <Field label="Email" name="signup-email" value={form.email} onChange={(value) => setForm({ ...form, email: value })} type="email" required autoComplete="email" placeholder="you@example.com" />
-      <Field
-        label={`Phone number (${countryDialCode(form.country)})`}
-        name="signup-phone"
-        value={form.phone}
-        onChange={(value) => setForm({ ...form, phone: value })}
-        required
-        autoComplete="tel"
-        inputMode="tel"
-        placeholder={countryPhoneExample(form.country)}
-        helper={form.country === "Other" ? "Include your country code, for example +491701234567." : `Enter local number only. We will store it as ${countryDialCode(form.country)} plus your number.`}
-      />
+      <Card level="section" className="space-y-3">
+        <Field label="Username" name="signup-username" value={form.username} onChange={(value) => setForm({ ...form, username: value })} required autoComplete="username" placeholder="garv_makkar" helper={`${usernameHelpText()} Do not use your email here.`} />
+        <Field label="Email" name="signup-email" value={form.email} onChange={(value) => setForm({ ...form, email: value })} type="email" required autoComplete="email" placeholder="you@example.com" />
+        <Field
+          label={`Phone number (${countryDialCode(form.country)})`}
+          name="signup-phone"
+          value={form.phone}
+          onChange={(value) => setForm({ ...form, phone: value })}
+          required
+          autoComplete="tel"
+          inputMode="tel"
+          placeholder={countryPhoneExample(form.country)}
+          helper={form.country === "Other" ? "Include your country code, for example +491701234567." : `Enter local number only. We will store it as ${countryDialCode(form.country)} plus your number.`}
+        />
+      </Card>
       {form.phone.trim() && <InlineNotice tone="info">Phone will be saved as {normalizePhone(form.phone, form.country)}.</InlineNotice>}
-      <Field label="Password" name="signup-password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} type="password" required autoComplete="new-password" />
-      <PasswordChecklist rules={rules} touched={form.password.length > 0} />
-      <label className="block">
-        <span className="mb-1 block text-sm font-bold text-stone-700">Country</span>
-        <select
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
-          value={form.country}
-          onChange={(event) => {
-            const country = event.target.value;
-            setForm({ ...form, country, timezone: timezoneForCountry(country, form.timezone) });
-          }}
-        >
-          {countries.map((country) => (
-            <option key={country.name} value={country.name}>{country.name}</option>
-          ))}
-        </select>
-      </label>
-      <TimezoneSelect country={form.country} value={form.timezone} onChange={(timezone) => setForm({ ...form, timezone })} />
+      <Card level="section" className="space-y-3">
+        <Field label="Password" name="signup-password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} type="password" required autoComplete="new-password" />
+        <PasswordChecklist rules={rules} touched={form.password.length > 0} />
+      </Card>
+      <Card level="section" className="space-y-3">
+        <label className="block">
+          <span className="mb-1 block text-sm font-bold text-stone-700">Country</span>
+          <select
+            className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+            value={form.country}
+            onChange={(event) => {
+              const country = event.target.value;
+              setForm({ ...form, country, timezone: timezoneForCountry(country, form.timezone) });
+            }}
+          >
+            {countries.map((country) => (
+              <option key={country.name} value={country.name}>{country.name}</option>
+            ))}
+          </select>
+        </label>
+        <TimezoneSelect country={form.country} value={form.timezone} onChange={(timezone) => setForm({ ...form, timezone })} />
+      </Card>
       <InlineNotice tone="info">{localDayBoundaryText(form.timezone)}</InlineNotice>
-      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" disabled={localBusy || !isPasswordReady}>
+      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={localBusy || !isPasswordReady}>
         <Plus size={18} /> Create account
       </button>
     </form>
@@ -485,7 +493,7 @@ function ForgotForm() {
           <PasswordChecklist rules={rules} touched={password.length > 0} />
         </>
       )}
-      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-bold text-white" disabled={localBusy}>
+      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={localBusy}>
         <ShieldCheck size={18} /> {supabase ? "Send reset email" : "Update password"}
       </button>
     </form>
@@ -537,7 +545,7 @@ function NewPasswordForm() {
       {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
       <Field label="New password" name="recovery-new-password" value={password} onChange={setPassword} type="password" required autoComplete="new-password" />
       <PasswordChecklist rules={rules} touched={password.length > 0} />
-      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-bold text-white" disabled={localBusy || !isPasswordReady}>
+      <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={localBusy || !isPasswordReady}>
         <ShieldCheck size={18} /> Save new password
       </button>
     </form>
@@ -614,13 +622,13 @@ function EmailOtpForm() {
       {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
       {hasSent && <InlineNotice tone="success">Code sent to {email.trim().toLowerCase()}. Keep this tab open and enter the code from your email.</InlineNotice>}
       <Field label="Account email" name="otp-email" value={email} onChange={setEmail} type="email" required autoComplete="email" placeholder="you@example.com" />
-      <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" disabled={localBusy} onClick={sendOtp}>
+      <button type="button" className="flex w-full items-center justify-center gap-2 rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" disabled={localBusy} onClick={sendOtp}>
         <ShieldCheck size={18} /> Send email OTP
       </button>
       {hasSent && (
         <>
           <Field label="OTP code" name="otp-code" value={token} onChange={setToken} required autoComplete="one-time-code" inputMode="numeric" placeholder="123456" />
-          <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-bold text-white" disabled={localBusy || token.trim().length < 6}>
+          <button className="flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white" disabled={localBusy || token.trim().length < 6}>
             <ShieldCheck size={18} /> Verify and sign in
           </button>
         </>
@@ -680,13 +688,13 @@ function CheckEmailScreen() {
         <p>Check spam, promotions, and the email address spelling. Supabase may also rate-limit repeated emails for a short time.</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">
-        <button type="button" className="rounded-md bg-peacock-600 px-4 py-3 font-bold text-white disabled:bg-peacock-300" disabled={localBusy || !pendingAuthNotice.email} onClick={resendConfirmation}>
+        <button type="button" className="rounded-md bg-peacock-600 px-4 py-2.5 font-bold text-white disabled:bg-peacock-300" disabled={localBusy || !pendingAuthNotice.email} onClick={resendConfirmation}>
           Resend email
         </button>
-        <button type="button" className="rounded-md bg-saffron-500 px-4 py-3 font-bold text-white" onClick={() => setAuthMode(pendingAuthNotice.next)}>
+        <button type="button" className="rounded-md bg-saffron-500 px-4 py-2.5 font-bold text-white" onClick={() => setAuthMode(pendingAuthNotice.next)}>
           Back
         </button>
-        <button type="button" className="rounded-md bg-stone-900 px-4 py-3 font-bold text-white" onClick={() => setAuthMode("signin")}>
+        <button type="button" className="rounded-md bg-stone-900 px-4 py-2.5 font-bold text-white" onClick={() => setAuthMode("signin")}>
           Go to sign in
         </button>
       </div>
