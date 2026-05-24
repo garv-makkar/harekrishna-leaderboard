@@ -5,7 +5,7 @@ import { CheckCircle2, ChevronRight, Clock3, Copy, ImageUp, Link, MessageSquare,
 import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
-import { addDays, currentStreak, formatDate, groupCodeProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
+import { addDays, currentStreak, formatDate, groupCodeProblem, imageExtensionForMime, imageFileProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
 import { ActionEmptyState, Avatar, Card, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function GroupsPage({
@@ -1695,12 +1695,9 @@ function GroupImagePicker({
     setStatus("");
     setErrorText("");
     if (!file || !currentUser) return;
-    if (!file.type.startsWith("image/")) {
-      setErrorText("Choose an image file.");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setErrorText("Group picture must be 2 MB or smaller.");
+    const fileError = imageFileProblem(file);
+    if (fileError) {
+      setErrorText(fileError);
       return;
     }
     if (!supabase) {
@@ -1715,8 +1712,7 @@ function GroupImagePicker({
     }
     const client = supabase;
 
-    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const safeExtension = ["jpg", "jpeg", "png", "webp", "gif"].includes(extension) ? extension : "jpg";
+    const safeExtension = imageExtensionForMime(file.type);
     const objectPath = `${currentUser.id}/groups/group-${Date.now()}.${safeExtension}`;
 
     await runRemote(async () => {
@@ -1748,13 +1744,13 @@ function GroupImagePicker({
           )}
           <div>
             <p className="font-black text-stone-900">Group picture</p>
-            <p>Upload JPG, PNG, WebP, or GIF up to 2 MB.</p>
+            <p>Upload JPG, PNG, or WebP up to 2 MB.</p>
             {status && <p className="mt-1 font-bold text-peacock-900">{status}</p>}
             {errorText && <p className="mt-1 font-bold text-red-700">{errorText}</p>}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={uploadImage} />
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadImage} />
           <button
             type="button"
             className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-4 py-3 font-bold text-white"

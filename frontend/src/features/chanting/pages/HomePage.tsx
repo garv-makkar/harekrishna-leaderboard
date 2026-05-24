@@ -301,7 +301,7 @@ export function HomePage() {
                 }}
                 type="number"
                 min={0}
-                max={999}
+                max={MAX_DAILY_ROUNDS}
                 helper="This is the full total for the selected date."
               />
               <StatCard label="Saved total" value={currentRounds} note="rounds" tone="saffron" />
@@ -494,7 +494,7 @@ export function HomePage() {
                   {currentRounds >= dailyGoal ? "Goal complete today." : `${remainingGoalRounds} rounds left today.`}
                 </p>
               </div>
-              <Field label="Goal rounds" value={goalDraft} onChange={setGoalDraft} type="number" min={0} max={999} />
+              <Field label="Goal rounds" value={goalDraft} onChange={setGoalDraft} type="number" min={0} max={MAX_DAILY_ROUNDS} />
               <button
                 type="button"
                 className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"

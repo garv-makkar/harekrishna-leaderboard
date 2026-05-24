@@ -304,8 +304,9 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     const shouldLoadTotals = shouldLoadCore || shouldLoadGroups || shouldLoadFriends;
     const shouldLoadGroupTables = shouldLoadGroups;
 
-    const [profilesResult, totalsResult, groupsResult, membersResult, requestsResult, notificationsResult] = await Promise.all([
-      shouldLoadProfiles ? supabase.from("profiles").select("*").order("username") : Promise.resolve({ data: null, error: null }),
+    const [publicProfilesResult, currentProfileResult, totalsResult, groupsResult, membersResult, requestsResult, notificationsResult] = await Promise.all([
+      shouldLoadProfiles ? supabase.from("app_public_profiles").select("*").order("username") : Promise.resolve({ data: null, error: null }),
+      shouldLoadProfiles ? supabase.rpc("get_current_profile") : Promise.resolve({ data: null, error: null }),
       shouldLoadTotals ? supabase.from("chant_totals").select("*") : Promise.resolve({ data: null, error: null }),
       shouldLoadGroupTables ? supabase.from("groups").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
       shouldLoadGroupTables ? supabase.from("group_members").select("*") : Promise.resolve({ data: null, error: null }),
@@ -313,7 +314,21 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       shouldLoadCore ? supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at", { ascending: false }).limit(80) : Promise.resolve({ data: null, error: null })
     ]);
 
-    const error = profilesResult.error || totalsResult.error || groupsResult.error || membersResult.error || requestsResult.error;
+    let profileRows = (publicProfilesResult.data || []) as ProfileRow[];
+    let profileError = publicProfilesResult.error || currentProfileResult.error;
+    if (shouldLoadProfiles && profileError) {
+      const fallbackProfiles = await supabase.from("profiles").select("*").order("username");
+      profileRows = (fallbackProfiles.data || []) as ProfileRow[];
+      profileError = fallbackProfiles.error;
+    } else if (shouldLoadProfiles && currentProfileResult.data) {
+      const privateProfile = currentProfileResult.data as ProfileRow;
+      profileRows = [
+        ...profileRows.filter((profile) => profile.id !== privateProfile.id),
+        privateProfile
+      ].sort((a, b) => a.username.localeCompare(b.username));
+    }
+
+    const error = profileError || totalsResult.error || groupsResult.error || membersResult.error || requestsResult.error;
 
     if (error) {
       showMessage(readableError(error));
@@ -322,7 +337,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
 
     const nextState: AppState = {
       currentUserId,
-      users: shouldLoadProfiles ? ((profilesResult.data || []) as ProfileRow[]).map(fromProfileRow) : state.users,
+      users: shouldLoadProfiles ? profileRows.map(fromProfileRow) : state.users,
       chantTotals: shouldLoadTotals ? ((totalsResult.data || []) as ChantTotalRow[]).map(fromChantTotalRow) : state.chantTotals,
       groups: shouldLoadGroupTables ? ((groupsResult.data || []) as GroupRow[]).map(fromGroupRow) : state.groups,
       groupMembers: shouldLoadGroupTables
@@ -386,7 +401,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       login_identifier: identifier
     });
     if (error) throw error;
-    if (!data) throw new Error("No account found for that username or phone number.");
+    if (!data) throw new Error("No account found for that username, email, or phone number.");
     return String(data);
   };
 

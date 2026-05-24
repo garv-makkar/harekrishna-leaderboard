@@ -13,9 +13,9 @@ import {
   defaultProfilePrivacy,
   detectTimezone,
   hashPassword,
+  normalizedOptionalPhone,
   isAccountNotFoundError,
   localDayBoundaryText,
-  normalizePhone,
   passwordProblem,
   passwordRules,
   readableError,
@@ -225,7 +225,7 @@ function SignInForm() {
 
   return (
     <div className="space-y-5">
-      <AuthHeader title="Welcome back" body="Sign in with your username, email, or phone number and your password." />
+      <AuthHeader title="Welcome back" body="Sign in with your username, email, or optional phone number and your password." />
       <InlineNotice tone="info">
         New here? Use Sign up first. If you prefer not to use your password, request an email OTP below.
       </InlineNotice>
@@ -360,7 +360,7 @@ function SignUpForm() {
     setFormStatus("");
     const username = form.username.trim().toLowerCase();
     const email = form.email.trim().toLowerCase();
-    const phone = normalizePhone(form.phone, form.country);
+    const phone = normalizedOptionalPhone(form.phone, form.country);
     if (username.includes("@")) {
       setFormError("Username cannot be an email address. Use something like garv_makkar or garv108.");
       return;
@@ -373,8 +373,8 @@ function SignUpForm() {
       setFormError("Enter your email address in the Email field.");
       return;
     }
-    if (!phone || phone.length < 6) {
-      setFormError("Enter a valid phone number. The country code will be added automatically.");
+    if (phone && phone.length < 6) {
+      setFormError("Enter a valid phone number, or leave phone blank.");
       return;
     }
     const passwordError = passwordProblem(form.password);
@@ -390,15 +390,15 @@ function SignUpForm() {
       setFormError("That email is already registered. Try signing in instead.");
       return;
     }
-    if (state.users.some((user) => user.phone === phone)) {
-      setFormError("That phone number is already registered. Try signing in instead.");
+    if (phone && state.users.some((user) => user.phone === phone)) {
+      setFormError("That phone number is already registered. Leave phone blank or use a different number.");
       return;
     }
     if (supabase) {
       const client = supabase;
       setLocalBusy(true);
       try {
-        setFormStatus("Checking username, email, and phone...");
+        setFormStatus(phone ? "Checking username, email, and phone..." : "Checking username and email...");
         await checkIdentityConflicts(username, email, phone);
         setFormStatus("Creating account in Supabase...");
         const { data, error } = await client.auth.signUp({
@@ -408,7 +408,7 @@ function SignUpForm() {
             emailRedirectTo: window.location.origin,
             data: {
               username,
-              phone,
+              phone: phone || null,
               country: form.country,
               timezone: form.timezone || detectTimezone(),
               display_name: username
@@ -474,14 +474,13 @@ function SignUpForm() {
           name="signup-phone"
           value={form.phone}
           onChange={(value) => setForm({ ...form, phone: value })}
-          required
           autoComplete="tel"
           inputMode="tel"
           placeholder={countryPhoneExample(form.country)}
-          helper={form.country === "Other" ? "Include your country code, for example +491701234567." : `Enter local number only. We will store it as ${countryDialCode(form.country)} plus your number.`}
+          helper={form.country === "Other" ? "Optional. Include your country code, for example +491701234567." : `Optional. Enter local number only; if added, we store it as ${countryDialCode(form.country)} plus your number.`}
         />
       </Card>
-      {form.phone.trim() && <InlineNotice tone="info">Phone will be saved as {normalizePhone(form.phone, form.country)}.</InlineNotice>}
+      {form.phone.trim() && <InlineNotice tone="info">Phone will be saved as {normalizedOptionalPhone(form.phone, form.country)}.</InlineNotice>}
       <Card level="section" className="space-y-3">
         <Field label="Password" name="signup-password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} type="password" required autoComplete="new-password" />
         <PasswordChecklist rules={rules} touched={form.password.length > 0} />

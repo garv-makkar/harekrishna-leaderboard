@@ -11,7 +11,9 @@ import type {
 } from "@/lib/types";
 
 export const STORAGE_KEY = "hare-krishna-leaderboard-state-v1";
-export const MAX_DAILY_ROUNDS = 999;
+export const MAX_DAILY_ROUNDS = 250;
+export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const usernamePattern = /^[a-z][a-z0-9_]{2,23}$/;
 
 export const countries = [
@@ -73,12 +75,12 @@ export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "mil
 export type ProfileRow = {
   id: string;
   username: string;
-  email: string;
-  phone: string;
-  display_name: string;
-  country: string;
-  timezone: string;
-  avatar_url: string;
+  email?: string | null;
+  phone?: string | null;
+  display_name: string | null;
+  country: string | null;
+  timezone: string | null;
+  avatar_url: string | null;
   daily_goal?: number;
   reminder_enabled?: boolean;
   reminder_time?: string;
@@ -312,10 +314,10 @@ export function readableError(error: unknown, context?: "signin" | "signup" | "o
     return "That email is already registered. Try signing in or use email OTP.";
   }
   if (text.includes("profiles_phone_key") || (text.includes("phone") && text.includes("duplicate"))) {
-    return "That phone number is already registered. Try signing in with it.";
+    return "That phone number is already registered. Leave phone blank or use a different number.";
   }
   if (text.includes("username, email, or phone is already registered")) {
-    return "That username, email, or phone is already registered. Try changing one field or sign in.";
+    return "That username, email, or phone is already registered. Try changing that field or sign in.";
   }
   if (text.includes("email not confirmed")) {
     return "Your email is not confirmed yet. Open the confirmation email, then sign in.";
@@ -334,6 +336,9 @@ export function readableError(error: unknown, context?: "signin" | "signup" | "o
     (text.includes("row-level security") || text.includes("violates row-level security") || text.includes("editable"))
   ) {
     return "The database blocked this edit because the date is before your account join date or after today.";
+  }
+  if (context === "rounds" && (text.includes("chant_totals_rounds_check") || text.includes("rounds"))) {
+    return `Rounds must be between 0 and ${MAX_DAILY_ROUNDS} for one user on one day.`;
   }
   if (text.includes("network")) return "Network error. Check your internet connection and try again.";
   if (text.includes("bucket not found")) return "Storage bucket is missing. Run the latest Supabase Storage migration, then try again.";
@@ -437,6 +442,23 @@ export function normalizePhone(phone: string, countryName: string) {
   const dialCode = countryDialCode(countryName);
   if (dialCode === "+") return `+${digits}`;
   return `${dialCode}${digits}`;
+}
+
+export function normalizedOptionalPhone(phone: string, countryName: string) {
+  const trimmed = phone.trim();
+  return trimmed ? normalizePhone(trimmed, countryName) : "";
+}
+
+export function imageFileProblem(file: File) {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) return "Choose a JPG, PNG, or WebP image.";
+  if (file.size > MAX_IMAGE_BYTES) return "Image must be 2 MB or smaller.";
+  return "";
+}
+
+export function imageExtensionForMime(mimeType: string) {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  return "jpg";
 }
 
 export function normalizeGroupCode(code: string) {
@@ -879,11 +901,11 @@ export function fromProfileRow(row: ProfileRow): UserProfile {
   return {
     id: row.id,
     username: row.username,
-    email: row.email,
-    phone: row.phone,
+    email: row.email || "",
+    phone: row.phone || "",
     passwordHash: "",
-    country: row.country,
-    timezone: row.timezone,
+    country: row.country || "India",
+    timezone: row.timezone || detectTimezone(),
     displayName: row.display_name || row.username,
     avatarUrl: row.avatar_url || "",
     dailyGoal: row.daily_goal ?? 16,

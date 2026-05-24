@@ -14,8 +14,10 @@ import {
   defaultProfilePrivacy,
   formatDate,
   hashPassword,
+  imageExtensionForMime,
+  imageFileProblem,
   localDayBoundaryText,
-  normalizePhone,
+  normalizedOptionalPhone,
   readableError,
   passwordProblem,
   passwordRules,
@@ -82,7 +84,7 @@ export function ProfilePage() {
     { label: "Added a friend", done: friends.length > 0 },
     { label: "Logged rounds", done: state.chantTotals.some((total) => total.userId === currentUser.id && total.rounds > 0) }
   ];
-  const normalizedProfilePhone = normalizePhone(profileForm.phone, profileForm.country);
+  const normalizedProfilePhone = normalizedOptionalPhone(profileForm.phone, profileForm.country);
   const profileDirty =
     profileForm.username.trim().toLowerCase() !== currentUser.username ||
     profileForm.displayName.trim() !== currentUser.displayName ||
@@ -98,12 +100,9 @@ export function ProfilePage() {
     setAvatarStatus("");
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setAvatarError("Choose an image file.");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setAvatarError("Profile picture must be 2 MB or smaller.");
+    const fileError = imageFileProblem(file);
+    if (fileError) {
+      setAvatarError(fileError);
       return;
     }
 
@@ -119,8 +118,7 @@ export function ProfilePage() {
     }
 
     const client = supabase;
-    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const safeExtension = ["jpg", "jpeg", "png", "webp", "gif"].includes(extension) ? extension : "jpg";
+    const safeExtension = imageExtensionForMime(file.type);
     const objectPath = `${currentUser.id}/avatar-${Date.now()}.${safeExtension}`;
 
     await runRemote(async () => {
@@ -242,10 +240,18 @@ export function ProfilePage() {
       timezone: profileForm.timezone.trim(),
       avatarUrl: profileForm.avatarUrl
     };
-    profile.phone = normalizePhone(profile.phone, profile.country);
+    profile.phone = normalizedOptionalPhone(profile.phone, profile.country);
     const username = profile.username;
     if (!usernamePattern.test(username)) {
       showMessage(`Username must follow this rule: ${usernameHelpText()}`);
+      return;
+    }
+    if (!profile.email || !profile.email.includes("@")) {
+      showMessage("Email is required.");
+      return;
+    }
+    if (profile.phone && profile.phone.length < 6) {
+      showMessage("Enter a valid phone number, or leave phone blank.");
       return;
     }
     if (state.users.some((user) => user.id !== currentUser.id && user.username.toLowerCase() === username)) {
@@ -256,8 +262,8 @@ export function ProfilePage() {
       showMessage("That email is already registered.");
       return;
     }
-    if (state.users.some((user) => user.id !== currentUser.id && user.phone === profile.phone)) {
-      showMessage("That phone number is already registered.");
+    if (profile.phone && state.users.some((user) => user.id !== currentUser.id && user.phone === profile.phone)) {
+      showMessage("That phone number is already registered. Leave phone blank or use a different number.");
       return;
     }
     if (supabase) {
@@ -272,7 +278,7 @@ export function ProfilePage() {
           .update({
             username: profile.username,
             email: profile.email,
-            phone: profile.phone,
+            phone: profile.phone || null,
             display_name: profile.displayName,
             country: profile.country,
             timezone: profile.timezone,
@@ -368,7 +374,7 @@ export function ProfilePage() {
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         onChange={uploadAvatar}
                       />
@@ -441,12 +447,11 @@ export function ProfilePage() {
                   label={`Phone (${countryDialCode(profileForm.country)})`}
                   value={profileForm.phone}
                   onChange={(value) => setProfileForm({ ...profileForm, phone: value })}
-                  required
-                  helper={`Use a local number for ${profileForm.country}; saved value will include ${countryDialCode(profileForm.country)}.`}
+                  helper={`Optional. Use a local number for ${profileForm.country}; saved value will include ${countryDialCode(profileForm.country)}.`}
                 />
                 <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600 sm:px-4 sm:py-3">
                   <p className="font-black text-stone-900">Phone preview</p>
-                  <p>{profileForm.phone.trim() ? normalizePhone(profileForm.phone, profileForm.country) : "Enter a phone number to preview the saved value."}</p>
+                  <p>{profileForm.phone.trim() ? normalizedOptionalPhone(profileForm.phone, profileForm.country) : "No phone number will be saved."}</p>
                 </div>
                 <label className="block">
                   <span className="mb-1 block text-sm font-bold text-stone-700">Country</span>
@@ -836,7 +841,7 @@ function DataPrivacyPanel() {
         </div>
         <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm leading-6 text-stone-700 sm:px-4 sm:py-3">
           <p className="font-black text-stone-900">Stored for your account</p>
-          <p>Identity fields: username, email, phone, display name, country, timezone, profile picture URL, and join date.</p>
+          <p>Identity fields: username, email, optional phone, display name, country, timezone, profile picture URL, and join date.</p>
           <p>App activity: daily round totals, group memberships, friend requests, and notifications.</p>
           <p>Passwords are handled by Supabase Auth and are not included in this export.</p>
         </div>
@@ -981,7 +986,7 @@ function ChangePasswordPanel() {
   return (
     <Panel title="Change password" icon={<KeyRound size={18} />}>
       <form className="space-y-4" onSubmit={submit}>
-        <InlineNotice tone="info">Use this when you are already signed in. Forgot-password remains available on the sign-in screen.</InlineNotice>
+        <InlineNotice tone="info">Use this when you are already signed in. If you forget your password, sign in with email OTP first, then change it here.</InlineNotice>
         {formError && <InlineNotice tone="error">{formError}</InlineNotice>}
         {formStatus && <InlineNotice tone="info">{formStatus}</InlineNotice>}
         <div className="grid gap-4 md:grid-cols-3">

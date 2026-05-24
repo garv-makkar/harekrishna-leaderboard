@@ -21,7 +21,8 @@ export function FriendsPage() {
     acceptFriendRequest,
     ensureFriendsData,
     loadingRemoteSlices,
-    refreshRemoteState
+    refreshRemoteState,
+    setSelectedPublicUserId
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [showAllFriends, setShowAllFriends] = useState(false);
@@ -246,6 +247,14 @@ export function FriendsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 sm:justify-end">
+                    {friend && (
+                      <button
+                        className="rounded-md bg-white px-3 py-2 text-sm font-bold text-peacock-900 ring-1 ring-peacock-100"
+                        onClick={() => setSelectedPublicUserId(friend.id)}
+                      >
+                        Profile
+                      </button>
+                    )}
                     <button
                       className="rounded-md bg-stone-100 px-3 py-2 text-sm font-bold text-stone-700"
                       disabled={isBusy}
@@ -336,7 +345,7 @@ function FriendLeaderboardToggle({ showAll, onChange }: { showAll: boolean; onCh
 }
 
 function FriendSearch() {
-  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, showActionFeedback, showMessage, addNotification } = useChanting();
+  const { state, saveState, currentUser, isBusy, runRemote, refreshRemoteState, showActionFeedback, showMessage, addNotification, setSelectedPublicUserId } = useChanting();
   const [query, setQuery] = useState("");
   if (!currentUser) return null;
 
@@ -454,6 +463,12 @@ function FriendSearch() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 sm:justify-end">
+                  <button
+                    className="rounded-md bg-white px-3 py-2 text-sm font-bold text-peacock-900 ring-1 ring-peacock-100"
+                    onClick={() => setSelectedPublicUserId(user.id)}
+                  >
+                    Profile
+                  </button>
                   <button
                     className={`rounded-md px-3 py-2 text-sm font-bold ${
                       alreadyRelated ? "bg-stone-100 text-stone-500" : "bg-saffron-500 text-white"

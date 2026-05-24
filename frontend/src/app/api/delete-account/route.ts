@@ -2,7 +2,24 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeSupabaseUrl } from "@/lib/config";
 
+type StorageAdminClient = {
+  storage: {
+    from: (bucket: string) => {
+      list: (
+        path?: string,
+        options?: { limit?: number; sortBy?: { column: string; order: "asc" | "desc" } }
+      ) => Promise<{ data: { id: string | null; name: string }[] | null }>;
+      remove: (paths: string[]) => Promise<unknown>;
+    };
+  };
+};
+
 export async function POST(request: Request) {
+  const contentType = request.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return NextResponse.json({ error: "Expected a JSON request." }, { status: 415 });
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -59,12 +76,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Session is invalid. Please sign in again." }, { status: 401 });
   }
 
-  const adminClient = createClient(normalizedUrl, configuredServiceRoleKey);
+  const adminClient = createClient(normalizedUrl, configuredServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
+
+  await removeUserStorageFolder(adminClient, "avatars", user.id);
+  await removeUserStorageFolder(adminClient, "group-images", user.id);
+
   const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
   if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    return NextResponse.json({ error: "Account deletion failed. Please try again later." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
+}
+
+async function removeUserStorageFolder(
+  client: StorageAdminClient,
+  bucket: string,
+  userId: string
+) {
+  const paths = await listStoragePaths(client, bucket, userId);
+  if (paths.length === 0) return;
+  await client.storage.from(bucket).remove(paths);
+}
+
+async function listStoragePaths(
+  client: StorageAdminClient,
+  bucket: string,
+  prefix: string
+): Promise<string[]> {
+  const { data } = await client.storage.from(bucket).list(prefix, {
+    limit: 1000,
+    sortBy: { column: "name", order: "asc" }
+  });
+  if (!data?.length) return [];
+  const paths = await Promise.all(
+    data.map(async (item) => {
+      const path = `${prefix}/${item.name}`;
+      if (item.id === null) return listStoragePaths(client, bucket, path);
+      return [path];
+    })
+  );
+  return paths.flat();
 }
