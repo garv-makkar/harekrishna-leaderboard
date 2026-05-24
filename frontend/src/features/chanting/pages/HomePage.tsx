@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, ExternalLink, Flame, History, Medal, Moon, PlusCircle, Target, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
@@ -43,12 +43,20 @@ export function HomePage() {
     setSelectedGroupId,
     emailVerified,
     friends,
-    showActionFeedback
+    showActionFeedback,
+    refreshRemoteState
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState("");
   const [goalDraft, setGoalDraft] = useState("16");
   const [highRoundConfirmed, setHighRoundConfirmed] = useState(false);
+  const refreshedUserRef = useRef("");
+
+  useEffect(() => {
+    if (!currentUser || refreshedUserRef.current === currentUser.id) return;
+    refreshedUserRef.current = currentUser.id;
+    void refreshRemoteState(currentUser.id, "core");
+  }, [currentUser, refreshRemoteState]);
 
   useEffect(() => {
     if (currentUser) setGoalDraft(String(currentUser.dailyGoal || 16));

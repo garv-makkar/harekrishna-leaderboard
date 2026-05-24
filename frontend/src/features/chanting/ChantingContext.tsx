@@ -122,9 +122,9 @@ type ChantingContextValue = {
   updateUserPreferences: (updates: Partial<Pick<UserProfile, "dailyGoal" | "reminderEnabled" | "reminderTime">>) => Promise<void>;
   runRemote: (action: () => Promise<void>) => Promise<void>;
   refreshRemoteState: (currentUserId: string, scope?: RemoteScope) => Promise<void>;
-  ensureGroupsData: () => Promise<void>;
-  ensureFriendsData: () => Promise<void>;
-  ensureAdminData: () => Promise<void>;
+  ensureGroupsData: (force?: boolean) => Promise<void>;
+  ensureFriendsData: (force?: boolean) => Promise<void>;
+  ensureAdminData: (force?: boolean) => Promise<void>;
   resolveLoginEmail: (identifier: string) => Promise<string>;
   checkIdentityConflicts: (username: string, email: string, phone: string) => Promise<void>;
   submitUserReport: (reportedUserId: string, reason: string, details: string) => Promise<void>;
@@ -311,12 +311,15 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     const shouldLoadGroups = scope === "groups" || scope === "all";
     const shouldLoadFriends = scope === "friends" || scope === "all";
     const shouldLoadAdmin = scope === "admin";
+    const shouldLoadProfiles = shouldLoadCore || shouldLoadGroups || shouldLoadFriends || shouldLoadAdmin;
+    const shouldLoadTotals = shouldLoadCore || shouldLoadGroups || shouldLoadFriends || shouldLoadAdmin;
+    const shouldLoadGroupTables = shouldLoadGroups || shouldLoadAdmin;
 
     const [profilesResult, totalsResult, groupsResult, membersResult, requestsResult, reportsResult, notificationsResult] = await Promise.all([
-      shouldLoadCore ? supabase.from("profiles").select("*").order("username") : Promise.resolve({ data: null, error: null }),
-      shouldLoadCore ? supabase.from("chant_totals").select("*") : Promise.resolve({ data: null, error: null }),
-      shouldLoadGroups ? supabase.from("groups").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
-      shouldLoadGroups ? supabase.from("group_members").select("*") : Promise.resolve({ data: null, error: null }),
+      shouldLoadProfiles ? supabase.from("profiles").select("*").order("username") : Promise.resolve({ data: null, error: null }),
+      shouldLoadTotals ? supabase.from("chant_totals").select("*") : Promise.resolve({ data: null, error: null }),
+      shouldLoadGroupTables ? supabase.from("groups").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
+      shouldLoadGroupTables ? supabase.from("group_members").select("*") : Promise.resolve({ data: null, error: null }),
       shouldLoadFriends ? supabase.from("friend_requests").select("*") : Promise.resolve({ data: null, error: null }),
       shouldLoadAdmin ? supabase.from("moderation_reports").select("*").order("created_at", { ascending: false }) : Promise.resolve({ data: null, error: null }),
       shouldLoadCore ? supabase.from("notifications").select("*").eq("user_id", currentUserId).order("created_at", { ascending: false }).limit(80) : Promise.resolve({ data: null, error: null })
@@ -331,10 +334,10 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
 
     const nextState: AppState = {
       currentUserId,
-      users: shouldLoadCore ? ((profilesResult.data || []) as ProfileRow[]).map(fromProfileRow) : state.users,
-      chantTotals: shouldLoadCore ? ((totalsResult.data || []) as ChantTotalRow[]).map(fromChantTotalRow) : state.chantTotals,
-      groups: shouldLoadGroups ? ((groupsResult.data || []) as GroupRow[]).map(fromGroupRow) : state.groups,
-      groupMembers: shouldLoadGroups
+      users: shouldLoadProfiles ? ((profilesResult.data || []) as ProfileRow[]).map(fromProfileRow) : state.users,
+      chantTotals: shouldLoadTotals ? ((totalsResult.data || []) as ChantTotalRow[]).map(fromChantTotalRow) : state.chantTotals,
+      groups: shouldLoadGroupTables ? ((groupsResult.data || []) as GroupRow[]).map(fromGroupRow) : state.groups,
+      groupMembers: shouldLoadGroupTables
         ? ((membersResult.data || []) as GroupMemberRow[]).map((row) => ({
             groupId: row.group_id,
             userId: row.user_id,
@@ -363,8 +366,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     setSelectedDate(localDateKey(new Date(), current?.timezone || detectTimezone()));
   }, [state.chantTotals, state.friendRequests, state.groupMembers, state.groups, state.moderationReports, state.notifications, state.users]);
 
-  const ensureGroupsData = useCallback(async () => {
-    if (!supabase || !currentUser || loadedRemoteSlices.groups || loadingRemoteSlices.groups) return;
+  const ensureGroupsData = useCallback(async (force = false) => {
+    if (!supabase || !currentUser || (!force && loadedRemoteSlices.groups) || loadingRemoteSlices.groups) return;
     setLoadingRemoteSlices((current) => ({ ...current, groups: true }));
     try {
       await refreshRemoteState(currentUser.id, "groups");
@@ -373,8 +376,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentUser, loadedRemoteSlices.groups, loadingRemoteSlices.groups, refreshRemoteState]);
 
-  const ensureFriendsData = useCallback(async () => {
-    if (!supabase || !currentUser || loadedRemoteSlices.friends || loadingRemoteSlices.friends) return;
+  const ensureFriendsData = useCallback(async (force = false) => {
+    if (!supabase || !currentUser || (!force && loadedRemoteSlices.friends) || loadingRemoteSlices.friends) return;
     setLoadingRemoteSlices((current) => ({ ...current, friends: true }));
     try {
       await refreshRemoteState(currentUser.id, "friends");
@@ -383,8 +386,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentUser, loadedRemoteSlices.friends, loadingRemoteSlices.friends, refreshRemoteState]);
 
-  const ensureAdminData = useCallback(async () => {
-    if (!supabase || !currentUser || !isAdmin || loadedRemoteSlices.admin || loadingRemoteSlices.admin) return;
+  const ensureAdminData = useCallback(async (force = false) => {
+    if (!supabase || !currentUser || !isAdmin || (!force && loadedRemoteSlices.admin) || loadingRemoteSlices.admin) return;
     setLoadingRemoteSlices((current) => ({ ...current, admin: true }));
     try {
       await refreshRemoteState(currentUser.id, "admin");

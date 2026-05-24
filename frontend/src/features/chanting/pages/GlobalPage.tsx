@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Globe2, Trophy, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange } from "../domain";
@@ -10,6 +10,14 @@ export function GlobalPage() {
   const { state, currentUser, period, setPeriod, todayKey, isBusy, refreshRemoteState } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [showAllUsers, setShowAllUsers] = useState(false);
+  const refreshedUserRef = useRef("");
+
+  useEffect(() => {
+    if (!currentUser || refreshedUserRef.current === currentUser.id) return;
+    refreshedUserRef.current = currentUser.id;
+    void refreshRemoteState(currentUser.id, "core");
+  }, [currentUser, refreshRemoteState]);
+
   useEffect(() => setPeriodOffset(0), [period]);
   if (!currentUser) return null;
   const range = leaderboardRange(period, todayKey, periodOffset);

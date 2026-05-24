@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import type { ModerationReport } from "@/lib/types";
 import { publicSupabaseConfig, runtimeLabel } from "@/lib/config";
@@ -31,10 +31,13 @@ export function AdminPage() {
   } = useChanting();
   const [statusFilter, setStatusFilter] = useState<ModerationReport["status"] | "all">("open");
   const [signalFilter, setSignalFilter] = useState<SignalFilter>("all");
+  const refreshedUserRef = useRef("");
 
   useEffect(() => {
-    ensureAdminData();
-  }, [ensureAdminData]);
+    if (!currentUser || refreshedUserRef.current === currentUser.id) return;
+    refreshedUserRef.current = currentUser.id;
+    ensureAdminData(true);
+  }, [currentUser, ensureAdminData]);
 
   const reports = useMemo(() => {
     return (state.moderationReports || [])

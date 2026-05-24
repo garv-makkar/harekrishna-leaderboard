@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Award, BarChart3, CalendarDays, CheckCircle2, Download, FileUp, Flame, ListChecks, ShieldCheck, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
@@ -22,10 +22,17 @@ const rangeOptions = [
 ];
 
 export function ActivityPage() {
-  const { state, currentUser, todayKey, editableDates, setSelectedDate, setDailyRounds, showMessage } = useChanting();
+  const { state, currentUser, todayKey, editableDates, setSelectedDate, setDailyRounds, showMessage, refreshRemoteState } = useChanting();
   const [days, setDays] = useState(30);
   const [importStatus, setImportStatus] = useState("");
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const refreshedUserRef = useRef("");
+
+  useEffect(() => {
+    if (!currentUser || refreshedUserRef.current === currentUser.id) return;
+    refreshedUserRef.current = currentUser.id;
+    void refreshRemoteState(currentUser.id, "core");
+  }, [currentUser, refreshRemoteState]);
 
   const history = useMemo(
     () => recentChantingHistory(state.chantTotals, currentUser?.id || "", todayKey, days),

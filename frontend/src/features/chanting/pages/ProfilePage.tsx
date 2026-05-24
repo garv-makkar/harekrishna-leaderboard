@@ -54,6 +54,13 @@ export function ProfilePage() {
   const [privacyDraft, setPrivacyDraft] = useState<ProfilePrivacy>(defaultProfilePrivacy);
   const [privacyStatus, setPrivacyStatus] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const refreshedUserRef = useRef("");
+
+  useEffect(() => {
+    if (!currentUser || refreshedUserRef.current === currentUser.id) return;
+    refreshedUserRef.current = currentUser.id;
+    void refreshRemoteState(currentUser.id, "core");
+  }, [currentUser, refreshRemoteState]);
 
   useEffect(() => {
     if (!currentUser) return;

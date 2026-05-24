@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, CheckCircle2, Circle, Filter, Inbox, ShieldAlert } from "lucide-react";
 import type { AppNotification } from "@/lib/types";
 import type { TabId } from "../domain";
@@ -18,8 +18,15 @@ const filters: { id: NotificationFilter; label: string }[] = [
 ];
 
 export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => void }) {
-  const { state, currentUser, markNotificationRead, markAllNotificationsRead } = useChanting();
+  const { state, currentUser, markNotificationRead, markAllNotificationsRead, refreshRemoteState } = useChanting();
   const [filter, setFilter] = useState<NotificationFilter>("all");
+  const refreshedUserRef = useRef("");
+
+  useEffect(() => {
+    if (!currentUser || refreshedUserRef.current === currentUser.id) return;
+    refreshedUserRef.current = currentUser.id;
+    void refreshRemoteState(currentUser.id, "core");
+  }, [currentUser, refreshRemoteState]);
 
   const notifications = useMemo(
     () =>

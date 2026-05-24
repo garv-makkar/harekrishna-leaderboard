@@ -44,10 +44,13 @@ export function GroupsPage({
   const [inviteModalGroup, setInviteModalGroup] = useState<Group | null>(null);
   const [groupSearch, setGroupSearch] = useState("");
   const actionPanelRef = useRef<HTMLDivElement | null>(null);
+  const refreshedUserRef = useRef("");
 
   useEffect(() => {
-    ensureGroupsData();
-  }, [ensureGroupsData]);
+    if (!currentUser || refreshedUserRef.current === currentUser.id) return;
+    refreshedUserRef.current = currentUser.id;
+    ensureGroupsData(true);
+  }, [currentUser, ensureGroupsData]);
 
   useEffect(() => setPeriodOffset(0), [period, selectedGroup?.id]);
 

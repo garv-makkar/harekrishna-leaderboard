@@ -27,10 +27,13 @@ export function FriendsPage() {
   const [showAllFriends, setShowAllFriends] = useState(false);
   const [friendSearch, setFriendSearch] = useState("");
   const searchPanelRef = useRef<HTMLDivElement | null>(null);
+  const forcedRefreshUserRef = useRef("");
 
   useEffect(() => {
-    ensureFriendsData();
-  }, [ensureFriendsData]);
+    if (!currentUser || forcedRefreshUserRef.current === currentUser.id) return;
+    forcedRefreshUserRef.current = currentUser.id;
+    ensureFriendsData(true);
+  }, [currentUser, ensureFriendsData]);
 
   useEffect(() => setPeriodOffset(0), [period]);
 
