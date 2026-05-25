@@ -39,7 +39,6 @@ export function GroupsPage({
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [actionMode, setActionMode] = useState<"join" | "create">("join");
-  const [showAllMembers, setShowAllMembers] = useState(false);
   const [recentCopy, setRecentCopy] = useState("");
   const [inviteModalGroup, setInviteModalGroup] = useState<Group | null>(null);
   const [groupSearch, setGroupSearch] = useState("");
@@ -326,14 +325,13 @@ export function GroupsPage({
         <>
           <div id="group-leaderboard" className="min-w-0">
             <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
-              <div className="mb-3 rounded-lg border border-stone-200 bg-stone-50 p-2 shadow-sm">
-                <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="grid grid-cols-3 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:flex sm:w-fit">
+              <div className="mb-3 flex flex-col gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2 shadow-sm xl:flex-row xl:items-center">
+                  <div className="grid grid-cols-3 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:flex xl:shrink-0">
                     {(["daily", "weekly", "monthly"] as const).map((option) => (
                       <button
                         key={option}
                         type="button"
-                        className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                        className={`rounded-md px-3 py-1.5 text-sm font-black transition ${
                           period === option ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
                         }`}
                         onClick={() => setPeriod(option)}
@@ -342,17 +340,17 @@ export function GroupsPage({
                       </button>
                     ))}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="grid grid-cols-3 gap-1 sm:flex xl:shrink-0">
                     <button
                       type="button"
-                      className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-stone-700 shadow-sm"
+                      className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-sm font-bold text-stone-700 shadow-sm"
                       onClick={() => setPeriodOffset(periodOffset + 1)}
                     >
                       Previous
                     </button>
                     <button
                       type="button"
-                      className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-stone-700 shadow-sm disabled:text-stone-400"
+                      className="rounded-md border border-stone-200 bg-white px-3 py-1.5 text-sm font-bold text-stone-700 shadow-sm disabled:text-stone-400"
                       disabled={periodOffset === 0}
                       onClick={() => setPeriodOffset(Math.max(0, periodOffset - 1))}
                     >
@@ -360,28 +358,13 @@ export function GroupsPage({
                     </button>
                     <button
                       type="button"
-                      className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100"
+                      className="rounded-md bg-saffron-50 px-3 py-1.5 text-sm font-black text-saffron-900 ring-1 ring-saffron-100"
                       onClick={() => setPeriodOffset(0)}
                     >
                       {range.label}
                     </button>
                   </div>
-                </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    className={`rounded-md px-3 py-1.5 text-sm font-black transition ${!showAllMembers ? "bg-saffron-500 text-white shadow-sm" : "bg-white text-stone-700 ring-1 ring-stone-200 hover:bg-saffron-50"}`}
-                    onClick={() => setShowAllMembers(false)}
-                  >
-                    Active
-                  </button>
-                  <button
-                    type="button"
-                    className={`rounded-md px-3 py-1.5 text-sm font-black transition ${showAllMembers ? "bg-saffron-500 text-white shadow-sm" : "bg-white text-stone-700 ring-1 ring-stone-200 hover:bg-saffron-50"}`}
-                    onClick={() => setShowAllMembers(true)}
-                  >
-                    All
-                  </button>
+                <div className="flex flex-wrap items-center gap-1.5 xl:min-w-0 xl:flex-1 xl:justify-end">
                   <span className="rounded-md bg-peacock-50 px-2.5 py-1.5 text-xs font-black text-peacock-900 ring-1 ring-peacock-100">
                     {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
                   </span>
@@ -396,7 +379,7 @@ export function GroupsPage({
                   </span>
                   <button
                     type="button"
-                    className="ml-0 inline-flex items-center gap-1.5 rounded-md bg-peacock-600 px-3 py-1.5 text-sm font-black text-white xl:ml-auto"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-peacock-600 px-3 py-1.5 text-sm font-black text-white"
                     onClick={() => setInviteModalGroup(selectedGroup)}
                   >
                     <Share2 size={14} /> Invite
@@ -413,7 +396,7 @@ export function GroupsPage({
                   periodText={range.label}
                   currentUserId={currentUser.id}
                   emptyText="No group rounds saved for this period yet."
-                  visibility={showAllMembers ? "all" : "active"}
+                  visibility="all"
                   rows={selectedGroupRows}
                 />
               )}
