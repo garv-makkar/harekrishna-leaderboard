@@ -6,7 +6,7 @@ import { Check, HeartHandshake, Search, Trophy, UserRoundSearch, Users } from "l
 import { supabase } from "@/lib/supabase";
 import { makeFriendRequest, useChanting } from "../ChantingContext";
 import { latestChantUpdate, latestUpdateLabel, leaderboardRange, rankUsersInRange, readableError } from "../domain";
-import { ActionEmptyState, Avatar, DataFreshness, EmptyState, Field, FilterBar, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, PublicUserCard, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Avatar, EmptyState, Field, FilterBar, Leaderboard, LeaderboardSkeleton, MetricSkeletonGrid, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, PublicUserCard, StatCard, StatGrid } from "../ui";
 
 export function FriendsPage() {
   const {
@@ -22,9 +22,7 @@ export function FriendsPage() {
     ensureFriendsData,
     loadingRemoteSlices,
     refreshRemoteState,
-    setSelectedPublicUserId,
-    lastRemoteRefresh,
-    remoteRefreshErrors
+    setSelectedPublicUserId
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [showAllFriends, setShowAllFriends] = useState(false);
@@ -95,15 +93,6 @@ export function FriendsPage() {
           icon={<HeartHandshake size={16} />}
           title="Friends"
           description="Requests, friends, and your private friends leaderboard."
-          actions={
-            <DataFreshness
-              label="Friends"
-              lastUpdatedAt={lastRemoteRefresh.friends}
-              error={remoteRefreshErrors.friends}
-              isRefreshing={isLoadingFriends}
-              onRefresh={() => refreshRemoteState(currentUser.id, "friends")}
-            />
-          }
           stats={
             <StatGrid columns={3}>
               <StatCard label="Accepted" value={acceptedRequests.length} tone="saffron" />

@@ -18,7 +18,7 @@ import {
   recentChantingHistory,
   sumRounds,
 } from "../domain";
-import { ActionEmptyState, Card, DataFreshness, Field, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Card, Field, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 export function HomePage() {
   const {
@@ -44,11 +44,7 @@ export function HomePage() {
     friends,
     showActionFeedback,
     refreshRemoteState,
-    ensureFriendsData,
-    ensureGroupsData,
-    loadingRemoteSlices,
-    lastRemoteRefresh,
-    remoteRefreshErrors
+    loadingRemoteSlices
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState("");
@@ -59,10 +55,8 @@ export function HomePage() {
   useEffect(() => {
     if (!currentUser || refreshedUserRef.current === currentUser.id) return;
     refreshedUserRef.current = currentUser.id;
-    void refreshRemoteState(currentUser.id, "core");
-    void ensureFriendsData(true);
-    void ensureGroupsData(true);
-  }, [currentUser, ensureFriendsData, ensureGroupsData, refreshRemoteState]);
+    void refreshRemoteState(currentUser.id, "all");
+  }, [currentUser, refreshRemoteState]);
 
   useEffect(() => {
     if (currentUser) setGoalDraft(String(currentUser.dailyGoal || 16));
@@ -296,17 +290,8 @@ export function HomePage() {
         icon={<CalendarDays size={16} />}
         title="Today's rounds"
         description="Enter your total rounds for the selected day."
-        actions={
-          <DataFreshness
-            label="Home"
-            lastUpdatedAt={lastRemoteRefresh.core}
-            error={remoteRefreshErrors.core}
-            isRefreshing={loadingRemoteSlices.core}
-            onRefresh={() => refreshRemoteState(currentUser.id, "core")}
-          />
-        }
       >
-            <div className="grid gap-3 lg:grid-cols-[minmax(170px,0.65fr)_minmax(220px,1fr)_auto] lg:items-end">
+            <div className="grid gap-3 lg:grid-cols-[220px_minmax(260px,1fr)_150px] lg:items-end">
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
                 <input
@@ -335,7 +320,7 @@ export function HomePage() {
               />
               <button
                 type="button"
-                className="rounded-md bg-saffron-500 px-5 py-3 text-base font-black text-white shadow-sm transition hover:bg-saffron-600 sm:py-2.5 sm:text-sm"
+                className="h-[46px] rounded-md bg-saffron-500 px-5 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200"
                 onClick={saveDraftRounds}
                 disabled={!canSaveDraft}
               >
@@ -343,15 +328,15 @@ export function HomePage() {
               </button>
             </div>
 
-            <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center sm:mt-4">
+            <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center sm:mt-4">
               <div>
                 <p className="mb-2 text-sm font-bold text-stone-700">Quick adjust</p>
-                <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap">
-                {[-1, 1, 4].map((amount) => (
+                <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                {[-1, 1, 4, 8, 16].map((amount) => (
                   <button
                     key={amount}
                     type="button"
-                    className={`rounded-md px-4 py-2.5 text-sm font-black ring-1 transition ${
+                    className={`rounded-md px-3 py-2.5 text-sm font-black ring-1 transition sm:min-w-16 ${
                       amount < 0
                         ? "bg-stone-100 text-stone-800 ring-stone-200 hover:bg-stone-200"
                         : "bg-peacock-50 text-peacock-900 ring-peacock-100 hover:bg-peacock-100"
@@ -367,7 +352,7 @@ export function HomePage() {
                 ))}
                 <button
                   type="button"
-                  className="rounded-md bg-stone-100 px-4 py-2.5 text-sm font-black text-stone-800 ring-1 ring-stone-200 transition hover:bg-stone-200"
+                  className="rounded-md bg-stone-100 px-3 py-2.5 text-sm font-black text-stone-800 ring-1 ring-stone-200 transition hover:bg-stone-200 sm:min-w-16"
                   onClick={() => {
                     if (previousDraft === null) return;
                     setRoundInput(String(previousDraft));

@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import { addDays, currentStreak, formatDate, groupCodeProblem, imageExtensionForMime, imageFileProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
-import { ActionEmptyState, Avatar, Card, DataFreshness, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Avatar, Card, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
 
 export function GroupsPage({
   inviteCode = "",
@@ -35,9 +35,7 @@ export function GroupsPage({
     runRemote,
     refreshRemoteState,
     saveState,
-    showMessage,
-    lastRemoteRefresh,
-    remoteRefreshErrors
+    showMessage
   } = useChanting();
   const [periodOffset, setPeriodOffset] = useState(0);
   const [actionMode, setActionMode] = useState<"join" | "create">("join");
@@ -167,13 +165,6 @@ export function GroupsPage({
         description="Join by code, share invites, and view group leaderboards."
         actions={
           <>
-            <DataFreshness
-              label="Groups"
-              lastUpdatedAt={lastRemoteRefresh.groups}
-              error={remoteRefreshErrors.groups}
-              isRefreshing={isLoadingGroups}
-              onRefresh={() => refreshRemoteState(currentUser.id, "groups")}
-            />
             {selectedGroup && (
               <>
               <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">

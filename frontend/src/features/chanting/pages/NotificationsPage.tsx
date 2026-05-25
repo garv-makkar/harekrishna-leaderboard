@@ -5,7 +5,7 @@ import { Bell, CheckCircle2, Circle, Filter, Inbox, ShieldAlert } from "lucide-r
 import type { AppNotification } from "@/lib/types";
 import type { TabId } from "../domain";
 import { useChanting } from "../ChantingContext";
-import { DataFreshness, EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 type NotificationFilter = "all" | "unread" | "success" | "info" | "warning";
 
@@ -18,7 +18,7 @@ const filters: { id: NotificationFilter; label: string }[] = [
 ];
 
 export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => void }) {
-  const { state, currentUser, markNotificationRead, markAllNotificationsRead, refreshRemoteState, isBusy, loadingRemoteSlices, lastRemoteRefresh, remoteRefreshErrors } = useChanting();
+  const { state, currentUser, markNotificationRead, markAllNotificationsRead, refreshRemoteState } = useChanting();
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const refreshedUserRef = useRef("");
 
@@ -56,26 +56,14 @@ export function NotificationsPage({ onOpenTab }: { onOpenTab: (tab: TabId) => vo
         title="Notifications"
         description="Review saved updates from rounds, milestones, groups, and friends."
         actions={
-          <>
-            <DataFreshness
-              label="Notifications"
-              lastUpdatedAt={lastRemoteRefresh.core}
-              error={remoteRefreshErrors.core}
-              isRefreshing={loadingRemoteSlices.core}
-              onRefresh={() => {
-                if (!currentUser) return;
-                return refreshRemoteState(currentUser.id, "core");
-              }}
-            />
-            <button
-              type="button"
-              className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"
-              disabled={unreadCount === 0}
-              onClick={() => void markAllNotificationsRead()}
-            >
-              Mark all read
-            </button>
-          </>
+          <button
+            type="button"
+            className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"
+            disabled={unreadCount === 0}
+            onClick={() => void markAllNotificationsRead()}
+          >
+            Mark all read
+          </button>
         }
         stats={
           <StatGrid columns={3}>

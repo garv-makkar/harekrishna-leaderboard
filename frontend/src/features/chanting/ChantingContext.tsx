@@ -378,26 +378,36 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const nextState: AppState = {
-        currentUserId,
-        users: shouldLoadProfiles ? profileRows.map(fromProfileRow) : state.users,
-        chantTotals: shouldLoadTotals ? ((totalsResult.data || []) as ChantTotalRow[]).map(fromChantTotalRow) : state.chantTotals,
-        groups: shouldLoadGroupTables ? ((groupsResult.data || []) as GroupRow[]).map(fromGroupRow) : state.groups,
-        groupMembers: shouldLoadGroupTables
-          ? ((membersResult.data || []) as GroupMemberRow[]).map((row) => ({
-              groupId: row.group_id,
-              userId: row.user_id,
-              role: row.role,
-              joinedAt: row.joined_at
-            }))
-          : state.groupMembers,
-        friendRequests: shouldLoadFriends ? ((requestsResult.data || []) as FriendRequestRow[]).map(fromFriendRequestRow) : state.friendRequests,
-        notifications:
-          shouldLoadCore && !notificationsResult.error
-            ? ((notificationsResult.data || []) as NotificationRow[]).map(fromNotificationRow)
-            : state.notifications || []
-      };
-      setState(nextState);
+      const refreshedUsers = shouldLoadProfiles ? profileRows.map(fromProfileRow) : null;
+      const refreshedTotals = shouldLoadTotals ? ((totalsResult.data || []) as ChantTotalRow[]).map(fromChantTotalRow) : null;
+      const refreshedGroups = shouldLoadGroupTables ? ((groupsResult.data || []) as GroupRow[]).map(fromGroupRow) : null;
+      const refreshedGroupMembers = shouldLoadGroupTables
+        ? ((membersResult.data || []) as GroupMemberRow[]).map((row) => ({
+            groupId: row.group_id,
+            userId: row.user_id,
+            role: row.role,
+            joinedAt: row.joined_at
+          }))
+        : null;
+      const refreshedFriendRequests = shouldLoadFriends ? ((requestsResult.data || []) as FriendRequestRow[]).map(fromFriendRequestRow) : null;
+      const refreshedNotifications =
+        shouldLoadCore && !notificationsResult.error ? ((notificationsResult.data || []) as NotificationRow[]).map(fromNotificationRow) : null;
+      let refreshedTimezone = detectTimezone();
+
+      setState((current) => {
+        const nextState: AppState = {
+          currentUserId,
+          users: refreshedUsers || current.users,
+          chantTotals: refreshedTotals || current.chantTotals,
+          groups: refreshedGroups || current.groups,
+          groupMembers: refreshedGroupMembers || current.groupMembers,
+          friendRequests: refreshedFriendRequests || current.friendRequests,
+          notifications: refreshedNotifications || current.notifications || []
+        };
+        const currentProfile = nextState.users.find((user) => user.id === currentUserId);
+        refreshedTimezone = currentProfile?.timezone || refreshedTimezone;
+        return nextState;
+      });
       setLoadedRemoteSlices((current) => ({
         core: current.core || shouldLoadCore,
         groups: current.groups || shouldLoadGroups,
@@ -411,8 +421,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       }));
       const { data: authData } = await supabase.auth.getUser();
       setEmailVerified(Boolean(authData.user?.email_confirmed_at));
-      const current = nextState.users.find((user) => user.id === currentUserId);
-      setSelectedDate(localDateKey(new Date(), current?.timezone || detectTimezone()));
+      setSelectedDate(localDateKey(new Date(), refreshedTimezone));
     } catch (error) {
       const message = readableError(error);
       setRemoteRefreshErrors((current) => ({
@@ -428,7 +437,7 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         friends: requestedSlices.friends ? false : current.friends
       }));
     }
-  }, [state.chantTotals, state.friendRequests, state.groupMembers, state.groups, state.notifications, state.users]);
+  }, []);
 
   const ensureGroupsData = useCallback(async (force = false) => {
     if (!supabase || !currentUser || (!force && loadedRemoteSlices.groups) || loadingRemoteSlices.groups) return;

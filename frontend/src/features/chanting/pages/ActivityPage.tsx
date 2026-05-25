@@ -13,7 +13,7 @@ import {
   roundsForDate
 } from "../domain";
 import type { ActivityFeedItem } from "../domain";
-import { DataFreshness, EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { EmptyState, FilterBar, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 const rangeOptions = [
   { label: "7 days", value: 7 },
@@ -22,7 +22,7 @@ const rangeOptions = [
 ];
 
 export function ActivityPage() {
-  const { state, currentUser, todayKey, editableDates, setSelectedDate, showMessage, refreshRemoteState, isBusy, loadingRemoteSlices, lastRemoteRefresh, remoteRefreshErrors } = useChanting();
+  const { state, currentUser, todayKey, editableDates, setSelectedDate, showMessage, refreshRemoteState } = useChanting();
   const [days, setDays] = useState(30);
   const refreshedUserRef = useRef("");
 
@@ -75,22 +75,13 @@ export function ActivityPage() {
         title="Activity summary"
         description="History, recent activity, and CSV export."
         actions={
-          <>
-            <DataFreshness
-              label="Activity"
-              lastUpdatedAt={lastRemoteRefresh.core}
-              error={remoteRefreshErrors.core}
-              isRefreshing={loadingRemoteSlices.core}
-              onRefresh={() => refreshRemoteState(currentUser.id, "core")}
-            />
-            <button
-              type="button"
-              className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm"
-              onClick={exportHistory}
-            >
-              <Download size={16} /> Export CSV
-            </button>
-          </>
+          <button
+            type="button"
+            className="inline-flex w-fit items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white shadow-sm"
+            onClick={exportHistory}
+          >
+            <Download size={16} /> Export CSV
+          </button>
         }
       >
         <FilterBar label="Range">

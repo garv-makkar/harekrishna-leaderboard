@@ -26,7 +26,7 @@ import {
   usernameHelpText,
   usernamePattern
 } from "../domain";
-import { DataFreshness, EmptyState, Field, InlineNotice, PageHeader, Panel, PasswordChecklist, PrivacyVisibilitySummary, PublicUserCard, StatCard, StatGrid, TimezoneSelect } from "../ui";
+import { EmptyState, Field, InlineNotice, PageHeader, Panel, PasswordChecklist, PrivacyVisibilitySummary, PublicUserCard, StatCard, StatGrid, TimezoneSelect } from "../ui";
 
 type ProfileSection = "public" | "account" | "privacy" | "security" | "danger";
 
@@ -49,10 +49,7 @@ export function ProfilePage() {
     todayKey,
     joinedGroups,
     friends,
-    updateUserPreferences,
-    loadingRemoteSlices,
-    lastRemoteRefresh,
-    remoteRefreshErrors
+    updateUserPreferences
   } = useChanting();
   const [avatarStatus, setAvatarStatus] = useState("");
   const [avatarError, setAvatarError] = useState("");
@@ -103,13 +100,6 @@ export function ProfilePage() {
     if (section === profileSection) return;
     if (profileDirty && !window.confirm("Discard unsaved profile changes?")) return;
     setProfileSection(section);
-  };
-
-  const refreshProfile = async () => {
-    if (!currentUser) return;
-    if (profileDirty && !window.confirm("Refresh profile and discard unsaved changes?")) return;
-    await refreshRemoteState(currentUser.id, "core");
-    showMessage("Profile refreshed.");
   };
 
   if (!currentUser) return null;
@@ -345,15 +335,6 @@ export function ProfilePage() {
         icon={<UserRound size={16} />}
         title={currentUser.displayName || currentUser.username}
         description={`Joined ${formatDate(currentUser.joinedAt.slice(0, 10))}. Manage what people see, how your account works, and your data.`}
-        actions={
-          <DataFreshness
-            label="Profile"
-            lastUpdatedAt={lastRemoteRefresh.core}
-            error={remoteRefreshErrors.core}
-            isRefreshing={loadingRemoteSlices.core}
-            onRefresh={refreshProfile}
-          />
-        }
         stats={
           <StatGrid columns={2}>
             <StatCard label="Email status" value={emailVerified ? "Verified" : "Unverified"} tone={emailVerified ? "peacock" : "saffron"} />

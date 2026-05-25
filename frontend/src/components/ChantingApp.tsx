@@ -12,6 +12,7 @@ import {
   LineChart,
   LogOut,
   Menu,
+  RefreshCw,
   Settings,
   Sparkles,
   Star,
@@ -162,7 +163,10 @@ function AppShell({
     saveState,
     selectedPublicUserId,
     setSelectedPublicUserId,
-    state
+    state,
+    refreshRemoteState,
+    loadingRemoteSlices,
+    remoteRefreshErrors
   } = useChanting();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
@@ -201,6 +205,9 @@ function AppShell({
   const notifications = buildNotifications(state, currentUser?.id || "", emailVerified, message);
   const urgentNotificationCount = notifications.filter((item) => !item.readAt).length;
   const activeTabLabel = tabs.find((tab) => tab.id === activeTab)?.label || "Dashboard";
+  const isRefreshingAppData = loadingRemoteSlices.core || loadingRemoteSlices.groups || loadingRemoteSlices.friends;
+  const refreshError = remoteRefreshErrors.core || remoteRefreshErrors.groups || remoteRefreshErrors.friends;
+  const showRuntimeChip = publicSupabaseConfig.mode !== "supabase" || process.env.NODE_ENV !== "production";
 
   const handleTabChange = (tab: TabId) => {
     onTabChange(tab);
@@ -309,21 +316,37 @@ function AppShell({
                 </div>
               </div>
               <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
-                <span
-                  className={`hidden rounded-md px-3 py-2 text-xs font-black sm:inline-flex ${
-                    publicSupabaseConfig.mode === "supabase"
-                      ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
-                      : publicSupabaseConfig.mode === "misconfigured"
-                        ? "bg-red-50 text-red-800 ring-1 ring-red-200"
-                        : "bg-stone-100 text-stone-700 ring-1 ring-stone-200"
-                  }`}
-                  title={[...publicSupabaseConfig.issues, ...publicSupabaseConfig.warnings].join(" ") || runtimeLabel(publicSupabaseConfig.mode)}
-                >
-                  {runtimeLabel(publicSupabaseConfig.mode)}
-                </span>
+                {showRuntimeChip && (
+                  <span
+                    className={`hidden rounded-md px-3 py-2 text-xs font-black sm:inline-flex ${
+                      publicSupabaseConfig.mode === "supabase"
+                        ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
+                        : publicSupabaseConfig.mode === "misconfigured"
+                          ? "bg-red-50 text-red-800 ring-1 ring-red-200"
+                          : "bg-stone-100 text-stone-700 ring-1 ring-stone-200"
+                    }`}
+                    title={[...publicSupabaseConfig.issues, ...publicSupabaseConfig.warnings].join(" ") || runtimeLabel(publicSupabaseConfig.mode)}
+                  >
+                    {runtimeLabel(publicSupabaseConfig.mode)}
+                  </span>
+                )}
                 <span className="hidden max-w-[260px] truncate rounded-md border border-peacock-200 bg-peacock-50 px-3 py-2 text-xs font-bold text-peacock-900 md:inline-flex">
                   {currentUser?.country} | {currentUser?.timezone}
                 </span>
+                <button
+                  type="button"
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-md border bg-white shadow-sm transition sm:h-11 sm:w-11 ${
+                    refreshError
+                      ? "border-red-200 text-red-700 hover:bg-red-50"
+                      : "border-stone-200 text-stone-700 hover:bg-stone-50"
+                  }`}
+                  onClick={() => currentUser && void refreshRemoteState(currentUser.id, "all")}
+                  disabled={!currentUser || isRefreshingAppData}
+                  title={refreshError || "Refresh latest data"}
+                  aria-label="Refresh latest data"
+                >
+                  <RefreshCw size={17} className={isRefreshingAppData ? "animate-spin" : ""} />
+                </button>
                 <div className="relative">
                   <button
                     type="button"

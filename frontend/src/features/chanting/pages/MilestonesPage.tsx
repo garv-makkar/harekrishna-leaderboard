@@ -4,10 +4,10 @@ import { useEffect, useRef } from "react";
 import { Award, CheckCircle2, Circle, Star, Trophy } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import { computeMilestones } from "../domain";
-import { DataFreshness, EmptyState, MilestoneGrid, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { EmptyState, MilestoneGrid, PageHeader, Panel, StatCard, StatGrid } from "../ui";
 
 export function MilestonesPage() {
-  const { state, currentUser, todayKey, isBusy, updateFeaturedMilestones, refreshRemoteState, loadingRemoteSlices, lastRemoteRefresh, remoteRefreshErrors } = useChanting();
+  const { state, currentUser, todayKey, isBusy, updateFeaturedMilestones, refreshRemoteState } = useChanting();
   const refreshedUserRef = useRef("");
 
   useEffect(() => {
@@ -43,15 +43,6 @@ export function MilestonesPage() {
         icon={<Award size={16} />}
         title="Milestones"
         description="Track progress and feature up to 3 earned milestones."
-        actions={
-          <DataFreshness
-            label="Milestones"
-            lastUpdatedAt={lastRemoteRefresh.core}
-            error={remoteRefreshErrors.core}
-            isRefreshing={loadingRemoteSlices.core}
-            onRefresh={() => refreshRemoteState(currentUser.id, "core")}
-          />
-        }
         stats={
           <StatGrid columns={3}>
             <StatCard label="Completed" value={`${earned.length}/${milestones.length}`} tone="saffron" />
