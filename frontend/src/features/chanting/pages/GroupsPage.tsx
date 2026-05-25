@@ -325,8 +325,9 @@ export function GroupsPage({
         <>
           <div id="group-leaderboard" className="min-w-0">
             <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
-              <div className="mb-3 flex flex-col gap-2 rounded-lg border border-stone-200 bg-stone-50 p-2 shadow-sm xl:flex-row xl:items-center">
-                  <div className="grid grid-cols-3 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:flex xl:shrink-0">
+              <div className="mb-3 rounded-lg border border-stone-200 bg-stone-50 p-2 shadow-sm">
+                <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="grid grid-cols-3 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:flex">
                     {(["daily", "weekly", "monthly"] as const).map((option) => (
                       <button
                         key={option}
@@ -364,7 +365,8 @@ export function GroupsPage({
                       {range.label}
                     </button>
                   </div>
-                <div className="flex flex-wrap items-center gap-1.5 xl:min-w-0 xl:flex-1 xl:justify-end">
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   <span className="rounded-md bg-peacock-50 px-2.5 py-1.5 text-xs font-black text-peacock-900 ring-1 ring-peacock-100">
                     {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
                   </span>
@@ -379,7 +381,7 @@ export function GroupsPage({
                   </span>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-peacock-600 px-3 py-1.5 text-sm font-black text-white"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-peacock-600 px-3 py-1.5 text-sm font-black text-white xl:ml-auto"
                     onClick={() => setInviteModalGroup(selectedGroup)}
                   >
                     <Share2 size={14} /> Invite
