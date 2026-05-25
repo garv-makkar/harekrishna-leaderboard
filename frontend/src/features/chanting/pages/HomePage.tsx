@@ -291,7 +291,7 @@ export function HomePage() {
         title="Today's rounds"
         description="Enter your total rounds for the selected day."
       >
-            <div className="grid gap-3 lg:grid-cols-[220px_minmax(260px,1fr)_150px] lg:items-end">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-[220px_minmax(260px,1fr)_150px] lg:items-end">
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
                 <input
@@ -320,7 +320,7 @@ export function HomePage() {
               />
               <button
                 type="button"
-                className="h-[46px] rounded-md bg-saffron-500 px-5 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200"
+                className="col-span-2 h-[46px] rounded-md bg-saffron-500 px-5 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200 lg:col-span-1"
                 onClick={saveDraftRounds}
                 disabled={!canSaveDraft}
               >

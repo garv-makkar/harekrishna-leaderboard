@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import { addDays, currentStreak, formatDate, groupCodeProblem, imageExtensionForMime, imageFileProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
-import { ActionEmptyState, Avatar, Card, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, PageHeader, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs, StatCard, StatGrid } from "../ui";
+import { ActionEmptyState, Avatar, Card, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
 
 export function GroupsPage({
   inviteCode = "",
@@ -43,6 +43,7 @@ export function GroupsPage({
   const [recentCopy, setRecentCopy] = useState("");
   const [inviteModalGroup, setInviteModalGroup] = useState<Group | null>(null);
   const [groupSearch, setGroupSearch] = useState("");
+  const [showGroupList, setShowGroupList] = useState(true);
   const actionPanelRef = useRef<HTMLDivElement | null>(null);
   const refreshedUserRef = useRef("");
 
@@ -128,6 +129,18 @@ export function GroupsPage({
       (currentUserGroupRole(group.id) || "").includes(cleanGroupSearch)
     );
   }), [cleanGroupSearch, currentUserGroupRole, joinedGroups]);
+  const selectedGroupRows = selectedGroup
+    ? rankUsersInRange(
+        state.groupMembers
+          .filter((member) => member.groupId === selectedGroup.id)
+          .map((member) => state.users.find((user) => user.id === member.userId))
+          .filter(Boolean) as UserProfile[],
+        state.chantTotals,
+        range.start,
+        range.end
+      )
+    : [];
+  const selectedCurrentRow = selectedGroupRows.find((row) => row.user.id === currentUser.id);
 
   const leaveSelectedGroup = async () => {
     if (!selectedGroup || selectedRole === "owner") return;
@@ -158,45 +171,11 @@ export function GroupsPage({
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <PageHeader
-        eyebrow={`${joinedGroups.length} joined`}
-        icon={<Users size={16} />}
-        title={selectedGroup ? selectedGroup.name : "Your chanting groups"}
-        description="Join by code, share invites, and view group leaderboards."
-        actions={
-          <>
-            {selectedGroup && (
-              <>
-              <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
-                {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
-              </span>
-              <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100">
-                {selectedRole}
-              </span>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-bold text-white"
-                onClick={() => setInviteModalGroup(selectedGroup)}
-              >
-                <Share2 size={15} /> Invite
-              </button>
-              </>
-            )}
-          </>
-        }
-        stats={
-          <StatGrid columns={2}>
-            <StatCard label="Created groups" value={state.groups.filter((group) => group.ownerId === currentUser.id).length} tone="saffron" />
-            <StatCard label="Memberships" value={joinedGroups.length} tone="peacock" />
-          </StatGrid>
-        }
-      >
-        {recentCopy && (
-          <p className="inline-flex rounded-md bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
-            {recentCopy}
-          </p>
-        )}
-      </PageHeader>
+      {recentCopy && (
+        <p className="inline-flex rounded-md bg-emerald-50 px-3 py-2 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
+          {recentCopy}
+        </p>
+      )}
 
       {inviteCode && (
         <GroupInviteLandingCard
@@ -217,229 +196,295 @@ export function GroupsPage({
         />
       )}
 
-      <Panel title="Your groups" icon={<Users size={18} />}>
-        {isLoadingGroups && joinedGroups.length === 0 ? (
-          <div className="-m-4 sm:-m-5">
-            <PanelSkeleton rows={3} title={false} />
-          </div>
-        ) : joinedGroups.length === 0 ? (
-          <ActionEmptyState
-            icon={<UserPlus size={20} />}
-            title="No groups yet"
-            text="Join with a code, or create a group and share it."
-          >
-            <button
-              type="button"
-              className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white shadow-sm"
-              onClick={() => openActionPanel("join")}
+      <details
+        className="group overflow-hidden rounded-lg border border-saffron-200/80 bg-white/92 shadow-soft"
+        open={showGroupList}
+        onToggle={(event) => setShowGroupList(event.currentTarget.open)}
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 sm:px-4">
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-700 ring-1 ring-saffron-100">
+              <Users size={18} />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate font-black text-stone-950">Your groups</span>
+              <span className="block truncate text-xs font-bold text-stone-500">
+                {selectedGroup ? `Default: ${selectedGroup.name}` : `${joinedGroups.length} joined`}
+              </span>
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="hidden rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900 ring-1 ring-peacock-100 sm:inline-flex">
+              {joinedGroups.length} joined
+            </span>
+            <ChevronRight className="text-stone-400 transition group-open:rotate-90" size={18} />
+          </span>
+        </summary>
+        <div className="border-t border-saffron-100 p-3 sm:p-4">
+          {isLoadingGroups && joinedGroups.length === 0 ? (
+            <div className="-m-3 sm:-m-4">
+              <PanelSkeleton rows={3} title={false} />
+            </div>
+          ) : joinedGroups.length === 0 ? (
+            <ActionEmptyState
+              icon={<UserPlus size={20} />}
+              title="No groups yet"
+              text="Join with a code, or create a group and share it."
             >
-              Join by code
-            </button>
-            <button
-              type="button"
-              className="rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
-              onClick={() => openActionPanel("create")}
-            >
-              Create group
-            </button>
-          </ActionEmptyState>
-        ) : (
-          <>
-          <FilterBar meta={`Showing ${visibleJoinedGroups.length} of ${joinedGroups.length}`}>
-            <label className="min-w-0 flex-1">
-              <span className="mb-1 block text-sm font-bold text-stone-700">Search groups</span>
-              <input
-                className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100 sm:py-2.5 sm:text-base"
-                value={groupSearch}
-                onChange={(event) => setGroupSearch(event.target.value)}
-                placeholder="name, code, or role"
-                type="search"
-              />
-            </label>
-          </FilterBar>
-          {visibleJoinedGroups.length === 0 ? (
-            <EmptyState text={`No joined groups match "${groupSearch.trim()}". Clear the search, join by code, or create a new group below.`} />
-          ) : (
-          <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-            {visibleJoinedGroups.map((group) => {
-              const groupMembers = state.groupMembers.filter((member) => member.groupId === group.id);
-              const todayTotal = groupMembers.reduce(
-                (sum, member) => sum + sumRounds(state.chantTotals, member.userId, "daily", todayKey),
-                0
-              );
-              const activeToday = groupMembers.filter((member) => sumRounds(state.chantTotals, member.userId, "daily", todayKey) > 0).length;
-              return (
-              <div
-                key={group.id}
-                className={`rounded-lg border p-3 shadow-sm ${
-                  selectedGroup?.id === group.id ? "border-saffron-500 bg-saffron-50" : "border-stone-200 bg-white"
-                }`}
+              <button
+                type="button"
+                className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white shadow-sm"
+                onClick={() => openActionPanel("join")}
               >
-                <button
-                  type="button"
-                  onClick={() => setSelectedGroupId(group.id)}
-                  className="flex w-full items-center justify-between gap-3 text-left"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar src={group.imageUrl} label={group.name} />
-                    <div className="min-w-0">
-                      <p className="truncate font-bold text-stone-900">{group.name}</p>
-                      <p className="text-sm text-stone-600">{groupMemberCount(group.id)} member{groupMemberCount(group.id) === 1 ? "" : "s"}</p>
-                    </div>
+                Join by code
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-white px-4 py-2.5 text-sm font-black text-stone-800 ring-1 ring-saffron-200"
+                onClick={() => openActionPanel("create")}
+              >
+                Create group
+              </button>
+            </ActionEmptyState>
+          ) : (
+            <>
+              <FilterBar meta={`Showing ${visibleJoinedGroups.length} of ${joinedGroups.length}`}>
+                <label className="min-w-0 flex-1">
+                  <span className="sr-only">Search groups</span>
+                  <input
+                    className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+                    value={groupSearch}
+                    onChange={(event) => setGroupSearch(event.target.value)}
+                    placeholder="Search groups by name, code, or role"
+                    type="search"
+                  />
+                </label>
+              </FilterBar>
+              {visibleJoinedGroups.length === 0 ? (
+                <EmptyState text={`No joined groups match "${groupSearch.trim()}". Clear the search, join by code, or create a new group below.`} />
+              ) : (
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  {visibleJoinedGroups.map((group) => {
+                    const groupMembers = state.groupMembers.filter((member) => member.groupId === group.id);
+                    const todayTotal = groupMembers.reduce(
+                      (sum, member) => sum + sumRounds(state.chantTotals, member.userId, "daily", todayKey),
+                      0
+                    );
+                    const activeToday = groupMembers.filter((member) => sumRounds(state.chantTotals, member.userId, "daily", todayKey) > 0).length;
+                    const isSelected = selectedGroup?.id === group.id;
+                    return (
+                      <div
+                        key={group.id}
+                        className={`rounded-lg border p-3 shadow-sm ${
+                          isSelected ? "border-saffron-500 bg-saffron-50" : "border-stone-200 bg-white"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedGroupId(group.id)}
+                          className="flex w-full items-center justify-between gap-3 text-left"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <Avatar src={group.imageUrl} label={group.name} />
+                            <div className="min-w-0">
+                              <p className="truncate font-bold text-stone-900">{group.name}</p>
+                              <p className="text-sm text-stone-600">
+                                {groupMemberCount(group.id)} member{groupMemberCount(group.id) === 1 ? "" : "s"}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`rounded-md px-2 py-1 text-xs font-black ${isSelected ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700"}`}>
+                            {isSelected ? "Default" : "Select"}
+                          </span>
+                        </button>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black uppercase text-peacock-900">
+                            {currentUserGroupRole(group.id)}
+                          </span>
+                          <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-black text-saffron-900">
+                            {todayTotal} today
+                          </span>
+                          <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
+                            {activeToday}/{groupMembers.length} active
+                          </span>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900"
+                            onClick={() => setInviteModalGroup(group)}
+                          >
+                            <Share2 size={13} /> Invite
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </details>
+      {selectedGroup && (
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div id="group-leaderboard" className="min-w-0">
+            <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
+              <div className="mb-3 grid gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
+                <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
+                  <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
+                  <div className="flex flex-wrap gap-2 2xl:justify-end">
+                    <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
+                      {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
+                    </span>
+                    <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black capitalize text-saffron-900 ring-1 ring-saffron-100">
+                      {selectedRole || "member"}
+                    </span>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white"
+                      onClick={() => setInviteModalGroup(selectedGroup)}
+                    >
+                      <Share2 size={15} /> Invite
+                    </button>
                   </div>
-                  <ChevronRight size={18} />
-                </button>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black uppercase text-peacock-900">
-                    {currentUserGroupRole(group.id)}
-                  </span>
-                  <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-black text-saffron-900">
-                    {todayTotal} today
-                  </span>
-                  <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
-                    {activeToday}/{groupMembers.length} active
-                  </span>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900"
-                    onClick={() => setInviteModalGroup(group)}
-                  >
-                    <Share2 size={13} /> Invite
-                  </button>
+                </div>
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                  <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
+                  <GroupLeaderboardToggle showAll={showAllMembers} onChange={setShowAllMembers} />
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-4">
+                  <CompactGroupMetric label="Today total" value={selectedTodayTotal} />
+                  <CompactGroupMetric label="Active today" value={`${selectedActiveToday}/${selectedMemberCount}`} />
+                  <CompactGroupMetric label="Your rank" value={selectedCurrentRow?.rounds ? `#${selectedCurrentRow.rank}` : "-"} />
+                  <CompactGroupMetric label="Last update" value={selectedLastUpdated || "None"} />
                 </div>
               </div>
-            );})}
-          </div>
-          )}
-          </>
-        )}
-      </Panel>
-      {selectedGroup && (
-        <>
-        <GroupOverviewPanel
-          group={selectedGroup}
-          role={selectedRole}
-          memberCount={selectedMemberCount}
-          activeToday={selectedActiveToday}
-          todayTotal={selectedTodayTotal}
-          lastUpdated={selectedLastUpdated}
-          onInvite={() => setInviteModalGroup(selectedGroup)}
-        />
-        <div id="group-leaderboard">
-          <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
-            {isLoadingGroups && selectedMemberCount === 0 ? (
-              <LeaderboardSkeleton />
-            ) : (
-              <>
-                <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
-                <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
-                <GroupLeaderboardToggle showAll={showAllMembers} onChange={setShowAllMembers} />
+              {isLoadingGroups && selectedMemberCount === 0 ? (
+                <LeaderboardSkeleton />
+              ) : (
                 <Leaderboard
+                  compact
                   title=""
                   period={period}
                   periodText={range.label}
                   currentUserId={currentUser.id}
                   emptyText="No group rounds saved for this period yet."
                   visibility={showAllMembers ? "all" : "active"}
-                  lastUpdated={selectedLastUpdated}
-                  isRefreshing={isBusy || isLoadingGroups}
-                  onRefresh={() => refreshRemoteState(currentUser.id, "groups")}
-                  rows={rankUsersInRange(
-                    state.groupMembers
-                      .filter((member) => member.groupId === selectedGroup.id)
-                      .map((member) => state.users.find((user) => user.id === member.userId))
-                      .filter(Boolean) as UserProfile[],
-                    state.chantTotals,
-                    range.start,
-                    range.end
-                  )}
+                  rows={selectedGroupRows}
                 />
-              </>
+              )}
+            </Panel>
+          </div>
+          <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
+            <div ref={actionPanelRef}>
+              <Panel title="Create or join" icon={<Plus size={18} />}>
+                <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                      actionMode === "join" ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+                    }`}
+                    onClick={() => setActionMode("join")}
+                  >
+                    Join by code
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                      actionMode === "create" ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+                    }`}
+                    onClick={() => setActionMode("create")}
+                  >
+                    Create group
+                  </button>
+                </div>
+                {actionMode === "join" ? (
+                  <JoinGroupForm embedded initialCode={inviteCode} onJoined={onInviteHandled} />
+                ) : (
+                  <CreateGroupForm embedded />
+                )}
+              </Panel>
+            </div>
+            <GroupDetailsSection title="Invite and group info" icon={<Share2 size={18} />} defaultOpen={false}>
+              <GroupInviteCard
+                group={selectedGroup}
+                role={selectedRole}
+                memberCount={selectedMemberCount}
+                onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+              />
+              <div className="mt-4 space-y-4">
+                {selectedRole === "owner" && (
+                  <GroupOwnerDashboard
+                    group={selectedGroup}
+                    onOpenInvite={() => setInviteModalGroup(selectedGroup)}
+                    onRefresh={() => refreshRemoteState(currentUser.id, "groups")}
+                  />
+                )}
+                <GroupTargetPanel group={selectedGroup} />
+              </div>
+            </GroupDetailsSection>
+            <GroupDetailsSection title="Members and activity" icon={<Users size={18} />} defaultOpen={false}>
+              <div className="space-y-4">
+                <GroupActivityFeed group={selectedGroup} />
+                <GroupMemberRoster group={selectedGroup} />
+                <GroupAccountabilityPanel group={selectedGroup} />
+              </div>
+            </GroupDetailsSection>
+            <GroupDetailsSection title="Settings and controls" icon={<Settings size={18} />} defaultOpen={false}>
+              {selectedRole === "owner" ? (
+                <GroupOwnerControls group={selectedGroup} role={selectedRole} />
+              ) : selectedRole === "moderator" ? (
+                <GroupOwnerControls group={selectedGroup} role={selectedRole} />
+              ) : (
+                <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
+                  <div>
+                    <p className="font-black text-stone-900">Member controls</p>
+                    <p className="text-sm text-stone-600">You can leave this group. Your chanting history stays on your profile.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="rounded-md bg-stone-900 px-4 py-2.5 text-sm font-bold text-white"
+                    disabled={isBusy}
+                    onClick={leaveSelectedGroup}
+                  >
+                    Leave group
+                  </button>
+                </div>
+              )}
+            </GroupDetailsSection>
+          </aside>
+        </div>
+      )}
+      {!selectedGroup && (
+        <div ref={actionPanelRef}>
+          <Panel title="Create or join" icon={<Plus size={18} />}>
+            <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
+              <button
+                type="button"
+                className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                  actionMode === "join" ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+                }`}
+                onClick={() => setActionMode("join")}
+              >
+                Join by code
+              </button>
+              <button
+                type="button"
+                className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                  actionMode === "create" ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+                }`}
+                onClick={() => setActionMode("create")}
+              >
+                Create group
+              </button>
+            </div>
+            {actionMode === "join" ? (
+              <JoinGroupForm embedded initialCode={inviteCode} onJoined={onInviteHandled} />
+            ) : (
+              <CreateGroupForm embedded />
             )}
           </Panel>
         </div>
-        <GroupDetailsSection title="Invite and group info" icon={<Share2 size={18} />} defaultOpen={false}>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <GroupInviteCard
-              group={selectedGroup}
-              role={selectedRole}
-              memberCount={selectedMemberCount}
-              onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-            />
-            <div className="space-y-4">
-              {selectedRole === "owner" && (
-                <GroupOwnerDashboard
-                  group={selectedGroup}
-                  onOpenInvite={() => setInviteModalGroup(selectedGroup)}
-                  onRefresh={() => refreshRemoteState(currentUser.id, "groups")}
-                />
-              )}
-              <GroupTargetPanel group={selectedGroup} />
-            </div>
-          </div>
-        </GroupDetailsSection>
-        <GroupDetailsSection title="Members and activity" icon={<Users size={18} />} defaultOpen={false}>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <GroupActivityFeed group={selectedGroup} />
-            <div className="space-y-4">
-              <GroupMemberRoster group={selectedGroup} />
-              <GroupAccountabilityPanel group={selectedGroup} />
-            </div>
-          </div>
-        </GroupDetailsSection>
-        <GroupDetailsSection title="Settings and controls" icon={<Settings size={18} />} defaultOpen={false}>
-          {selectedRole === "owner" ? (
-            <GroupOwnerControls group={selectedGroup} role={selectedRole} />
-          ) : selectedRole === "moderator" ? (
-            <GroupOwnerControls group={selectedGroup} role={selectedRole} />
-          ) : (
-            <div className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
-              <div>
-                <p className="font-black text-stone-900">Member controls</p>
-                <p className="text-sm text-stone-600">You can leave this group. Your chanting history stays on your profile.</p>
-              </div>
-              <button
-                type="button"
-                className="rounded-md bg-stone-900 px-4 py-2.5 text-sm font-bold text-white"
-                disabled={isBusy}
-                onClick={leaveSelectedGroup}
-              >
-                Leave group
-              </button>
-            </div>
-          )}
-        </GroupDetailsSection>
-        </>
       )}
-      <div ref={actionPanelRef}>
-        <Panel title="Create or join" icon={<Plus size={18} />}>
-          <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
-            <button
-              type="button"
-              className={`rounded-md px-3 py-2 text-sm font-black transition ${
-                actionMode === "join" ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
-              }`}
-              onClick={() => setActionMode("join")}
-            >
-              Join by code
-            </button>
-            <button
-              type="button"
-              className={`rounded-md px-3 py-2 text-sm font-black transition ${
-                actionMode === "create" ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
-              }`}
-              onClick={() => setActionMode("create")}
-            >
-              Create group
-            </button>
-          </div>
-          {actionMode === "join" ? (
-            <JoinGroupForm embedded initialCode={inviteCode} onJoined={onInviteHandled} />
-          ) : (
-          <CreateGroupForm embedded />
-          )}
-        </Panel>
-      </div>
       {inviteModalGroup && (
         <InviteMembersModal
           group={inviteModalGroup}
@@ -452,6 +497,15 @@ export function GroupsPage({
           onCopyShortMessage={() => copyShortInviteMessage(inviteModalGroup)}
         />
       )}
+    </div>
+  );
+}
+
+function CompactGroupMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-md border border-stone-200 bg-white px-3 py-2 shadow-sm">
+      <p className="truncate text-xs font-black uppercase text-stone-500">{label}</p>
+      <p className="mt-0.5 truncate text-lg font-black text-stone-950">{value}</p>
     </div>
   );
 }

@@ -541,7 +541,8 @@ export function Leaderboard({
   visibility = "logged",
   lastUpdated,
   isRefreshing = false,
-  onRefresh
+  onRefresh,
+  compact = false
 }: {
   title: string;
   rows: RankedUser[];
@@ -553,6 +554,7 @@ export function Leaderboard({
   lastUpdated?: string;
   isRefreshing?: boolean;
   onRefresh?: () => void | Promise<void>;
+  compact?: boolean;
 }) {
   const { setSelectedPublicUserId } = useChanting();
   const currentRowRef = useRef<HTMLDivElement | null>(null);
@@ -562,11 +564,11 @@ export function Leaderboard({
   const [searchText, setSearchText] = useState("");
   const todayText = new Date().toDateString();
   const currentRow = rows.find((row) => row.user.id === currentUserId);
-  const cleanSearch = searchText.trim().toLowerCase();
+  const cleanSearch = compact ? "" : searchText.trim().toLowerCase();
   const baseRows = rows.filter((row) => {
     if (row.user.id === currentUserId) return true;
     if (visibility === "all") return true;
-    if (showZeroEntries && row.hasEntry) return true;
+    if (!compact && showZeroEntries && row.hasEntry) return true;
     if (visibility === "active") return row.rounds > 0;
     return row.rounds > 0 || row.hasEntry;
   });
@@ -577,13 +579,14 @@ export function Leaderboard({
       (row.user.displayName || "").toLowerCase().includes(cleanSearch) ||
       String(row.rounds).includes(cleanSearch);
     if (!matchesSearch) return false;
-    if (!onlyUpdatedToday) return true;
+    if (compact || !onlyUpdatedToday) return true;
     if (!row.lastUpdatedAt) return false;
     return new Date(row.lastUpdatedAt).toDateString() === todayText;
   });
-  const limitedRows = showAllRows ? filteredRows : filteredRows.slice(0, 10);
+  const effectiveShowAllRows = !compact && showAllRows;
+  const limitedRows = effectiveShowAllRows ? filteredRows : filteredRows.slice(0, 10);
   const visibleRows =
-    !cleanSearch && !showAllRows && currentRow && !limitedRows.some((row) => row.user.id === currentUserId) && filteredRows.some((row) => row.user.id === currentUserId)
+    !cleanSearch && !effectiveShowAllRows && currentRow && !limitedRows.some((row) => row.user.id === currentUserId) && filteredRows.some((row) => row.user.id === currentUserId)
       ? [...limitedRows, currentRow]
       : limitedRows;
   if (baseRows.length === 0) return <EmptyState text={emptyText} />;
@@ -611,14 +614,17 @@ export function Leaderboard({
           <LeaderboardRefreshMeta periodText={periodText || periodLabel(period)} lastUpdated={lastUpdated} isRefreshing={isRefreshing} onRefresh={onRefresh} />
         </div>
       )}
-      <div className="mb-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-bold leading-5 text-stone-600">
-        <b>0 saved</b> means zero was saved. <b>No entry</b> means nothing was saved.
-      </div>
+      {!compact && (
+        <div className="mb-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-xs font-bold leading-5 text-stone-600">
+          <b>0 saved</b> means zero was saved. <b>No entry</b> means nothing was saved.
+        </div>
+      )}
       {activeRows.length === 0 && (
         <div className="mb-4">
           <EmptyState text={emptyText} />
         </div>
       )}
+      {!compact && (
       <div className="mb-3 grid gap-2 rounded-lg border border-stone-200 bg-white p-2 shadow-sm sm:mb-4 sm:flex sm:flex-wrap sm:items-center">
         <label className="min-w-0 sm:min-w-[220px] sm:flex-1">
           <span className="sr-only">Search leaderboard</span>
@@ -671,12 +677,13 @@ export function Leaderboard({
           </button>
         )}
       </div>
+      )}
       {filteredRows.length === 0 && (
         <div className="mb-4">
           <EmptyState text={cleanSearch ? `No rows match "${searchText.trim()}".` : "No rows match the current leaderboard filters."} />
         </div>
       )}
-      {leaderRows.length > 0 && (
+      {!compact && leaderRows.length > 0 && (
         <div className="mb-4 hidden gap-3 sm:grid lg:grid-cols-3">
           {leaderRows.map((row) => {
             const isCurrent = row.user.id === currentUserId;
@@ -720,7 +727,7 @@ export function Leaderboard({
           })}
         </div>
       )}
-      {currentRow && (
+      {!compact && currentRow && (
         <div className="mb-3 grid grid-cols-2 gap-2 sm:mb-4 sm:gap-3 md:grid-cols-4">
           <div className="rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:px-4 sm:py-3">
             <p className="text-xs font-black uppercase text-stone-500">Your rank</p>
@@ -762,7 +769,7 @@ export function Leaderboard({
           </div>
         </div>
       )}
-      {currentRow && currentRowIndex > 3 && (
+      {!compact && currentRow && currentRowIndex > 3 && (
         <div className="mb-4 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50/80 px-3 py-2.5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
           <div>
             <p className="font-black text-saffron-950">Your row is lower in this leaderboard.</p>
@@ -777,7 +784,7 @@ export function Leaderboard({
           </button>
         </div>
       )}
-      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+      <div className={`rounded-lg border border-stone-200 bg-white shadow-sm ${compact ? "max-h-[720px] overflow-y-auto" : "overflow-hidden"}`}>
         {visibleRows.map((row) => {
           const isCurrent = row.user.id === currentUserId;
           const rowTieCount = row.rounds > 0
