@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import type { Group, GroupMember, GroupRole, UserProfile } from "@/lib/types";
 import { useChanting } from "../ChantingContext";
 import { addDays, currentStreak, formatDate, groupCodeProblem, imageExtensionForMime, imageFileProblem, latestChantUpdate, latestUpdateLabel, leaderboardRange, normalizeGroupCode, rankUsersInRange, readableError, sumRounds, uid } from "../domain";
-import { ActionEmptyState, Avatar, Card, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, Panel, PanelSkeleton, PeriodHistoryControls, PeriodTabs } from "../ui";
+import { ActionEmptyState, Avatar, Card, EmptyState, Field, FilterBar, InlineNotice, Leaderboard, LeaderboardSkeleton, Panel, PanelSkeleton } from "../ui";
 
 export function GroupsPage({
   inviteCode = "",
@@ -73,7 +73,6 @@ export function GroupsPage({
       : [],
     [selectedGroup?.id, state.groupMembers]
   );
-  const selectedLastUpdated = latestUpdateLabel(latestChantUpdate(state.chantTotals, selectedMemberIds, range.start, range.end));
   const selectedTodayTotal = selectedMemberIds.reduce(
     (sum, userId) => sum + sumRounds(state.chantTotals, userId, "daily", todayKey),
     0
@@ -140,7 +139,6 @@ export function GroupsPage({
         range.end
       )
     : [];
-  const selectedCurrentRow = selectedGroupRows.find((row) => row.user.id === currentUser.id);
 
   const leaveSelectedGroup = async () => {
     if (!selectedGroup || selectedRole === "owner") return;
@@ -325,37 +323,84 @@ export function GroupsPage({
         </div>
       </details>
       {selectedGroup && (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <>
           <div id="group-leaderboard" className="min-w-0">
             <Panel title={`${selectedGroup.name} leaderboard`} icon={<Trophy size={18} />}>
-              <div className="mb-3 grid gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
-                <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-start 2xl:justify-between">
-                  <PeriodTabs value={period} onChange={setPeriod} options={["daily", "weekly", "monthly"]} />
-                  <div className="flex flex-wrap gap-2 2xl:justify-end">
-                    <span className="rounded-md bg-peacock-50 px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100">
-                      {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
-                    </span>
-                    <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black capitalize text-saffron-900 ring-1 ring-saffron-100">
-                      {selectedRole || "member"}
-                    </span>
+              <div className="mb-3 rounded-lg border border-stone-200 bg-stone-50 p-2 shadow-sm">
+                <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="grid grid-cols-3 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:flex sm:w-fit">
+                    {(["daily", "weekly", "monthly"] as const).map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        className={`rounded-md px-3 py-2 text-sm font-black transition ${
+                          period === option ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"
+                        }`}
+                        onClick={() => setPeriod(option)}
+                      >
+                        {option === "daily" ? "Today" : option === "weekly" ? "Week" : "Month"}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      className="inline-flex items-center gap-2 rounded-md bg-peacock-600 px-3 py-2 text-sm font-black text-white"
-                      onClick={() => setInviteModalGroup(selectedGroup)}
+                      className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-stone-700 shadow-sm"
+                      onClick={() => setPeriodOffset(periodOffset + 1)}
                     >
-                      <Share2 size={15} /> Invite
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-bold text-stone-700 shadow-sm disabled:text-stone-400"
+                      disabled={periodOffset === 0}
+                      onClick={() => setPeriodOffset(Math.max(0, periodOffset - 1))}
+                    >
+                      Next
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900 ring-1 ring-saffron-100"
+                      onClick={() => setPeriodOffset(0)}
+                    >
+                      {range.label}
                     </button>
                   </div>
                 </div>
-                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                  <PeriodHistoryControls offset={periodOffset} onChange={setPeriodOffset} label={range.label} />
-                  <GroupLeaderboardToggle showAll={showAllMembers} onChange={setShowAllMembers} />
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-4">
-                  <CompactGroupMetric label="Today total" value={selectedTodayTotal} />
-                  <CompactGroupMetric label="Active today" value={`${selectedActiveToday}/${selectedMemberCount}`} />
-                  <CompactGroupMetric label="Your rank" value={selectedCurrentRow?.rounds ? `#${selectedCurrentRow.rank}` : "-"} />
-                  <CompactGroupMetric label="Last update" value={selectedLastUpdated || "None"} />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1.5 text-sm font-black transition ${!showAllMembers ? "bg-saffron-500 text-white shadow-sm" : "bg-white text-stone-700 ring-1 ring-stone-200 hover:bg-saffron-50"}`}
+                    onClick={() => setShowAllMembers(false)}
+                  >
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1.5 text-sm font-black transition ${showAllMembers ? "bg-saffron-500 text-white shadow-sm" : "bg-white text-stone-700 ring-1 ring-stone-200 hover:bg-saffron-50"}`}
+                    onClick={() => setShowAllMembers(true)}
+                  >
+                    All
+                  </button>
+                  <span className="rounded-md bg-peacock-50 px-2.5 py-1.5 text-xs font-black text-peacock-900 ring-1 ring-peacock-100">
+                    {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
+                  </span>
+                  <span className="rounded-md bg-stone-100 px-2.5 py-1.5 text-xs font-bold text-stone-700">
+                    {selectedActiveToday}/{selectedMemberCount} active
+                  </span>
+                  <span className="rounded-md bg-stone-100 px-2.5 py-1.5 text-xs font-bold text-stone-700">
+                    {selectedTodayTotal} today
+                  </span>
+                  <span className="rounded-md bg-saffron-50 px-2.5 py-1.5 text-xs font-black capitalize text-saffron-900 ring-1 ring-saffron-100">
+                    {selectedRole || "member"}
+                  </span>
+                  <button
+                    type="button"
+                    className="ml-0 inline-flex items-center gap-1.5 rounded-md bg-peacock-600 px-3 py-1.5 text-sm font-black text-white xl:ml-auto"
+                    onClick={() => setInviteModalGroup(selectedGroup)}
+                  >
+                    <Share2 size={14} /> Invite
+                  </button>
                 </div>
               </div>
               {isLoadingGroups && selectedMemberCount === 0 ? (
@@ -374,7 +419,7 @@ export function GroupsPage({
               )}
             </Panel>
           </div>
-          <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
+          <div className="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
             <div ref={actionPanelRef}>
               <Panel title="Create or join" icon={<Plus size={18} />}>
                 <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
@@ -404,6 +449,7 @@ export function GroupsPage({
                 )}
               </Panel>
             </div>
+            <div className="space-y-3">
             <GroupDetailsSection title="Invite and group info" icon={<Share2 size={18} />} defaultOpen={false}>
               <GroupInviteCard
                 group={selectedGroup}
@@ -451,8 +497,9 @@ export function GroupsPage({
                 </div>
               )}
             </GroupDetailsSection>
-          </aside>
-        </div>
+            </div>
+          </div>
+        </>
       )}
       {!selectedGroup && (
         <div ref={actionPanelRef}>
@@ -497,15 +544,6 @@ export function GroupsPage({
           onCopyShortMessage={() => copyShortInviteMessage(inviteModalGroup)}
         />
       )}
-    </div>
-  );
-}
-
-function CompactGroupMetric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-md border border-stone-200 bg-white px-3 py-2 shadow-sm">
-      <p className="truncate text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-0.5 truncate text-lg font-black text-stone-950">{value}</p>
     </div>
   );
 }
@@ -844,51 +882,48 @@ function GroupInviteCard({
 }) {
   const inviteText = groupInviteShortMessage(group);
   return (
-    <section className="overflow-hidden rounded-lg border border-peacock-100 bg-peacock-50/80 shadow-soft">
-      <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="p-4 sm:p-5">
-          <div className="mb-3 flex items-center gap-2 text-peacock-900">
-            <MessageSquare size={18} />
-            <p className="font-black">Invite members</p>
-          </div>
-          <p className="text-sm leading-6 text-stone-700">
-            Share this code with people you want in the group. Group codes are global and unique.
+    <section className="rounded-lg border border-peacock-100 bg-peacock-50/70 p-3 shadow-sm sm:p-4">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
+        <div className="min-w-0">
+          <p className="font-black text-peacock-950">Invite members</p>
+          <p className="mt-1 text-sm leading-5 text-stone-700">Share the code or open invite options.</p>
+          <p className="mt-3 rounded-md border border-peacock-100 bg-white px-3 py-2 text-sm font-bold leading-5 text-stone-800">
+            {inviteText}
           </p>
-          <div className="mt-4 rounded-lg border border-peacock-100 bg-white px-4 py-3">
-            <p className="text-xs font-black uppercase text-stone-500">Share message preview</p>
-            <p className="mt-1 text-sm font-bold text-stone-800">{inviteText}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-md bg-white px-2.5 py-1.5 text-xs font-black uppercase text-peacock-900 ring-1 ring-peacock-100">
+              {role || "member"}
+            </span>
+            <span className="rounded-md bg-white px-2.5 py-1.5 text-xs font-black text-stone-700 ring-1 ring-peacock-100">
+              {memberCount} member{memberCount === 1 ? "" : "s"}
+            </span>
           </div>
-          {role === "owner" && (
-            <p className="mt-3 rounded-md bg-white/75 px-3 py-2 text-sm font-bold text-peacock-900 ring-1 ring-peacock-100">
-              Owner tip: keep codes memorable but specific. You can change the code in group controls.
-            </p>
-          )}
-          {group.announcement && (
-            <div className="mt-3 rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2 text-sm text-saffron-950">
-              <p className="font-black">Pinned announcement</p>
-              <p>{group.announcement}</p>
-            </div>
-          )}
         </div>
-        <div className="border-t border-peacock-100 bg-white/80 p-4 sm:p-5 lg:border-l lg:border-t-0">
+        <div className="rounded-lg border border-peacock-100 bg-white p-3">
           <p className="text-xs font-black uppercase text-stone-500">Group code</p>
-          <p className="mt-2 rounded-md bg-stone-950 px-4 py-3 text-center text-2xl font-black tracking-normal text-white">
+          <p className="mt-2 rounded-md bg-stone-950 px-3 py-2 text-center text-xl font-black tracking-normal text-white">
             {group.code}
           </p>
-          <div className="mt-3 grid gap-2">
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-peacock-600 px-4 py-3 text-sm font-black text-white"
-              onClick={onOpenInvite}
-            >
-              <Share2 size={16} /> Invite members
-            </button>
-          </div>
-          <p className="mt-3 text-center text-sm font-bold text-stone-600">
-            {memberCount} member{memberCount === 1 ? "" : "s"}
-          </p>
+          <button
+            type="button"
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-peacock-600 px-3 py-2.5 text-sm font-black text-white"
+            onClick={onOpenInvite}
+          >
+            <Share2 size={15} /> Invite options
+          </button>
         </div>
       </div>
+      {role === "owner" && (
+        <p className="mt-3 rounded-md bg-white/75 px-3 py-2 text-sm font-bold text-peacock-900 ring-1 ring-peacock-100">
+          Owner tip: keep codes memorable but specific. You can change the code in group controls.
+        </p>
+      )}
+      {group.announcement && (
+        <div className="mt-3 rounded-md border border-saffron-200 bg-saffron-50 px-3 py-2 text-sm text-saffron-950">
+          <p className="font-black">Pinned announcement</p>
+          <p>{group.announcement}</p>
+        </div>
+      )}
     </section>
   );
 }
@@ -1105,20 +1140,25 @@ function GroupActivityFeed({ group }: { group: Group }) {
   const todayRoundUpdates = roundItems.filter((item) => item.body.startsWith("Today")).length;
 
   return (
-    <Panel title="Group activity" icon={<Clock3 size={18} />}>
-      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-        <GroupStat label="Recent items" value={items.length} />
-        <GroupStat label="Today updates" value={todayRoundUpdates} />
-        <GroupStat label="Members tracked" value={memberships.length} />
+    <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Clock3 size={16} className="text-saffron-700" />
+          <p className="font-black text-stone-950">Group activity</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">{items.length} recent</span>
+          <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900">{todayRoundUpdates} today</span>
+          <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-bold text-saffron-900">{memberships.length} members</span>
+        </div>
       </div>
       {items.length === 0 ? (
         <EmptyState text="No group activity yet. Round updates and member joins will appear here." />
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y divide-stone-100">
           {items.map((item) => (
-            <div key={item.id} className="rounded-lg border border-stone-200 bg-white px-4 py-3 shadow-sm">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex min-w-0 gap-3">
+            <div key={item.id} className="flex items-center justify-between gap-3 py-2">
+              <div className="flex min-w-0 items-center gap-2">
                   {item.user ? (
                     <button
                       type="button"
@@ -1129,25 +1169,23 @@ function GroupActivityFeed({ group }: { group: Group }) {
                       <Avatar src={item.user.avatarUrl} label={item.user.displayName || item.user.username} />
                     </button>
                   ) : (
-                    <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-md ${activityIconClass(item.tone)}`}>
+                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-md ${activityIconClass(item.tone)}`}>
                       {activitySymbol(item.tone)}
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="font-black text-stone-950">{item.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-stone-600">{item.body}</p>
-                    {item.user && <p className="mt-1 text-xs font-bold text-stone-500">@{item.user.username}</p>}
+                    <p className="truncate text-sm font-black text-stone-950">{item.title}</p>
+                    <p className="truncate text-xs font-bold text-stone-500">{item.body}</p>
                   </div>
-                </div>
-                <span className={`shrink-0 rounded-md px-3 py-2 text-xs font-black uppercase ${activityBadgeClass(item.tone)}`}>
-                  {activityLabel(item.tone)}
-                </span>
               </div>
+              <span className={`shrink-0 rounded-md px-2 py-1 text-xs font-black uppercase ${activityBadgeClass(item.tone)}`}>
+                {activityLabel(item.tone)}
+              </span>
             </div>
           ))}
         </div>
       )}
-    </Panel>
+    </div>
   );
 }
 
@@ -1241,161 +1279,75 @@ function GroupMemberRoster({ group }: { group: Group }) {
   });
 
   return (
-    <Panel title="Group members" icon={<Users size={18} />}>
-      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-        <GroupStat label="Members" value={rows.length} />
-        <GroupStat label="Active today" value={activeToday} />
-        <GroupStat label="Active week" value={activeThisWeek} />
+    <div className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Users size={16} className="text-saffron-700" />
+          <p className="font-black text-stone-950">Group members</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">{rows.length} members</span>
+          <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900">{activeToday} today</span>
+          <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-bold text-saffron-900">{activeThisWeek} week</span>
+        </div>
       </div>
-      <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 p-3">
-        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_220px_180px]">
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold text-stone-700">Search members</span>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={17} />
-              <input
-                className="w-full rounded-md border border-stone-300 bg-white py-2.5 pl-10 pr-3 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="username, name, or role"
-                type="search"
-              />
-            </div>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold text-stone-700">Role</span>
-            <select
-              className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
-              value={roleFilter}
-              onChange={(event) => setRoleFilter(event.target.value as GroupRole | "all")}
-            >
-              <option value="all">All roles</option>
-              <option value="owner">Owner</option>
-              <option value="moderator">Moderators</option>
-              <option value="member">Members</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold text-stone-700">Activity</span>
-            <select
-              className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
-              value={activityFilter}
-              onChange={(event) => setActivityFilter(event.target.value as typeof activityFilter)}
-            >
-              <option value="all">All activity</option>
-              <option value="today">Active today</option>
-              <option value="week">Active this week</option>
-              <option value="inactive-week">Inactive this week</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold text-stone-700">Sort</span>
-            <select
-              className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
-              value={sortMode}
-              onChange={(event) => setSortMode(event.target.value as typeof sortMode)}
-            >
-              <option value="role">Role, then today</option>
-              <option value="today">Most today</option>
-              <option value="week">Most this week</option>
-              <option value="name">Username A-Z</option>
-            </select>
-          </label>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <span className="rounded-md bg-white px-3 py-2 text-sm font-bold text-stone-600 ring-1 ring-stone-200">
-            Showing {visibleRows.length} of {rows.length}
-          </span>
-          {(searchText || roleFilter !== "all" || activityFilter !== "all" || sortMode !== "role") && (
-            <button
-              type="button"
-              className="rounded-md bg-white px-3 py-2 text-sm font-black text-stone-800 ring-1 ring-stone-200"
-              onClick={() => {
-                setSearchText("");
-                setRoleFilter("all");
-                setActivityFilter("all");
-                setSortMode("role");
-              }}
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
+      <div className="mb-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_120px_150px_130px]">
+        <label className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={15} />
+          <input
+            className="w-full rounded-md border border-stone-300 bg-white py-2 pl-9 pr-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-saffron-500 focus:ring-2 focus:ring-saffron-100"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder="Search members"
+            type="search"
+          />
+        </label>
+        <select className="rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 shadow-sm outline-none" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as GroupRole | "all")}>
+          <option value="all">All roles</option>
+          <option value="owner">Owner</option>
+          <option value="moderator">Moderators</option>
+          <option value="member">Members</option>
+        </select>
+        <select className="rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 shadow-sm outline-none" value={activityFilter} onChange={(event) => setActivityFilter(event.target.value as typeof activityFilter)}>
+          <option value="all">All activity</option>
+          <option value="today">Active today</option>
+          <option value="week">Active week</option>
+          <option value="inactive-week">Inactive week</option>
+        </select>
+        <select className="rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 shadow-sm outline-none" value={sortMode} onChange={(event) => setSortMode(event.target.value as typeof sortMode)}>
+          <option value="role">Role</option>
+          <option value="today">Today</option>
+          <option value="week">Week</option>
+          <option value="name">Name</option>
+        </select>
       </div>
       {rows.length === 0 ? (
         <EmptyState text="No members are visible in this group yet." />
       ) : visibleRows.length === 0 ? (
         <EmptyState text="No members match the current search and filters." />
       ) : (
-        <div className="grid gap-3 xl:grid-cols-2">
+        <div className="divide-y divide-stone-100">
           {visibleRows.map((row) => (
-            <div key={row.user.id} className="rounded-lg border border-stone-200 bg-white p-3 shadow-sm sm:p-4">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex min-w-0 gap-3">
-                  <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate font-black text-stone-950">{row.user.displayName || row.user.username}</p>
-                      <span className={`rounded-md px-2 py-1 text-xs font-black uppercase ${roleBadgeClass(row.membership.role)}`}>
-                        {row.membership.role}
-                      </span>
-                    </div>
-                    <p className="mt-1 truncate text-sm text-stone-600">@{row.user.username}</p>
-                    <p className="mt-2 text-xs font-bold text-stone-500">
-                      {row.latestUpdate ? `Last updated ${latestUpdateLabel(row.latestUpdate)}` : "No rounds logged yet"}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <span className={`rounded-md px-2 py-1 text-xs font-black ${memberActivityBadgeClass(row.todayRounds, row.weekRounds)}`}>
-                        {memberActivityText(row.todayRounds, row.weekRounds)}
-                      </span>
-                      {row.streak > 1 && (
-                        <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-black text-saffron-900">
-                          {row.streak} day streak
-                        </span>
-                      )}
-                    </div>
-                  </div>
+            <div key={row.user.id} className="flex items-center justify-between gap-3 py-2">
+              <button type="button" className="flex min-w-0 items-center gap-2 text-left" onClick={() => setSelectedPublicUserId(row.user.id)}>
+                <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-stone-950">{row.user.displayName || row.user.username}</p>
+                  <p className="truncate text-xs font-bold text-stone-500">@{row.user.username}</p>
                 </div>
-                <button
-                  type="button"
-                  className="shrink-0 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white"
-                  onClick={() => setSelectedPublicUserId(row.user.id)}
-                >
-                  View profile
-                </button>
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 sm:mt-4">
-                <MemberRosterStat label="Today" value={row.todayRounds} />
-                <MemberRosterStat label="Week" value={row.weekRounds} />
-                <MemberRosterStat label="Streak" value={row.streak} />
+              </button>
+              <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                <span className={`rounded-md px-2 py-1 text-xs font-black uppercase ${roleBadgeClass(row.membership.role)}`}>{row.membership.role}</span>
+                <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900">{row.todayRounds} today</span>
+                <span className="hidden rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700 sm:inline-flex">{row.weekRounds} week</span>
+                {row.streak > 1 && <span className="hidden rounded-md bg-saffron-50 px-2 py-1 text-xs font-black text-saffron-900 sm:inline-flex">{row.streak} streak</span>}
               </div>
             </div>
           ))}
         </div>
       )}
-    </Panel>
-  );
-}
-
-function MemberRosterStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border border-stone-100 bg-stone-50 px-3 py-2 text-center">
-      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-1 text-xl font-black text-stone-950">{value}</p>
     </div>
   );
-}
-
-function memberActivityText(todayRounds: number, weekRounds: number) {
-  if (todayRounds > 0) return "Active today";
-  if (weekRounds > 0) return "Active this week";
-  return "Inactive this week";
-}
-
-function memberActivityBadgeClass(todayRounds: number, weekRounds: number) {
-  if (todayRounds > 0) return "bg-peacock-50 text-peacock-900 ring-1 ring-peacock-100";
-  if (weekRounds > 0) return "bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100";
-  return "bg-stone-100 text-stone-600 ring-1 ring-stone-200";
 }
 
 function OwnerDigestTile({ label, value, note }: { label: string; value: string; note: string }) {
@@ -1455,27 +1407,6 @@ function GroupAccountabilityPanel({ group }: { group: Group }) {
         </div>
       )}
     </Panel>
-  );
-}
-
-function GroupLeaderboardToggle({ showAll, onChange }: { showAll: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <div className="mb-4 inline-flex max-w-full flex-wrap gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm">
-      <button
-        type="button"
-        className={`rounded-md px-3 py-2 text-sm font-black transition ${!showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
-        onClick={() => onChange(false)}
-      >
-        Active only
-      </button>
-      <button
-        type="button"
-        className={`rounded-md px-3 py-2 text-sm font-black transition ${showAll ? "bg-saffron-500 text-white shadow-sm" : "text-stone-700 hover:bg-saffron-50"}`}
-        onClick={() => onChange(true)}
-      >
-        All members
-      </button>
-    </div>
   );
 }
 
