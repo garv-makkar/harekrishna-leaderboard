@@ -13,6 +13,7 @@ import {
   formatDate,
   loadState,
   localDateKey,
+  milestoneDisplayFromId,
   readableError,
   roundsForDate,
   sumRounds
@@ -100,7 +101,7 @@ export function PublicProfileRoutePage({ username }: { username: string }) {
     () =>
       payload && privacy.showMilestones
         ? (payload.profile.featuredMilestoneIds || [])
-            .map((id) => milestones.find((milestone) => milestone.id === id && milestone.earned))
+            .map((id) => milestones.find((milestone) => milestone.id === id && milestone.earned) || milestoneDisplayFromId(id))
             .filter(Boolean)
             .slice(0, 3) as typeof milestones
         : [],

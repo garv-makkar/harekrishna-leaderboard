@@ -24,6 +24,12 @@ export function AboutPage() {
           <p className="max-w-3xl text-sm leading-6 text-stone-700 sm:text-base">
             I am Garv Makkar. I started my spirituality journey in 2026 and built this app to keep chanting progress simple, visible, and accountable.
           </p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <InfoPill label="College" value="IIIT Delhi" />
+            <InfoPill label="Company" value="Oracle" />
+            <InfoPill label="Home" value="Delhi" />
+            <InfoPill label="Currently" value="Bengaluru" />
+          </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <ContactLink
               icon={<Mail size={17} />}
@@ -57,6 +63,15 @@ function AboutTile({ icon, title, text }: { icon: React.ReactNode; title: string
       </div>
       <p className="font-black text-stone-900">{title}</p>
       <p className="mt-1 text-sm leading-6 text-stone-600">{text}</p>
+    </div>
+  );
+}
+
+function InfoPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
+      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
+      <p className="mt-0.5 truncate text-sm font-black text-stone-900">{value}</p>
     </div>
   );
 }

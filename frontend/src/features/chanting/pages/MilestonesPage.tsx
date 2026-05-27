@@ -17,7 +17,7 @@ export function MilestonesPage() {
   useEffect(() => {
     if (!currentUser || refreshedUserRef.current === currentUser.id) return;
     refreshedUserRef.current = currentUser.id;
-    void refreshRemoteState(currentUser.id, "core");
+    void refreshRemoteState(currentUser.id, "all");
   }, [currentUser, refreshRemoteState]);
 
   if (!currentUser) return null;

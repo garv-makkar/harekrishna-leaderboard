@@ -38,6 +38,7 @@ import {
   currentStreak,
   defaultProfilePrivacy,
   formatDate,
+  milestoneDisplayFromId,
   normalizeGroupCode,
   recentChantingHistory,
   sumRounds
@@ -673,7 +674,7 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
   ).length;
   const milestones = computeMilestones(state, user, todayKey);
   const featuredMilestones = user.featuredMilestoneIds
-    .map((id) => milestones.find((milestone) => milestone.id === id && milestone.earned))
+    .map((id) => milestones.find((milestone) => milestone.id === id && milestone.earned) || milestoneDisplayFromId(id))
     .filter(Boolean)
     .slice(0, 3) as typeof milestones;
   const recentHistory = recentChantingHistory(state.chantTotals, user.id, todayKey, 7);

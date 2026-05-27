@@ -759,6 +759,37 @@ function milestoneTitle(idPrefix: string, target: number) {
   return `${target} monthly #1${target === 1 ? "" : "s"}`;
 }
 
+export function milestoneDisplayFromId(id: string): Milestone | null {
+  const legacyMilestones: Record<string, { prefix: string; target: number }> = {
+    "first-entry": { prefix: "entry", target: 1 },
+    "seven-day-streak": { prefix: "streak", target: 7 },
+    "thirty-day-streak": { prefix: "streak", target: 30 },
+    "joined-group": { prefix: "joined-group", target: 1 },
+    "first-friend": { prefix: "friend", target: 1 },
+    "created-group": { prefix: "created-group", target: 1 }
+  };
+  const parsed = legacyMilestones[id] || parseMilestoneId(id);
+  if (!parsed) return null;
+  const category = milestoneCategory(parsed.prefix);
+  if (!category) return null;
+  const title = milestoneTitle(parsed.prefix, parsed.target);
+  return makeMilestone(id, category, title, title, 1, 1);
+}
+
+function parseMilestoneId(id: string) {
+  const match = id.match(/^(.+)-(\d+)$/);
+  if (!match) return null;
+  return { prefix: match[1], target: Number(match[2]) };
+}
+
+function milestoneCategory(prefix: string): Milestone["category"] | null {
+  if (prefix === "entry" || prefix === "rounds") return "Chanting";
+  if (prefix === "streak") return "Consistency";
+  if (prefix === "friend" || prefix === "joined-group" || prefix === "created-group") return "Community";
+  if (prefix === "daily-first" || prefix === "weekly-first" || prefix === "monthly-first") return "Leaderboards";
+  return null;
+}
+
 function countLeaderboardWins(state: AppState, userId: string, todayKey: string) {
   const activeDates = Array.from(new Set(state.chantTotals.map((total) => total.localDate).filter((dateKey) => dateKey <= todayKey))).sort();
   const activeWeeks = Array.from(new Set(activeDates.map(mondayStart))).sort();

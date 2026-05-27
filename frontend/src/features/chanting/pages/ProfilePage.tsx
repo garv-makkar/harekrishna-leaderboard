@@ -17,6 +17,7 @@ import {
   imageExtensionForMime,
   imageFileProblem,
   localDayBoundaryText,
+  milestoneDisplayFromId,
   normalizedOptionalPhone,
   readableError,
   passwordProblem,
@@ -621,7 +622,7 @@ function PublicProfilePreview() {
       (request.fromUserId === currentUser.id || request.toUserId === currentUser.id)
   ).length;
   const featuredMilestones = currentUser.featuredMilestoneIds
-    .map((id) => computeMilestones(state, currentUser, todayKey).find((milestone) => milestone.id === id && milestone.earned))
+    .map((id) => computeMilestones(state, currentUser, todayKey).find((milestone) => milestone.id === id && milestone.earned) || milestoneDisplayFromId(id))
     .filter(Boolean)
     .slice(0, 3) as ReturnType<typeof computeMilestones>;
 
