@@ -4,7 +4,10 @@ import { useEffect, useRef } from "react";
 import { Award, CheckCircle2, Circle, Star, Trophy } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import { computeMilestones } from "../domain";
-import { EmptyState, MilestoneGrid, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import type { Milestone } from "../domain";
+import { EmptyState, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+
+const milestoneCategories: Milestone["category"][] = ["Chanting", "Consistency", "Community", "Leaderboards"];
 
 export function MilestonesPage() {
   const { state, currentUser, todayKey, isBusy, updateFeaturedMilestones, refreshRemoteState } = useChanting();
@@ -27,6 +30,10 @@ export function MilestonesPage() {
     .filter(Boolean) as typeof earned;
   const fallbackFeatured = featuredMilestones.length ? featuredMilestones : earned.slice(-3).reverse();
   const closestNext = [...inProgress].sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
+  const categorizedMilestones = milestoneCategories.map((category) => ({
+    category,
+    milestones: milestones.filter((milestone) => milestone.category === category)
+  })).filter((group) => group.milestones.length > 0);
 
   const toggleFeatured = (milestoneId: string) => {
     const isSelected = featuredIds.includes(milestoneId);
@@ -63,7 +70,7 @@ export function MilestonesPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-black text-stone-950">{milestone.title}</p>
-                      <p className="mt-1 text-sm leading-5 text-stone-600">{milestone.description}</p>
+                      <p className="mt-1 text-xs font-bold text-saffron-900">{milestone.category}</p>
                     </div>
                     <CheckCircle2 className="shrink-0 text-saffron-700" size={18} />
                   </div>
@@ -77,7 +84,7 @@ export function MilestonesPage() {
           {closestNext ? (
             <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-2.5">
               <p className="font-black text-stone-950">{closestNext.title}</p>
-              <p className="mt-1 text-sm leading-5 text-stone-700 sm:leading-6">{closestNext.description}</p>
+              <p className="mt-1 text-xs font-bold text-peacock-900">{closestNext.category}</p>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
                 <div className="h-full bg-peacock-500" style={{ width: `${Math.round((closestNext.progress / Math.max(1, closestNext.target)) * 100)}%` }} />
               </div>
@@ -96,7 +103,7 @@ export function MilestonesPage() {
         {earned.length === 0 ? (
           <EmptyState text="No earned milestones yet. Log rounds to unlock the first one." />
         ) : (
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {earned.map((milestone) => {
               const selected = featuredIds.includes(milestone.id);
               const disabled = !selected && featuredIds.length >= 3;
@@ -116,7 +123,7 @@ export function MilestonesPage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block font-black text-stone-950">{milestone.title}</span>
-                      <span className="mt-1 block text-sm leading-5 text-stone-600">{milestone.description}</span>
+                      <span className="mt-1 block text-xs font-bold text-stone-500">{milestone.category}</span>
                       {disabled && <span className="mt-2 block text-xs font-bold text-stone-500">Remove one featured milestone first.</span>}
                     </span>
                   </div>
@@ -128,8 +135,66 @@ export function MilestonesPage() {
       </Panel>
 
       <Panel title="All milestones" icon={<Award size={18} />}>
-        <MilestoneGrid milestones={milestones} />
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-bold text-stone-600">
+              {earned.length} of {milestones.length} milestones earned
+            </p>
+            <span className="rounded-md bg-saffron-50 px-3 py-2 text-sm font-black text-saffron-900">
+              {Math.round((earned.length / Math.max(1, milestones.length)) * 100)}%
+            </span>
+          </div>
+          {categorizedMilestones.map((group) => {
+            const groupEarned = group.milestones.filter((milestone) => milestone.earned).length;
+            return (
+              <section key={group.category} className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-black uppercase text-stone-600">{group.category}</h3>
+                  <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-black text-stone-600">
+                    {groupEarned}/{group.milestones.length}
+                  </span>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                  {group.milestones.map((milestone) => (
+                    <CompactMilestoneCard key={milestone.id} milestone={milestone} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       </Panel>
+    </div>
+  );
+}
+
+function CompactMilestoneCard({ milestone }: { milestone: Milestone }) {
+  const percent = Math.round((milestone.progress / Math.max(1, milestone.target)) * 100);
+  return (
+    <div
+      className={`rounded-md border px-3 py-2.5 shadow-sm ${
+        milestone.earned ? "border-saffron-200 bg-saffron-50" : "border-stone-200 bg-white"
+      }`}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate font-black text-stone-950">{milestone.title}</p>
+        <span
+          className={`shrink-0 rounded-md px-2 py-1 text-xs font-black ${
+            milestone.earned ? "bg-peacock-50 text-peacock-900" : "bg-stone-100 text-stone-600"
+          }`}
+        >
+          {milestone.earned ? "Done" : `${percent}%`}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-stone-100">
+        <div
+          className={milestone.earned ? "h-full bg-saffron-500" : "h-full bg-peacock-500"}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <p className="mt-2 text-xs font-bold text-stone-500">
+        {milestone.progress} / {milestone.target}
+      </p>
     </div>
   );
 }

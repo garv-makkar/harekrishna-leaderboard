@@ -54,6 +54,7 @@ export type RankedUser = {
 
 export type Milestone = {
   id: string;
+  category: "Chanting" | "Consistency" | "Community" | "Leaderboards";
   title: string;
   description: string;
   earned: boolean;
@@ -705,17 +706,81 @@ export function computeMilestones(state: AppState, user: UserProfile, todayKey: 
       request.status === "accepted" &&
       (request.fromUserId === user.id || request.toUserId === user.id)
   ).length;
+  const leaderboardWins = countLeaderboardWins(state, user.id, todayKey);
 
   return [
-    makeMilestone("first-entry", "First entry", "Log your first chanting rounds.", positiveEntries.length, 1),
-    makeMilestone("seven-day-streak", "7-day streak", "Chant on seven consecutive days.", streakBest, 7),
-    makeMilestone("thirty-day-streak", "30-day streak", "Chant on thirty consecutive days.", streakBest, 30),
-    makeMilestone("rounds-108", "108 rounds", "Reach 108 total rounds.", totalRounds, 108),
-    makeMilestone("rounds-1008", "1008 rounds", "Reach 1008 total rounds.", totalRounds, 1008),
-    makeMilestone("joined-group", "Joined a group", "Join or create your first group.", joinedGroupCount, 1),
-    makeMilestone("first-friend", "First friend", "Add your first accepted friend.", friendCount, 1),
-    makeMilestone("created-group", "Group creator", "Create your first chanting group.", createdGroupCount, 1)
+    ...makeMilestoneSeries("Chanting", "entry", positiveEntries.length, [1, 7, 30, 90, 180, 365]),
+    ...makeMilestoneSeries("Chanting", "rounds", totalRounds, [108, 500, 1008, 5000, 10000, 25000]),
+    ...makeMilestoneSeries("Consistency", "streak", streakBest, [3, 7, 14, 30, 60, 108]),
+    ...makeMilestoneSeries("Community", "friend", friendCount, [1, 3, 7, 15, 30]),
+    ...makeMilestoneSeries("Community", "joined-group", joinedGroupCount, [1, 3, 5, 10]),
+    ...makeMilestoneSeries("Community", "created-group", createdGroupCount, [1, 3, 5]),
+    ...makeMilestoneSeries("Leaderboards", "daily-first", leaderboardWins.daily, [1, 3, 7, 14, 30]),
+    ...makeMilestoneSeries("Leaderboards", "weekly-first", leaderboardWins.weekly, [1, 2, 4, 8, 12]),
+    ...makeMilestoneSeries("Leaderboards", "monthly-first", leaderboardWins.monthly, [1, 2, 3, 6])
   ];
+}
+
+function makeMilestoneSeries(
+  category: Milestone["category"],
+  idPrefix: string,
+  progress: number,
+  targets: number[]
+) {
+  return targets.map((target) => {
+    const title = milestoneTitle(idPrefix, target);
+    return makeMilestone(milestoneId(idPrefix, target), category, title, title, progress, target);
+  });
+}
+
+function milestoneId(idPrefix: string, target: number) {
+  const legacyIds: Record<string, string> = {
+    "entry-1": "first-entry",
+    "streak-7": "seven-day-streak",
+    "streak-30": "thirty-day-streak",
+    "rounds-108": "rounds-108",
+    "rounds-1008": "rounds-1008",
+    "joined-group-1": "joined-group",
+    "friend-1": "first-friend",
+    "created-group-1": "created-group"
+  };
+  return legacyIds[`${idPrefix}-${target}`] || `${idPrefix}-${target}`;
+}
+
+function milestoneTitle(idPrefix: string, target: number) {
+  if (idPrefix === "entry") return `${target} active day${target === 1 ? "" : "s"}`;
+  if (idPrefix === "rounds") return `${target} total rounds`;
+  if (idPrefix === "streak") return `${target}-day streak`;
+  if (idPrefix === "friend") return `${target} friend${target === 1 ? "" : "s"}`;
+  if (idPrefix === "joined-group") return `${target} joined group${target === 1 ? "" : "s"}`;
+  if (idPrefix === "created-group") return `${target} created group${target === 1 ? "" : "s"}`;
+  if (idPrefix === "daily-first") return `${target} daily #1${target === 1 ? "" : "s"}`;
+  if (idPrefix === "weekly-first") return `${target} weekly #1${target === 1 ? "" : "s"}`;
+  return `${target} monthly #1${target === 1 ? "" : "s"}`;
+}
+
+function countLeaderboardWins(state: AppState, userId: string, todayKey: string) {
+  const activeDates = Array.from(new Set(state.chantTotals.map((total) => total.localDate).filter((dateKey) => dateKey <= todayKey))).sort();
+  const activeWeeks = Array.from(new Set(activeDates.map(mondayStart))).sort();
+  const activeMonths = Array.from(new Set(activeDates.map(monthStart))).sort();
+
+  return {
+    daily: activeDates.filter((dateKey) => userIsRankOne(state, userId, dateKey, dateKey)).length,
+    weekly: activeWeeks.filter((start) => userIsRankOne(state, userId, start, minDateKey(addDays(start, 6), todayKey))).length,
+    monthly: activeMonths.filter((start) => {
+      const nextMonth = shiftMonthStart(start, 1);
+      return userIsRankOne(state, userId, start, minDateKey(addDays(nextMonth, -1), todayKey));
+    }).length
+  };
+}
+
+function minDateKey(a: string, b: string) {
+  return a <= b ? a : b;
+}
+
+function userIsRankOne(state: AppState, userId: string, start: string, end: string) {
+  const row = rankUsersInRange(state.users, state.chantTotals, start, end).find((item) => item.user.id === userId);
+  return Boolean(row && row.rank === 1 && row.rounds > 0);
 }
 
 export function buildActivityFeed(state: AppState, currentUserId: string, todayKey: string): ActivityFeedItem[] {
@@ -850,9 +915,17 @@ function milestoneActivityTime(state: AppState, currentUserId: string, milestone
   return fallback;
 }
 
-function makeMilestone(id: string, title: string, description: string, progress: number, target: number): Milestone {
+function makeMilestone(
+  id: string,
+  category: Milestone["category"],
+  title: string,
+  description: string,
+  progress: number,
+  target: number
+): Milestone {
   return {
     id,
+    category,
     title,
     description,
     earned: progress >= target,
