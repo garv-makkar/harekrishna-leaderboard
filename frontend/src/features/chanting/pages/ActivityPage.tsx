@@ -18,8 +18,7 @@ import { EmptyState, Panel } from "../ui";
 
 const rangeOptions = [
   { label: "7 days", value: 7 },
-  { label: "30 days", value: 30 },
-  { label: "90 days", value: 90 }
+  { label: "30 days", value: 30 }
 ];
 
 type ActivityFilter = "all" | "rounds" | "milestones" | "social";
@@ -90,7 +89,7 @@ export function ActivityPage() {
       <Panel title="Activity overview" icon={<BarChart3 size={18} />}>
         <div className="mb-3 rounded-lg border border-stone-200 bg-stone-50 p-2 shadow-sm">
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div className="grid grid-cols-3 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:flex">
+            <div className="grid grid-cols-2 gap-1 rounded-lg border border-stone-200 bg-white p-1 shadow-sm sm:flex">
               {rangeOptions.map((option) => (
                 <button
                   key={option.value}
@@ -147,9 +146,10 @@ export function ActivityPage() {
           </div>
           <div className="rounded-lg border border-stone-200 bg-white px-3 py-3 shadow-sm">
             <p className="mb-2 text-xs font-black uppercase text-stone-500">Personal bests</p>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-4">
               <BestStat label="Best day" value={personalBests.bestDayRounds} note={personalBests.bestDayDate ? formatDate(personalBests.bestDayDate) : "No entries yet"} />
               <BestStat label="Best week" value={personalBests.bestWeekRounds} note={personalBests.bestWeekStart ? `Week of ${formatDate(personalBests.bestWeekStart)}` : "No entries yet"} />
+              <BestStat label="Best month" value={personalBests.bestMonthRounds} note={personalBests.bestMonthStart ? formatMonth(personalBests.bestMonthStart) : "No entries yet"} />
               <BestStat label="Longest streak" value={bestStreak(state.chantTotals, currentUser.id)} note="days in a row" />
             </div>
           </div>
@@ -420,20 +420,29 @@ function computePersonalBests(
     { userId, localDate: "", rounds: 0 }
   );
   const weekTotals = new Map<string, number>();
+  const monthTotals = new Map<string, number>();
   entries.forEach((entry) => {
     const weekStart = mondayStart(entry.localDate);
     weekTotals.set(weekStart, (weekTotals.get(weekStart) || 0) + entry.rounds);
+    const monthStart = `${entry.localDate.slice(0, 7)}-01`;
+    monthTotals.set(monthStart, (monthTotals.get(monthStart) || 0) + entry.rounds);
   });
   const bestWeek = Array.from(weekTotals.entries()).reduce(
     (best, [weekStart, rounds]) => (rounds > best.rounds ? { weekStart, rounds } : best),
     { weekStart: "", rounds: 0 }
+  );
+  const bestMonth = Array.from(monthTotals.entries()).reduce(
+    (best, [monthStart, rounds]) => (rounds > best.rounds ? { monthStart, rounds } : best),
+    { monthStart: "", rounds: 0 }
   );
 
   return {
     bestDayDate: bestDay.localDate,
     bestDayRounds: bestDay.rounds,
     bestWeekStart: bestWeek.weekStart,
-    bestWeekRounds: bestWeek.rounds
+    bestWeekRounds: bestWeek.rounds,
+    bestMonthStart: bestMonth.monthStart,
+    bestMonthRounds: bestMonth.rounds
   };
 }
 
@@ -443,6 +452,13 @@ function mondayStart(dateKey: string) {
   const diff = day === 0 ? -6 : 1 - day;
   date.setUTCDate(date.getUTCDate() + diff);
   return date.toISOString().slice(0, 10);
+}
+
+function formatMonth(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00Z`).toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric"
+  });
 }
 
 function formatFeedTime(value: string) {
