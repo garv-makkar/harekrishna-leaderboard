@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Award, CheckCircle2, Circle, Star, Trophy } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Award, CheckCircle2, Circle, Loader2, Star, Trophy, X } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import { computeMilestones } from "../domain";
 import type { Milestone } from "../domain";
@@ -12,6 +12,7 @@ const milestoneCategories: Milestone["category"][] = ["Chanting", "Consistency",
 export function MilestonesPage() {
   const { state, currentUser, todayKey, isBusy, updateFeaturedMilestones, refreshRemoteState } = useChanting();
   const refreshedUserRef = useRef("");
+  const [savingFeatured, setSavingFeatured] = useState(false);
 
   useEffect(() => {
     if (!currentUser || refreshedUserRef.current === currentUser.id) return;
@@ -28,19 +29,25 @@ export function MilestonesPage() {
   const featuredMilestones = featuredIds
     .map((id) => earned.find((milestone) => milestone.id === id))
     .filter(Boolean) as typeof earned;
-  const fallbackFeatured = featuredMilestones.length ? featuredMilestones : earned.slice(-3).reverse();
   const closestNext = [...inProgress].sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
   const categorizedMilestones = milestoneCategories.map((category) => ({
     category,
     milestones: milestones.filter((milestone) => milestone.category === category)
   })).filter((group) => group.milestones.length > 0);
 
-  const toggleFeatured = (milestoneId: string) => {
+  const toggleFeatured = async (milestoneId: string) => {
+    if (savingFeatured) return;
     const isSelected = featuredIds.includes(milestoneId);
+    if (!isSelected && featuredIds.length >= 3) return;
     const nextIds = isSelected
       ? featuredIds.filter((id) => id !== milestoneId)
-      : [...featuredIds, milestoneId].slice(0, 3);
-    void updateFeaturedMilestones(nextIds);
+      : [...featuredIds, milestoneId];
+    setSavingFeatured(true);
+    try {
+      await updateFeaturedMilestones(nextIds);
+    } finally {
+      setSavingFeatured(false);
+    }
   };
 
   return (
@@ -61,18 +68,38 @@ export function MilestonesPage() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <Panel title="Featured on profile" icon={<Star size={18} />}>
-          {fallbackFeatured.length === 0 ? (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-bold text-stone-600">Shown on your public profile</p>
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-saffron-50 px-2.5 py-1 text-xs font-black text-saffron-900">
+              {savingFeatured && <Loader2 className="animate-spin" size={13} />}
+              {featuredIds.length}/3 selected
+            </span>
+          </div>
+          {earned.length === 0 ? (
             <EmptyState text="Complete a milestone to feature it on your profile." />
+          ) : featuredMilestones.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-4 text-center">
+              <p className="font-black text-stone-900">No featured milestones selected.</p>
+              <p className="mt-1 text-sm font-bold text-stone-500">Pick up to 3 earned milestones below.</p>
+            </div>
           ) : (
             <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-              {fallbackFeatured.map((milestone) => (
+              {featuredMilestones.map((milestone, index) => (
                 <div key={milestone.id} className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-black text-stone-950">{milestone.title}</p>
-                      <p className="mt-1 text-xs font-bold text-saffron-900">{milestone.category}</p>
+                      <p className="mt-1 text-xs font-bold text-saffron-900">Slot {index + 1} - {milestone.category}</p>
                     </div>
-                    <CheckCircle2 className="shrink-0 text-saffron-700" size={18} />
+                    <button
+                      type="button"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-white text-stone-500 ring-1 ring-saffron-100 transition hover:text-stone-900 disabled:opacity-60"
+                      onClick={() => toggleFeatured(milestone.id)}
+                      disabled={isBusy || savingFeatured}
+                      aria-label={`Remove ${milestone.title} from featured milestones`}
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -97,24 +124,34 @@ export function MilestonesPage() {
       </div>
 
       <Panel title="Choose profile milestones" icon={<Star size={18} />}>
-        <p className="mb-3 text-sm leading-5 text-stone-600 sm:leading-6">
-          Select up to 3 earned milestones for your profile.
-        </p>
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm leading-5 text-stone-600 sm:leading-6">
+            Select up to 3 earned milestones for your profile.
+          </p>
+          <span className="text-xs font-black uppercase text-stone-500">
+            {featuredIds.length === 3 ? "All slots filled" : `${3 - featuredIds.length} slot${3 - featuredIds.length === 1 ? "" : "s"} open`}
+          </span>
+        </div>
         {earned.length === 0 ? (
           <EmptyState text="No earned milestones yet. Log rounds to unlock the first one." />
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {earned.map((milestone) => {
-              const selected = featuredIds.includes(milestone.id);
+              const selectedIndex = featuredIds.indexOf(milestone.id);
+              const selected = selectedIndex >= 0;
               const disabled = !selected && featuredIds.length >= 3;
               return (
                 <button
                   key={milestone.id}
                   type="button"
                   className={`rounded-lg border px-3 py-2.5 text-left shadow-sm transition ${
-                    selected ? "border-saffron-300 bg-saffron-50" : "border-stone-200 bg-white hover:border-saffron-200"
+                    selected
+                      ? "border-saffron-300 bg-saffron-50 ring-2 ring-saffron-100"
+                      : disabled
+                        ? "border-stone-200 bg-stone-50 opacity-75"
+                        : "border-stone-200 bg-white hover:border-saffron-200"
                   }`}
-                  disabled={isBusy || disabled}
+                  disabled={isBusy || savingFeatured || disabled}
                   onClick={() => toggleFeatured(milestone.id)}
                 >
                   <div className="flex items-start gap-3">
@@ -123,7 +160,9 @@ export function MilestonesPage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block font-black text-stone-950">{milestone.title}</span>
-                      <span className="mt-1 block text-xs font-bold text-stone-500">{milestone.category}</span>
+                      <span className="mt-1 block text-xs font-bold text-stone-500">
+                        {selected ? `Featured ${selectedIndex + 1}` : milestone.category}
+                      </span>
                       {disabled && <span className="mt-2 block text-xs font-bold text-stone-500">Remove one featured milestone first.</span>}
                     </span>
                   </div>

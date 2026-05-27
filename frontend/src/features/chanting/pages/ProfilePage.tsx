@@ -657,10 +657,10 @@ function PublicProfilePreview() {
           <EmptyState text="Choose up to 3 earned milestones from the Milestones page to show here." />
         ) : (
           <div className="grid gap-2 min-[420px]:grid-cols-3">
-            {featuredMilestones.map((milestone) => (
+            {featuredMilestones.map((milestone, index) => (
               <div key={milestone.id} className="rounded-md bg-white px-3 py-2 text-sm ring-1 ring-saffron-100">
                 <p className="font-black text-stone-950">{milestone.title}</p>
-                <p className="mt-1 leading-5 text-stone-600">{milestone.description}</p>
+                <p className="mt-1 text-xs font-bold text-saffron-900">Slot {index + 1} - {milestone.category}</p>
               </div>
             ))}
           </div>

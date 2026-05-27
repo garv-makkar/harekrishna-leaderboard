@@ -868,8 +868,18 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) return;
     const earnedIds = new Set(computeMilestones(state, currentUser, todayKey).filter((milestone) => milestone.earned).map((milestone) => milestone.id));
     const cleanIds = Array.from(new Set(milestoneIds.filter((id) => earnedIds.has(id)))).slice(0, 3);
+    const previousFeaturedIds = currentUser.featuredMilestoneIds;
+    const applyFeaturedIds = (ids: string[]) => {
+      setState((current) => ({
+        ...current,
+        users: current.users.map((user) =>
+          user.id === currentUser.id ? { ...user, featuredMilestoneIds: ids } : user
+        )
+      }));
+    };
     if (supabase) {
       const client = supabase;
+      applyFeaturedIds(cleanIds);
       await runRemote(async () => {
         const { error } = await client
           .from("profiles")
@@ -878,15 +888,13 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
         await refreshRemoteState(currentUser.id, "core");
         showMessage("Featured milestones saved.");
-      }).catch((error: Error) => showMessage(readableError(error, "profile")));
+      }).catch((error: Error) => {
+        applyFeaturedIds(previousFeaturedIds);
+        showMessage(readableError(error, "profile"));
+      });
       return;
     }
-    saveState({
-      ...state,
-      users: state.users.map((user) =>
-        user.id === currentUser.id ? { ...user, featuredMilestoneIds: cleanIds } : user
-      )
-    });
+    applyFeaturedIds(cleanIds);
     showMessage("Featured milestones saved.");
   };
 

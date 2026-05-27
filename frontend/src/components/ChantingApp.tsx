@@ -780,10 +780,10 @@ function PublicUserDialog({ userId, onClose }: { userId: string; onClose: () => 
           <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-4 py-3">
             <p className="mb-2 font-black text-saffron-900">Featured milestones</p>
             <div className="grid gap-2 sm:grid-cols-3">
-              {featuredMilestones.map((milestone) => (
+              {featuredMilestones.map((milestone, index) => (
                 <div key={milestone.id} className="rounded-md bg-white px-3 py-2 text-sm ring-1 ring-saffron-100">
                   <p className="font-black text-stone-950">{milestone.title}</p>
-                  <p className="mt-1 leading-5 text-stone-600">{milestone.description}</p>
+                  <p className="mt-1 text-xs font-bold text-saffron-900">Slot {index + 1} - {milestone.category}</p>
                 </div>
               ))}
             </div>
