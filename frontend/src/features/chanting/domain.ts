@@ -71,7 +71,7 @@ export type ActivityFeedItem = {
 };
 
 export type AuthMode = "signin" | "signup" | "newPassword" | "checkEmail";
-export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "milestones" | "notifications" | "profile" | "about";
+export type TabId = "home" | "groups" | "friends" | "global" | "activity" | "milestones" | "profile" | "about";
 
 export type ProfileRow = {
   id: string;

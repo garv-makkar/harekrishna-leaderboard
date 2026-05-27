@@ -67,7 +67,7 @@ export type AppNotification = {
   title: string;
   body: string;
   tone: "success" | "info" | "warning";
-  actionTab: "home" | "groups" | "friends" | "global" | "activity" | "milestones" | "notifications" | "profile" | "about" | "";
+  actionTab: "home" | "groups" | "friends" | "global" | "activity" | "milestones" | "profile" | "about" | "";
   dedupeKey: string;
   readAt: string;
   createdAt: string;

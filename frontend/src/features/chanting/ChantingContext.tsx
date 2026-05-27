@@ -129,7 +129,8 @@ type ChantingContextValue = {
   checkIdentityConflicts: (username: string, email: string, phone: string) => Promise<void>;
   addNotification: (notification: NewNotification) => Promise<void>;
   markNotificationRead: (notificationId: string) => Promise<void>;
-  markAllNotificationsRead: () => Promise<void>;
+  clearNotification: (notificationId: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
 };
 
 type NewNotification = {
@@ -603,23 +604,31 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const markAllNotificationsRead = async () => {
-    if (!currentUser) return;
-    const readAt = new Date().toISOString();
+  const clearNotification = async (notificationId: string) => {
     const previousNotifications = state.notifications || [];
     setState((current) => ({
       ...current,
-      notifications: (current.notifications || []).map((item) =>
-        item.userId === currentUser.id ? { ...item, readAt: item.readAt || readAt } : item
-      )
+      notifications: (current.notifications || []).filter((item) => item.id !== notificationId)
     }));
     if (!supabase) return;
-    const { error } = await supabase.from("notifications").update({ read_at: readAt }).eq("user_id", currentUser.id).is("read_at", null);
+    const { error } = await supabase.from("notifications").delete().eq("id", notificationId);
     if (error) {
-      setState((current) => ({
-        ...current,
-        notifications: previousNotifications
-      }));
+      setState((current) => ({ ...current, notifications: previousNotifications }));
+      showMessage(readableError(error));
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    if (!currentUser) return;
+    const previousNotifications = state.notifications || [];
+    setState((current) => ({
+      ...current,
+      notifications: (current.notifications || []).filter((item) => item.userId !== currentUser.id)
+    }));
+    if (!supabase) return;
+    const { error } = await supabase.from("notifications").delete().eq("user_id", currentUser.id);
+    if (error) {
+      setState((current) => ({ ...current, notifications: previousNotifications }));
       showMessage(readableError(error));
     }
   };
@@ -941,7 +950,8 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
     checkIdentityConflicts,
     addNotification,
     markNotificationRead,
-    markAllNotificationsRead
+    clearNotification,
+    clearAllNotifications
   };
 
   return <ChantingContext.Provider value={value}>{children}</ChantingContext.Provider>;

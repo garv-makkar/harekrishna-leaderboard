@@ -32,7 +32,6 @@ import { HomePage } from "@/features/chanting/pages/HomePage";
 import { MilestonesPage } from "@/features/chanting/pages/MilestonesPage";
 import { ProfilePage } from "@/features/chanting/pages/ProfilePage";
 import { ActivityPage } from "@/features/chanting/pages/ActivityPage";
-import { NotificationsPage } from "@/features/chanting/pages/NotificationsPage";
 import {
   bestStreak,
   computeMilestones,
@@ -53,7 +52,6 @@ const tabs = [
   { id: "global", label: "Global", icon: Globe2 },
   { id: "activity", label: "Activity", icon: LineChart },
   { id: "milestones", label: "Milestones", icon: Star },
-  { id: "notifications", label: "Notifications", icon: Bell },
   { id: "profile", label: "Profile", icon: Settings },
   { id: "about", label: "About", icon: Sparkles }
 ] as const;
@@ -158,7 +156,8 @@ function AppShell({
     ensureFriendsData,
     friends,
     message,
-    markAllNotificationsRead,
+    clearAllNotifications,
+    clearNotification,
     markNotificationRead,
     saveState,
     selectedPublicUserId,
@@ -204,6 +203,7 @@ function AppShell({
     : 0;
   const notifications = buildNotifications(state, currentUser?.id || "", emailVerified, message);
   const urgentNotificationCount = notifications.filter((item) => !item.readAt).length;
+  const savedNotificationCount = notifications.filter((item) => item.persistedId).length;
   const activeTabLabel = tabs.find((tab) => tab.id === activeTab)?.label || "Dashboard";
   const isRefreshingAppData = loadingRemoteSlices.core || loadingRemoteSlices.groups || loadingRemoteSlices.friends;
   const refreshError = remoteRefreshErrors.core || remoteRefreshErrors.groups || remoteRefreshErrors.friends;
@@ -254,7 +254,6 @@ function AppShell({
               currentUserAvatar={currentUser?.avatarUrl || ""}
               friendsCount={friends.length}
               incomingRequestCount={incomingRequestCount}
-              unreadNotificationCount={urgentNotificationCount}
               onTabChange={handleTabChange}
             />
             <div className="mt-auto border-t border-saffron-100 p-4">
@@ -279,7 +278,6 @@ function AppShell({
               currentUserAvatar={currentUser?.avatarUrl || ""}
               friendsCount={friends.length}
               incomingRequestCount={incomingRequestCount}
-              unreadNotificationCount={urgentNotificationCount}
               onTabChange={handleTabChange}
             />
             <div className="mt-auto space-y-3">
@@ -372,20 +370,10 @@ function AppShell({
                           <button
                             type="button"
                             className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black text-peacock-900 ring-1 ring-peacock-100"
-                            disabled={urgentNotificationCount === 0}
-                            onClick={() => void markAllNotificationsRead()}
+                            disabled={savedNotificationCount === 0}
+                            onClick={() => void clearAllNotifications()}
                           >
-                            Mark all read
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-md bg-white px-2 py-1 text-xs font-black text-stone-800 ring-1 ring-stone-200"
-                            onClick={() => {
-                              handleTabChange("notifications");
-                              setShowNotifications(false);
-                            }}
-                          >
-                            View all
+                            Clear all
                           </button>
                           <button
                             type="button"
@@ -442,13 +430,13 @@ function AppShell({
                                 {item.action.label}
                               </button>
                             )}
-                            {item.persistedId && !item.readAt && (
+                            {item.persistedId && (
                               <button
                                 type="button"
                                 className="mt-2 rounded-md bg-white/80 px-3 py-2 text-xs font-black text-stone-700 ring-1 ring-white"
-                                onClick={() => void markNotificationRead(item.persistedId!)}
+                                onClick={() => void clearNotification(item.persistedId!)}
                               >
-                                Mark read
+                                Clear
                               </button>
                             )}
                             </div>
@@ -486,7 +474,6 @@ function AppShell({
           {activeTab === "global" && <GlobalPage />}
           {activeTab === "activity" && <ActivityPage />}
           {activeTab === "milestones" && <MilestonesPage />}
-          {activeTab === "notifications" && <NotificationsPage onOpenTab={handleTabChange} />}
           {activeTab === "profile" && <ProfilePage />}
           {activeTab === "about" && <AboutPage />}
         </section>
@@ -588,14 +575,12 @@ function NavigationList({
   currentUserAvatar,
   friendsCount,
   incomingRequestCount,
-  unreadNotificationCount,
   onTabChange
 }: {
   activeTab: TabId;
   currentUserAvatar: string;
   friendsCount: number;
   incomingRequestCount: number;
-  unreadNotificationCount: number;
   onTabChange: (tab: TabId) => void;
 }) {
   return (
@@ -605,9 +590,7 @@ function NavigationList({
         const badgeValue =
           tab.id === "friends"
             ? incomingRequestCount || friendsCount
-            : tab.id === "notifications"
-              ? unreadNotificationCount
-              : 0;
+            : 0;
         return (
           <button
             key={tab.id}
@@ -891,6 +874,7 @@ function buildNotifications(
 }
 
 function notificationToDropdownItem(notification: AppNotification): DropdownNotification {
+  const actionTab = isAppTab(notification.actionTab) ? notification.actionTab : "";
   return {
     id: `stored-${notification.id}`,
     persistedId: notification.id,
@@ -898,8 +882,12 @@ function notificationToDropdownItem(notification: AppNotification): DropdownNoti
     title: notification.title,
     body: notification.body,
     readAt: notification.readAt,
-    action: notification.actionTab
-      ? { type: "open-tab" as const, tab: notification.actionTab as TabId, label: "Open" }
+    action: actionTab
+      ? { type: "open-tab" as const, tab: actionTab as TabId, label: "Open" }
       : undefined
   };
+}
+
+function isAppTab(tab: string): tab is TabId {
+  return tabs.some((item) => item.id === tab);
 }
