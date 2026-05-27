@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, HeartHandshake, Sparkles, Trophy } from "lucide-react";
+import { Flame, Github, HeartHandshake, Linkedin, Mail, Sparkles, Trophy } from "lucide-react";
 import { PageHeader, Panel } from "../ui";
 
 export function AboutPage() {
@@ -20,10 +20,30 @@ export function AboutPage() {
         </div>
       </Panel>
       <Panel title="About the developer" icon={<Sparkles size={18} />}>
-        <p className="max-w-3xl text-sm leading-6 text-stone-700 sm:text-base">
-          This space is ready for your story, contact links, project purpose, and future updates. You can add your
-          name, temple/community details, GitHub, Instagram, or any personal note later.
-        </p>
+        <div className="space-y-4">
+          <p className="max-w-3xl text-sm leading-6 text-stone-700 sm:text-base">
+            I am Garv Makkar. I started my spirituality journey in 2026 and built this app to keep chanting progress simple, visible, and accountable.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <ContactLink
+              icon={<Mail size={17} />}
+              label="Email"
+              value="garv.makkar03@gmail.com"
+              href="mailto:garv.makkar03@gmail.com"
+            />
+            <ContactLink
+              icon={<Linkedin size={17} />}
+              label="LinkedIn"
+              value="garvmakkar"
+              href="https://www.linkedin.com/in/garvmakkar/"
+            />
+            <ContactLink
+              icon={<Github size={17} />}
+              label="GitHub"
+              value="To be added"
+            />
+          </div>
+        </div>
       </Panel>
     </div>
   );
@@ -38,5 +58,38 @@ function AboutTile({ icon, title, text }: { icon: React.ReactNode; title: string
       <p className="font-black text-stone-900">{title}</p>
       <p className="mt-1 text-sm leading-6 text-stone-600">{text}</p>
     </div>
+  );
+}
+
+function ContactLink({ icon, label, value, href }: { icon: React.ReactNode; label: string; value: string; href?: string }) {
+  const content = (
+    <>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-saffron-50 text-saffron-900 ring-1 ring-saffron-100">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xs font-black uppercase text-stone-500">{label}</span>
+        <span className="mt-0.5 block truncate text-sm font-black text-stone-900">{value}</span>
+      </span>
+    </>
+  );
+
+  if (!href) {
+    return (
+      <div className="flex min-w-0 items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={href}
+      target={href.startsWith("http") ? "_blank" : undefined}
+      rel={href.startsWith("http") ? "noreferrer" : undefined}
+      className="flex min-w-0 items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm transition hover:border-saffron-200 hover:bg-saffron-50"
+    >
+      {content}
+    </a>
   );
 }

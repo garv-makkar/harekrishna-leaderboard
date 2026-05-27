@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, Flame, History, PlusCircle, Target, Users } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
-  approximateHinduCalendar,
   addDays,
   bestStreak,
   computeMilestones,
@@ -19,6 +18,14 @@ import {
   sumRounds,
 } from "../domain";
 import { ActionEmptyState, Card, Field, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+
+type TithiState = {
+  status: "loading" | "ready" | "unavailable";
+  name: string;
+  paksha: string;
+  lunarDate: string;
+  note: string;
+};
 
 export function HomePage() {
   const {
@@ -50,6 +57,13 @@ export function HomePage() {
   const [shareStatus, setShareStatus] = useState("");
   const [goalDraft, setGoalDraft] = useState("16");
   const [highRoundConfirmed, setHighRoundConfirmed] = useState(false);
+  const [tithiState, setTithiState] = useState<TithiState>({
+    status: "loading",
+    name: "Loading",
+    paksha: "Fetching Drik Panchang",
+    lunarDate: "",
+    note: ""
+  });
   const refreshedUserRef = useRef("");
 
   useEffect(() => {
@@ -65,6 +79,47 @@ export function HomePage() {
   useEffect(() => {
     setHighRoundConfirmed(false);
   }, [draftRounds, selectedDate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setTithiState({
+      status: "loading",
+      name: "Loading",
+      paksha: "Fetching Drik Panchang",
+      lunarDate: "",
+      note: ""
+    });
+    fetch("/api/tithi")
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.ok) {
+          throw new Error(payload?.note || "Drik Panchang tithi service is unavailable.");
+        }
+        if (!cancelled) {
+          setTithiState({
+            status: "ready",
+            name: String(payload.name || "Unavailable"),
+            paksha: String(payload.paksha || ""),
+            lunarDate: String(payload.lunarDate || ""),
+            note: String(payload.note || "Fetched from Drik Panchang.")
+          });
+        }
+      })
+      .catch((error: Error) => {
+        if (!cancelled) {
+          setTithiState({
+            status: "unavailable",
+            name: "Unavailable",
+            paksha: "Drik Panchang service is down",
+            lunarDate: "",
+            note: error.message || "We cannot tell the tithi reliably right now."
+          });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [todayKey]);
 
   if (!currentUser) return null;
 
@@ -82,7 +137,6 @@ export function HomePage() {
   const hasStartedChanting = allTimeRounds > 0;
   const isLoadingRelationships = loadingRemoteSlices.friends || loadingRemoteSlices.groups;
   const isFirstRun = !isLoadingRelationships && !hasStartedChanting && joinedGroups.length === 0 && friends.length === 0;
-  const hinduDay = approximateHinduCalendar(todayKey);
   const dailyGoal = currentUser.dailyGoal || 16;
   const remainingGoalRounds = Math.max(0, dailyGoal - currentRounds);
   const goalPercent = Math.min(100, Math.round((currentRounds / Math.max(1, dailyGoal)) * 100));
@@ -255,7 +309,13 @@ export function HomePage() {
     ctx.fillRect(72, 500, 700, 58);
     ctx.fillStyle = "#92400e";
     ctx.font = "800 24px Arial";
-    ctx.fillText(`${hinduDay.paksha} ${hinduDay.name}${hinduDay.isEkadashi ? " • Ekadashi" : ""}`, 96, 538);
+    ctx.fillText(
+      tithiState.status === "ready"
+        ? `${tithiState.paksha} ${tithiState.name}`
+        : "Tithi unavailable - Drik Panchang service is down",
+      96,
+      538
+    );
     ctx.fillStyle = "#0f766e";
     ctx.font = "900 88px Arial";
     ctx.fillText("HK", 930, 330);
@@ -279,12 +339,23 @@ export function HomePage() {
             <p className="mt-1 text-sm font-bold text-stone-600">{formatDate(todayKey)}</p>
           </div>
           <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
-            <TopCompactStat label="Tithi" value={hinduDay.name} note={hinduDay.paksha} tone="saffron" />
+            <TopCompactStat
+              label="Tithi"
+              value={tithiState.name}
+              note={tithiState.status === "ready" ? `${tithiState.paksha} - Drik Panchang` : tithiState.paksha}
+              tone="saffron"
+            />
             <TopCompactStat label="Today" value={currentRounds} note="saved rounds" tone="peacock" />
             <TopCompactStat label="Week" value={weeklyRounds} note="Mon onward" tone="stone" />
           </div>
         </div>
       </section>
+      {tithiState.status === "unavailable" && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-bold text-amber-900">
+          <AlertTriangle className="mt-0.5 shrink-0" size={17} />
+          <p>{tithiState.note}</p>
+        </div>
+      )}
       <PageHeader
         eyebrow={selectedDateLabel}
         icon={<CalendarDays size={16} />}
