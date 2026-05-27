@@ -300,7 +300,7 @@ export function isAccountNotFoundError(message: string) {
 }
 
 export function readableError(error: unknown, context?: "signin" | "signup" | "otp" | "reset" | "rounds" | "profile") {
-  const raw = error instanceof Error ? error.message : String(error || "Something went wrong.");
+  const raw = errorMessage(error);
   const text = raw.toLowerCase();
 
   if (text.includes("profiles_username_key") || (text.includes("username") && text.includes("duplicate"))) {
@@ -350,6 +350,20 @@ export function readableError(error: unknown, context?: "signin" | "signup" | "o
   if (text.includes("network")) return "Network error. Check your internet connection and try again.";
   if (text.includes("bucket not found")) return "Storage bucket is missing. Run the latest Supabase Storage migration, then try again.";
   return raw;
+}
+
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const parts = [record.message, record.details, record.hint, record.code]
+      .filter((value): value is string | number => typeof value === "string" || typeof value === "number")
+      .map(String)
+      .filter(Boolean);
+    if (parts.length > 0) return parts.join(" ");
+  }
+  return "Something went wrong.";
 }
 
 export function usernameHelpText() {
