@@ -881,15 +881,23 @@ export function ChantingProvider({ children }: { children: React.ReactNode }) {
       const client = supabase;
       applyFeaturedIds(cleanIds);
       await runRemote(async () => {
-        const { data, error } = await client
-          .from("profiles")
-          .update({ featured_milestone_ids: cleanIds })
-          .eq("id", currentUser.id)
-          .select("featured_milestone_ids")
-          .single();
-        if (error) throw error;
-        if (!data) throw new Error("Featured milestones could not be saved. Please try signing in again.");
-        applyFeaturedIds(Array.isArray(data.featured_milestone_ids) ? data.featured_milestone_ids : cleanIds);
+        const { data, error } = await client.rpc("set_featured_milestones", {
+          milestone_ids: cleanIds
+        });
+        if (error) {
+          if (String(error.message || "").toLowerCase().includes("set_featured_milestones")) {
+            const { error: updateError } = await client
+              .from("profiles")
+              .update({ featured_milestone_ids: cleanIds })
+              .eq("id", currentUser.id);
+            if (updateError) throw updateError;
+            applyFeaturedIds(cleanIds);
+          } else {
+            throw error;
+          }
+        } else {
+          applyFeaturedIds(Array.isArray(data) ? data : cleanIds);
+        }
         showMessage("Featured milestones saved.");
       }).catch((error: Error) => {
         applyFeaturedIds(previousFeaturedIds);

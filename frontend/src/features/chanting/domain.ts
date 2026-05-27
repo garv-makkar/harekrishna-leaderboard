@@ -347,6 +347,16 @@ export function readableError(error: unknown, context?: "signin" | "signup" | "o
   if (context === "rounds" && (text.includes("chant_totals_rounds_check") || text.includes("rounds"))) {
     return `Rounds must be between 0 and ${MAX_DAILY_ROUNDS} for one user on one day.`;
   }
+  if (
+    context === "profile" &&
+    (text.includes("featured_milestone_ids") ||
+      text.includes("set_featured_milestones") ||
+      text.includes("schema cache") ||
+      text.includes("column") ||
+      text.includes("function"))
+  ) {
+    return "Featured milestones need the latest database migration. Apply the newest Supabase migration, then try again.";
+  }
   if (text.includes("network")) return "Network error. Check your internet connection and try again.";
   if (text.includes("bucket not found")) return "Storage bucket is missing. Run the latest Supabase Storage migration, then try again.";
   return raw;

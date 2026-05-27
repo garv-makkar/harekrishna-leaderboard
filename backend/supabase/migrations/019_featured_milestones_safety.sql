@@ -40,3 +40,41 @@ as $$
 $$;
 
 grant execute on function public.get_current_profile() to authenticated;
+
+create or replace function public.set_featured_milestones(milestone_ids text[])
+returns text[]
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  clean_ids text[];
+begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select coalesce(array_agg(distinct_id), '{}'::text[])
+  into clean_ids
+  from (
+    select distinct_id
+    from unnest(coalesce(milestone_ids, '{}'::text[])) with ordinality as selected(distinct_id, position)
+    where nullif(trim(distinct_id), '') is not null
+    group by distinct_id
+    order by min(position)
+    limit 3
+  ) ordered_ids;
+
+  update public.profiles
+  set featured_milestone_ids = clean_ids
+  where id = auth.uid();
+
+  if not found then
+    raise exception 'Profile not found';
+  end if;
+
+  return clean_ids;
+end;
+$$;
+
+grant execute on function public.set_featured_milestones(text[]) to authenticated;
