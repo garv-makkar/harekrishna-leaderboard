@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CalendarDays, PlusCircle } from "lucide-react";
+import { AlertTriangle, BookOpen, CalendarDays, PlusCircle } from "lucide-react";
 import { useChanting } from "../ChantingContext";
+import quotes from "../data/prabhupada-quotes.json";
 import {
   formatDate,
   MAX_DAILY_ROUNDS,
@@ -17,6 +18,17 @@ type TithiState = {
   lunarDate: string;
   note: string;
 };
+
+type DailyQuote = {
+  id: number;
+  date: string;
+  month: string;
+  day: number;
+  quote: string;
+  source: string;
+};
+
+const prabhupadaQuotes = quotes as DailyQuote[];
 
 export function HomePage() {
   const {
@@ -119,6 +131,7 @@ export function HomePage() {
   const dailyGoal = currentUser.dailyGoal || 16;
   const remainingGoalRounds = Math.max(0, dailyGoal - currentRounds);
   const goalPercent = Math.min(100, Math.round((currentRounds / Math.max(1, dailyGoal)) * 100));
+  const prabhupadaQuote = prabhupadaQuotes.find((quote) => quote.date === todayKey.slice(5));
   const hasUnsavedDraft = draftRounds !== currentRounds;
   const changeEditableDate = (nextDate: string, knownRounds?: number) => {
     if (nextDate !== selectedDate && hasUnsavedDraft) {
@@ -185,6 +198,27 @@ export function HomePage() {
           <AlertTriangle className="mt-0.5 shrink-0" size={17} />
           <p>{tithiState.note}</p>
         </div>
+      )}
+      {prabhupadaQuote && (
+        <section className="rounded-lg border border-peacock-100 bg-peacock-50/80 px-3 py-3 shadow-sm sm:px-4">
+          <div className="flex gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white text-peacock-800 ring-1 ring-peacock-100">
+              <BookOpen size={18} />
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <p className="font-black text-stone-950">Srila Prabhupada quote</p>
+                <p className="text-xs font-black uppercase text-peacock-900">
+                  {prabhupadaQuote.month} {prabhupadaQuote.day}
+                </p>
+              </div>
+              <blockquote className="mt-2 text-sm leading-6 text-stone-800 sm:text-base">
+                "{prabhupadaQuote.quote}"
+              </blockquote>
+              <p className="mt-2 text-xs font-bold text-stone-500">{prabhupadaQuote.source}</p>
+            </div>
+          </div>
+        </section>
       )}
       <PageHeader
         eyebrow={selectedDateLabel}
