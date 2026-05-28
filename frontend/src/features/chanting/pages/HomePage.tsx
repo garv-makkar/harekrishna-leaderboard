@@ -217,7 +217,6 @@ export function HomePage() {
                 type="number"
                 min={0}
                 max={MAX_DAILY_ROUNDS}
-                helper={`Max ${MAX_DAILY_ROUNDS}. Saved: ${currentRounds}.`}
               />
               <button
                 type="button"

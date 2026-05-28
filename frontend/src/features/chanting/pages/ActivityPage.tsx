@@ -51,7 +51,6 @@ export function ActivityPage() {
 
   const activeDays = history.filter((item) => item.rounds > 0).length;
   const totalRounds = history.reduce((sum, item) => sum + item.rounds, 0);
-  const highestRounds = Math.max(1, ...history.map((item) => item.rounds));
   const averageOnActiveDays = activeDays ? Math.round((totalRounds / activeDays) * 10) / 10 : 0;
   const allEntries = state.chantTotals
     .filter((total) => total.userId === currentUser.id && total.rounds > 0)
@@ -156,43 +155,7 @@ export function ActivityPage() {
         </div>
       </Panel>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
-        <Panel title={`${days}-day history`} icon={<CalendarDays size={18} />}>
-          <div className="-mx-1 overflow-x-auto px-1 pb-1">
-            <div className="grid auto-cols-[64px] grid-flow-col gap-2 sm:auto-cols-[72px] xl:auto-cols-fr xl:grid-flow-row xl:[grid-template-columns:repeat(auto-fit,minmax(62px,1fr))]">
-              {history.map((item) => {
-                const isToday = item.dateKey === todayKey;
-                const barHeight = Math.max(8, Math.round((item.rounds / highestRounds) * 76));
-                return (
-                  <button
-                    key={item.dateKey}
-                    type="button"
-                    className={`flex min-w-0 flex-col items-center gap-2 rounded-md border px-2 py-2 text-center ${
-                      isToday ? "border-saffron-400 bg-saffron-50 shadow-sm" : "border-stone-200 bg-white shadow-sm hover:border-saffron-200"
-                    }`}
-                    onClick={() => {
-                      setSelectedDate(item.dateKey);
-                      showMessage(`Selected ${formatDate(item.dateKey)} in the rounds editor.`);
-                    }}
-                    title={`${formatDate(item.dateKey)}: ${item.rounds} rounds`}
-                  >
-                    <div className="flex h-16 w-full items-end rounded bg-stone-50 px-1 py-1 sm:h-20">
-                      <div
-                        className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
-                        style={{ height: `${item.rounds > 0 ? barHeight : 8}px` }}
-                      />
-                    </div>
-                    <span className="text-sm font-black text-stone-900">{item.rounds}</span>
-                    <span className={`truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
-                      {isToday ? "Today" : shortDate(item.dateKey)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </Panel>
-
+      <div>
         <Panel title="Recent activity" icon={<ListChecks size={18} />}>
           <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg border border-stone-200 bg-stone-50 p-1 shadow-sm sm:flex sm:flex-wrap">
             {activityFilterOptions.map((option) => (
@@ -504,13 +467,6 @@ function buildMonthCalendar(todayKey: string, joinedDateKey: string, totals: { u
     };
   });
   return [...blanks, ...days];
-}
-
-function shortDate(dateKey: string) {
-  return new Date(`${dateKey}T00:00:00Z`).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short"
-  });
 }
 
 function csvCell(value: string) {

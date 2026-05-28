@@ -76,7 +76,6 @@ export function GroupsPage({
     (sum, userId) => sum + sumRounds(state.chantTotals, userId, "daily", todayKey),
     0
   );
-  const selectedActiveToday = selectedMemberIds.filter((userId) => sumRounds(state.chantTotals, userId, "daily", todayKey) > 0).length;
   const openActionPanel = (mode: "join" | "create") => {
     setActionMode(mode);
     window.requestAnimationFrame(() => actionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -263,11 +262,6 @@ export function GroupsPage({
                 <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                   {visibleJoinedGroups.map((group) => {
                     const groupMembers = state.groupMembers.filter((member) => member.groupId === group.id);
-                    const todayTotal = groupMembers.reduce(
-                      (sum, member) => sum + sumRounds(state.chantTotals, member.userId, "daily", todayKey),
-                      0
-                    );
-                    const activeToday = groupMembers.filter((member) => sumRounds(state.chantTotals, member.userId, "daily", todayKey) > 0).length;
                     const isSelected = selectedGroup?.id === group.id;
                     return (
                       <div
@@ -285,9 +279,6 @@ export function GroupsPage({
                             <Avatar src={group.imageUrl} label={group.name} />
                             <div className="min-w-0">
                               <p className="truncate font-bold text-stone-900">{group.name}</p>
-                              <p className="text-sm text-stone-600">
-                                {groupMemberCount(group.id)} member{groupMemberCount(group.id) === 1 ? "" : "s"}
-                              </p>
                             </div>
                           </div>
                           <span className={`rounded-md px-2 py-1 text-xs font-black ${isSelected ? "bg-saffron-500 text-white" : "bg-stone-100 text-stone-700"}`}>
@@ -298,15 +289,12 @@ export function GroupsPage({
                           <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-black uppercase text-peacock-900">
                             {currentUserGroupRole(group.id)}
                           </span>
-                          <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-black text-saffron-900">
-                            {todayTotal} today
-                          </span>
                           <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
-                            {activeToday}/{groupMembers.length} active
+                            {groupMembers.length} member{groupMembers.length === 1 ? "" : "s"}
                           </span>
                           <button
                             type="button"
-                            className="inline-flex items-center gap-1.5 rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900"
+                            className="inline-flex items-center gap-1.5 rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900 sm:ml-auto"
                             onClick={() => setInviteModalGroup(group)}
                           >
                             <Share2 size={13} /> Invite
@@ -369,9 +357,6 @@ export function GroupsPage({
                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                   <span className="rounded-md bg-peacock-50 px-2.5 py-1.5 text-xs font-black text-peacock-900 ring-1 ring-peacock-100">
                     {selectedMemberCount} member{selectedMemberCount === 1 ? "" : "s"}
-                  </span>
-                  <span className="rounded-md bg-stone-100 px-2.5 py-1.5 text-xs font-bold text-stone-700">
-                    {selectedActiveToday}/{selectedMemberCount} active
                   </span>
                   <span className="rounded-md bg-stone-100 px-2.5 py-1.5 text-xs font-bold text-stone-700">
                     {selectedTodayTotal} today
@@ -453,12 +438,8 @@ export function GroupsPage({
                 <GroupTargetPanel group={selectedGroup} />
               </div>
             </GroupDetailsSection>
-            <GroupDetailsSection title="Members and activity" icon={<Users size={18} />} defaultOpen={false}>
-              <div className="space-y-4">
-                <GroupActivityFeed group={selectedGroup} />
-                <GroupMemberRoster group={selectedGroup} />
-                <GroupAccountabilityPanel group={selectedGroup} />
-              </div>
+            <GroupDetailsSection title="Group members" icon={<Users size={18} />} defaultOpen>
+              <GroupMemberRoster group={selectedGroup} />
             </GroupDetailsSection>
             <GroupDetailsSection title="Settings and controls" icon={<Settings size={18} />} defaultOpen={false}>
               {selectedRole === "owner" ? (
@@ -1212,7 +1193,6 @@ function GroupMemberRoster({ group }: { group: Group }) {
   const { state, todayKey, setSelectedPublicUserId } = useChanting();
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] = useState<GroupRole | "all">("all");
-  const [activityFilter, setActivityFilter] = useState<"all" | "today" | "week" | "inactive-week">("all");
   const [sortMode, setSortMode] = useState<"role" | "today" | "week" | "name">("role");
   const members = state.groupMembers
     .filter((member) => member.groupId === group.id)
@@ -1245,8 +1225,6 @@ function GroupMemberRoster({ group }: { group: Group }) {
       return a.user.username.localeCompare(b.user.username);
     });
 
-  const activeToday = rows.filter((row) => row.todayRounds > 0).length;
-  const activeThisWeek = rows.filter((row) => row.weekRounds > 0).length;
   const cleanSearch = searchText.trim().toLowerCase();
   const visibleRows = rows.filter((row) => {
     const matchesSearch =
@@ -1255,12 +1233,7 @@ function GroupMemberRoster({ group }: { group: Group }) {
       (row.user.displayName || "").toLowerCase().includes(cleanSearch) ||
       row.membership.role.includes(cleanSearch);
     const matchesRole = roleFilter === "all" || row.membership.role === roleFilter;
-    const matchesActivity =
-      activityFilter === "all" ||
-      (activityFilter === "today" && row.todayRounds > 0) ||
-      (activityFilter === "week" && row.weekRounds > 0) ||
-      (activityFilter === "inactive-week" && row.weekRounds === 0);
-    return matchesSearch && matchesRole && matchesActivity;
+    return matchesSearch && matchesRole;
   });
 
   return (
@@ -1272,11 +1245,9 @@ function GroupMemberRoster({ group }: { group: Group }) {
         </div>
         <div className="flex flex-wrap gap-1.5">
           <span className="rounded-md bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">{rows.length} members</span>
-          <span className="rounded-md bg-peacock-50 px-2 py-1 text-xs font-bold text-peacock-900">{activeToday} today</span>
-          <span className="rounded-md bg-saffron-50 px-2 py-1 text-xs font-bold text-saffron-900">{activeThisWeek} week</span>
         </div>
       </div>
-      <div className="mb-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_120px_150px_130px]">
+      <div className="mb-3 grid gap-2 md:grid-cols-[minmax(0,1fr)_120px_130px]">
         <label className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={15} />
           <input
@@ -1292,12 +1263,6 @@ function GroupMemberRoster({ group }: { group: Group }) {
           <option value="owner">Owner</option>
           <option value="moderator">Moderators</option>
           <option value="member">Members</option>
-        </select>
-        <select className="rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 shadow-sm outline-none" value={activityFilter} onChange={(event) => setActivityFilter(event.target.value as typeof activityFilter)}>
-          <option value="all">All activity</option>
-          <option value="today">Active today</option>
-          <option value="week">Active week</option>
-          <option value="inactive-week">Inactive week</option>
         </select>
         <select className="rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 shadow-sm outline-none" value={sortMode} onChange={(event) => setSortMode(event.target.value as typeof sortMode)}>
           <option value="role">Role</option>
@@ -1318,7 +1283,9 @@ function GroupMemberRoster({ group }: { group: Group }) {
                 <Avatar src={row.user.avatarUrl} label={row.user.displayName || row.user.username} />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-black text-stone-950">{row.user.displayName || row.user.username}</p>
-                  <p className="truncate text-xs font-bold text-stone-500">@{row.user.username}</p>
+                  <p className="text-xs font-bold text-stone-500">
+                    @{row.user.username} | Joined {formatDate(row.membership.joinedAt.slice(0, 10))}
+                  </p>
                 </div>
               </button>
               <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
