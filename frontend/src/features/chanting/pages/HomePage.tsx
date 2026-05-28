@@ -1,23 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Award, CalendarDays, CheckCircle2, ChevronRight, Circle, Download, Flame, History, PlusCircle, Target, Users } from "lucide-react";
+import { AlertTriangle, CalendarDays, PlusCircle } from "lucide-react";
 import { useChanting } from "../ChantingContext";
 import {
-  addDays,
-  bestStreak,
-  computeMilestones,
-  currentStreak,
-  daysChantedThisMonth,
   formatDate,
-  latestChantUpdate,
-  latestUpdateLabel,
-  localDayBoundaryText,
   MAX_DAILY_ROUNDS,
-  recentChantingHistory,
   sumRounds,
 } from "../domain";
-import { ActionEmptyState, Card, Field, PageHeader, Panel, StatCard, StatGrid } from "../ui";
+import { Field, PageHeader, Panel } from "../ui";
 
 type TithiState = {
   status: "loading" | "ready" | "unavailable";
@@ -34,7 +25,6 @@ export function HomePage() {
     todayKey,
     selectedDate,
     setSelectedDate,
-    editableDates,
     currentRounds,
     roundInput,
     setRoundInput,
@@ -45,8 +35,6 @@ export function HomePage() {
     isBusy,
     updateUserPreferences,
     joinedGroups,
-    groupMemberCount,
-    setSelectedGroupId,
     emailVerified,
     friends,
     showActionFeedback,
@@ -54,7 +42,6 @@ export function HomePage() {
     loadingRemoteSlices
   } = useChanting();
   const [previousDraft, setPreviousDraft] = useState<number | null>(null);
-  const [shareStatus, setShareStatus] = useState("");
   const [goalDraft, setGoalDraft] = useState("16");
   const [highRoundConfirmed, setHighRoundConfirmed] = useState(false);
   const [tithiState, setTithiState] = useState<TithiState>({
@@ -123,16 +110,8 @@ export function HomePage() {
 
   if (!currentUser) return null;
 
-  const history = recentChantingHistory(state.chantTotals, currentUser.id, todayKey, 7);
-  const highestHistoryRounds = Math.max(1, ...history.map((item) => item.rounds));
-  const streakNow = currentStreak(state.chantTotals, currentUser.id, todayKey);
-  const streakBest = bestStreak(state.chantTotals, currentUser.id);
-  const monthDays = daysChantedThisMonth(state.chantTotals, currentUser.id, todayKey);
-  const milestones = computeMilestones(state, currentUser, todayKey);
   const weeklyRounds = sumRounds(state.chantTotals, currentUser.id, "weekly", todayKey);
-  const monthlyRounds = sumRounds(state.chantTotals, currentUser.id, "monthly", todayKey);
   const allTimeRounds = sumRounds(state.chantTotals, currentUser.id, "allTime", todayKey);
-  const sevenDayRounds = history.reduce((sum, item) => sum + item.rounds, 0);
   const selectedDateLabel = selectedDate === todayKey ? "Today" : formatDate(selectedDate || todayKey);
   const hasStartedChanting = allTimeRounds > 0;
   const isLoadingRelationships = loadingRemoteSlices.friends || loadingRemoteSlices.groups;
@@ -140,9 +119,6 @@ export function HomePage() {
   const dailyGoal = currentUser.dailyGoal || 16;
   const remainingGoalRounds = Math.max(0, dailyGoal - currentRounds);
   const goalPercent = Math.min(100, Math.round((currentRounds / Math.max(1, dailyGoal)) * 100));
-  const yesterdayKey = addDays(todayKey, -1);
-  const yesterdayRounds = state.chantTotals.find((item) => item.userId === currentUser.id && item.localDate === yesterdayKey)?.rounds || 0;
-  const canEditYesterday = editableDates.includes(yesterdayKey);
   const hasUnsavedDraft = draftRounds !== currentRounds;
   const changeEditableDate = (nextDate: string, knownRounds?: number) => {
     if (nextDate !== selectedDate && hasUnsavedDraft) {
@@ -159,19 +135,6 @@ export function HomePage() {
         : state.chantTotals.find((item) => item.userId === currentUser.id && item.localDate === nextDate)?.rounds || 0;
     setRoundInput(String(total));
   };
-  const activeGroupCards = joinedGroups.slice(0, 4).map((group) => {
-    const memberIds = state.groupMembers.filter((member) => member.groupId === group.id).map((member) => member.userId);
-    const todayTotal = state.chantTotals
-      .filter((total) => memberIds.includes(total.userId) && total.localDate === todayKey)
-      .reduce((sum, total) => sum + total.rounds, 0);
-    const latestUpdate = latestChantUpdate(state.chantTotals, memberIds, todayKey, todayKey);
-    return {
-      group,
-      memberCount: groupMemberCount(group.id),
-      todayTotal,
-      latestUpdate
-    };
-  });
   const setupRemainingCount = [
     allTimeRounds > 0,
     currentUser.dailyGoal > 0,
@@ -180,86 +143,6 @@ export function HomePage() {
     loadingRemoteSlices.friends || friends.length > 0,
     emailVerified !== false
   ].filter((complete) => !complete).length;
-  const onboardingItems: OnboardingChecklistItem[] = [
-    {
-      id: "rounds",
-      title: "Log first rounds",
-      text: "Save at least one round so your streak and leaderboards begin.",
-      complete: allTimeRounds > 0,
-      action: "Set draft to 1",
-      onClick: () => {
-        changeEditableDate(todayKey, todayKey === selectedDate ? draftRounds : 1);
-        setRoundInput("1");
-      }
-    },
-    {
-      id: "goal",
-      title: "Set daily goal",
-      text: "Keep a realistic target visible on your daily dashboard.",
-      complete: currentUser.dailyGoal > 0,
-      action: "Edit goal",
-      onClick: () => {
-        document.getElementById("daily-goal-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    },
-    {
-      id: "avatar",
-      title: "Add profile picture",
-      text: "Make your profile easier to recognize in groups and leaderboards.",
-      complete: Boolean(currentUser.avatarUrl),
-      action: "Open profile",
-      onClick: () =>
-        showActionFeedback({
-          title: "Open Profile",
-          body: "Add or update your profile picture from Profile settings.",
-          action: { label: "Go to Profile", tab: "profile" }
-        })
-    },
-    {
-      id: "group",
-      title: "Join or create group",
-      text: "Groups make your daily practice social and easier to follow.",
-      complete: loadingRemoteSlices.groups || joinedGroups.length > 0,
-      action: "Open groups",
-      onClick: () =>
-        showActionFeedback({
-          title: "Open Groups",
-          body: "Create a group or join one with a code.",
-          action: { label: "Go to Groups", tab: "groups" }
-        })
-    },
-    {
-      id: "friend",
-      title: "Add a friend",
-      text: "Build a private friends leaderboard.",
-      complete: loadingRemoteSlices.friends || friends.length > 0,
-      action: "Open friends",
-      onClick: () =>
-        showActionFeedback({
-          title: "Open Friends",
-          body: "Search by username and send a friend request.",
-          action: { label: "Go to Friends", tab: "friends" }
-        })
-    },
-    {
-      id: "email",
-      title: "Verify email",
-      text: emailVerified === null ? "Check account status from Profile." : "Keep account recovery reliable.",
-      complete: emailVerified !== false,
-      action: "Open profile",
-      onClick: () =>
-        showActionFeedback({
-          title: "Open Profile",
-          body: "Profile shows whether your email is verified.",
-          action: { label: "Go to Profile", tab: "profile" }
-        })
-    }
-  ];
-  const nextMilestone = milestones
-    .filter((milestone) => !milestone.earned)
-    .sort((a, b) => b.progress / b.target - a.progress / a.target)[0];
-  const latestEarnedMilestone = [...milestones].reverse().find((milestone) => milestone.earned);
-  const earnedMilestoneCount = milestones.filter((milestone) => milestone.earned).length;
   const isLargeRoundEntry = draftRounds >= 64;
   const needsHighRoundConfirmation = draftRounds >= 108;
   const canSaveDraft = !isBusy && draftRounds !== currentRounds && (!needsHighRoundConfirmation || highRoundConfirmed);
@@ -277,59 +160,6 @@ export function HomePage() {
       action: { label: "View activity", tab: "activity" }
     });
   };
-  const downloadShareCard = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1200;
-    canvas.height = 630;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
-    gradient.addColorStop(0, "#fff7ed");
-    gradient.addColorStop(1, "#e0f2f1");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#d98f08";
-    ctx.fillRect(0, 0, 1200, 18);
-    ctx.fillStyle = "#1c1917";
-    ctx.font = "900 54px Arial";
-    ctx.fillText("Hare Krishna Leaderboard", 72, 110);
-    ctx.font = "700 28px Arial";
-    ctx.fillStyle = "#57534e";
-    ctx.fillText(`${currentUser.displayName || currentUser.username} • ${formatDate(todayKey)}`, 72, 156);
-    ctx.fillStyle = "#0f766e";
-    ctx.font = "900 150px Arial";
-    ctx.fillText(String(currentRounds), 72, 330);
-    ctx.font = "900 42px Arial";
-    ctx.fillStyle = "#1c1917";
-    ctx.fillText("rounds today", 72, 382);
-    ctx.font = "700 30px Arial";
-    ctx.fillStyle = "#57534e";
-    ctx.fillText(`${weeklyRounds} this week • ${streakNow} day streak • ${allTimeRounds} all time`, 72, 450);
-    ctx.fillStyle = "#fef3c7";
-    ctx.fillRect(72, 500, 700, 58);
-    ctx.fillStyle = "#92400e";
-    ctx.font = "800 24px Arial";
-    ctx.fillText(
-      tithiState.status === "ready"
-        ? `${tithiState.paksha} ${tithiState.name}`
-        : "Tithi unavailable - Drik Panchang service is down",
-      96,
-      538
-    );
-    ctx.fillStyle = "#0f766e";
-    ctx.font = "900 88px Arial";
-    ctx.fillText("HK", 930, 330);
-    ctx.font = "700 24px Arial";
-    ctx.fillStyle = "#57534e";
-    ctx.fillText("Self-entered chanting log", 838, 374);
-    const link = document.createElement("a");
-    link.download = `chanting-share-${currentUser.username}-${todayKey}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-    setShareStatus("Share card downloaded.");
-    window.setTimeout(() => setShareStatus(""), 2500);
-  };
-
   return (
     <div className="space-y-4 sm:space-y-5">
       <section className="rounded-lg border border-saffron-200/80 bg-white/92 px-3 py-3 shadow-soft sm:px-4">
@@ -362,7 +192,7 @@ export function HomePage() {
         title="Today's rounds"
         description="Enter your total rounds for the selected day."
       >
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-[220px_minmax(260px,1fr)_150px] lg:items-end">
+            <div className="grid gap-3 lg:grid-cols-[330px_minmax(320px,1fr)_224px] lg:items-end">
               <label>
                 <span className="mb-1 block text-sm font-bold text-stone-700">Editable date</span>
                 <input
@@ -391,7 +221,7 @@ export function HomePage() {
               />
               <button
                 type="button"
-                className="col-span-2 h-[46px] rounded-md bg-saffron-500 px-5 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200 lg:col-span-1"
+                className="h-[46px] rounded-md bg-saffron-500 px-5 text-sm font-black text-white shadow-sm transition hover:bg-saffron-600 disabled:bg-saffron-200"
                 onClick={saveDraftRounds}
                 disabled={!canSaveDraft}
               >
@@ -440,6 +270,34 @@ export function HomePage() {
                 {draftDelta !== 0 && <span> ({draftDelta > 0 ? `+${draftDelta}` : draftDelta})</span>}
                 <span className="mx-2 text-stone-300">|</span>
                 <span>{currentRounds} saved</span>
+              </div>
+            </div>
+
+            <div id="daily-goal-panel" className="mt-4 rounded-lg border border-peacock-100 bg-peacock-50/70 px-3 py-3 sm:px-4">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_160px_120px] lg:items-end">
+                <div>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="font-black text-stone-900">Daily goal</p>
+                      <p className="text-sm text-stone-600">
+                        {dailyGoal} rounds target. {remainingGoalRounds === 0 ? "Goal complete." : `${remainingGoalRounds} rounds left.`}
+                      </p>
+                    </div>
+                    <p className="text-2xl font-black text-peacock-900">{goalPercent}%</p>
+                  </div>
+                  <div className="mt-2 h-3 overflow-hidden rounded-full bg-white ring-1 ring-peacock-100">
+                    <div className="h-full rounded-full bg-peacock-600 transition-all" style={{ width: `${goalPercent}%` }} />
+                  </div>
+                </div>
+                <Field label="Goal" value={goalDraft} onChange={setGoalDraft} type="number" min={0} max={MAX_DAILY_ROUNDS} />
+                <button
+                  type="button"
+                  className="h-[46px] rounded-md bg-peacock-600 px-4 text-sm font-black text-white disabled:bg-peacock-200"
+                  disabled={isBusy || Number(goalDraft) === dailyGoal}
+                  onClick={saveDailyGoal}
+                >
+                  Save goal
+                </button>
               </div>
             </div>
 
@@ -519,179 +377,6 @@ export function HomePage() {
         />
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
-        <Panel title="Today at a glance" icon={<Target size={18} />}>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <CompactMetric label="Goal" value={`${goalPercent}%`} note={remainingGoalRounds === 0 ? "complete" : `${remainingGoalRounds} left`} />
-            <CompactMetric label="Streak" value={streakNow} note={`best ${streakBest}`} />
-            <CompactMetric label="7 days" value={sevenDayRounds} note={`${history.filter((item) => item.rounds > 0).length} active days`} />
-            <CompactMetric label="Yesterday" value={yesterdayRounds} note={canEditYesterday ? "editable" : "locked"} />
-          </div>
-          <div id="daily-goal-panel" className="mt-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
-            <div className="grid gap-2 sm:grid-cols-[1fr_120px_auto] sm:items-end">
-              <div>
-                <p className="font-black text-stone-900">Daily goal</p>
-                <p className="text-sm text-stone-600">{dailyGoal} rounds target</p>
-              </div>
-              <Field label="Goal" value={goalDraft} onChange={setGoalDraft} type="number" min={0} max={MAX_DAILY_ROUNDS} />
-              <button
-                type="button"
-                className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white disabled:bg-peacock-200"
-                disabled={isBusy || Number(goalDraft) === dailyGoal}
-                onClick={saveDailyGoal}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {canEditYesterday && (
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-stone-800 ring-1 ring-stone-200"
-                disabled={isBusy}
-                onClick={() => changeEditableDate(yesterdayKey, yesterdayRounds)}
-              >
-                <History size={16} /> Edit yesterday
-              </button>
-            )}
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-black text-peacock-900 ring-1 ring-peacock-100"
-              onClick={downloadShareCard}
-            >
-              <Download size={16} /> Share card
-            </button>
-          </div>
-          {shareStatus && <p className="mt-2 rounded-md bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-800">{shareStatus}</p>}
-        </Panel>
-
-        <Panel title="Active groups" icon={<Users size={18} />}>
-          {loadingRemoteSlices.groups ? (
-            <div className="rounded-lg border border-peacock-100 bg-peacock-50 px-3 py-3 text-sm font-black text-peacock-900">
-              Loading your groups...
-            </div>
-          ) : activeGroupCards.length === 0 ? (
-            <ActionEmptyState
-              icon={<Users size={20} />}
-              title="No groups yet"
-              text="Join or create a group to appear in group leaderboards."
-            >
-              <button
-                type="button"
-                className="rounded-md bg-peacock-600 px-4 py-2.5 text-sm font-black text-white"
-                onClick={() =>
-                  showActionFeedback({
-                    title: "Open Groups",
-                    body: "Create or join a chanting group from the Groups page.",
-                    action: { label: "Go to Groups", tab: "groups" }
-                  })
-                }
-              >
-                Open groups
-              </button>
-            </ActionEmptyState>
-          ) : (
-            <div className="grid gap-2 lg:grid-cols-2">
-              {activeGroupCards.map(({ group, memberCount, todayTotal, latestUpdate }) => (
-                <button
-                  key={group.id}
-                  type="button"
-                  className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-saffron-300"
-                  onClick={() => {
-                    setSelectedGroupId(group.id);
-                    showActionFeedback({
-                      title: group.name,
-                      body: "Open Groups to view this group leaderboard, activity, and members.",
-                      action: { label: "Open group", tab: "groups" }
-                    });
-                  }}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-black text-stone-950">{group.name}</p>
-                      <p className="mt-1 text-sm text-stone-600">{todayTotal} today | {memberCount} member{memberCount === 1 ? "" : "s"}</p>
-                    </div>
-                    <ChevronRight size={18} className="shrink-0 text-stone-400" />
-                  </div>
-                  <p className="mt-2 text-xs font-bold text-stone-500">
-                    {latestUpdate ? `Last update ${latestUpdateLabel(latestUpdate)}` : "No updates today"}
-                  </p>
-                </button>
-              ))}
-            </div>
-          )}
-        </Panel>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]">
-        <Panel title="7-day rhythm" icon={<Flame size={18} />}>
-          <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm">
-            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-black text-stone-900">Last 7 days</p>
-                <p className="text-sm text-stone-600">Tap a day to edit.</p>
-              </div>
-              <span className="rounded-md bg-saffron-50 px-3 py-1.5 text-sm font-black text-saffron-900">
-                {sevenDayRounds} rounds
-              </span>
-            </div>
-            <div className="-mx-1 overflow-x-auto px-1 pb-1">
-              <div className="grid min-w-[490px] gap-2 [grid-template-columns:repeat(7,minmax(0,1fr))] sm:min-w-0">
-                {history.map((item) => {
-                  const barHeight = Math.max(10, Math.round((item.rounds / highestHistoryRounds) * 104));
-                  const isToday = item.dateKey === todayKey;
-                  return (
-                    <button
-                      key={item.dateKey}
-                      type="button"
-                      className={`flex min-w-0 flex-col items-center gap-1 rounded-md border px-1 py-2 transition sm:gap-2 ${
-                        isToday ? "border-saffron-300 bg-saffron-50" : "border-transparent hover:border-stone-200 hover:bg-stone-50"
-                      }`}
-                      onClick={() => {
-                        changeEditableDate(item.dateKey, item.rounds);
-                      }}
-                    >
-                      <div className="flex h-12 w-full items-end rounded-md bg-stone-50 px-1 py-1 sm:h-16">
-                        <div
-                          className={`w-full rounded-sm ${item.rounds > 0 ? "bg-peacock-500" : "bg-stone-200"}`}
-                          style={{ height: `${item.rounds > 0 ? Math.min(barHeight, 58) : 8}px` }}
-                        />
-                      </div>
-                      <p className="text-xs font-black text-stone-900 sm:text-sm">{item.rounds}</p>
-                      <p className={`max-w-full truncate text-xs ${isToday ? "font-black text-saffron-800" : "text-stone-500"}`}>
-                        {isToday ? "Today" : formatDate(item.dateKey).replace(/,.*$/, "")}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </Panel>
-
-        <Panel title="Milestones" icon={<Award size={18} />}>
-          <div className="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)]">
-            <div className="rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 text-center">
-              <p className="text-xs font-black uppercase text-stone-500">Completed</p>
-              <p className="mt-1 text-2xl font-black text-saffron-900">{earnedMilestoneCount}/{milestones.length}</p>
-            </div>
-            <div className="rounded-lg border border-stone-200 bg-white px-3 py-2.5">
-              <p className="font-black text-stone-950">{nextMilestone ? `Next: ${nextMilestone.title}` : "All current milestones earned"}</p>
-              <p className="mt-1 text-sm leading-6 text-stone-600">
-                {nextMilestone ? nextMilestone.description : latestEarnedMilestone ? `Latest: ${latestEarnedMilestone.title}.` : "New milestones can be added later."}
-              </p>
-              <button
-                type="button"
-                className="mt-3 rounded-md bg-saffron-500 px-4 py-2.5 text-sm font-black text-white"
-                onClick={() => window.dispatchEvent(new CustomEvent("chanting-open-tab", { detail: "milestones" }))}
-              >
-                View milestones
-              </button>
-            </div>
-          </div>
-        </Panel>
-      </div>
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-saffron-200 bg-white/95 p-3 shadow-soft backdrop-blur md:hidden">
         <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
           <button
@@ -725,15 +410,6 @@ export function HomePage() {
   );
 }
 
-type OnboardingChecklistItem = {
-  id: string;
-  title: string;
-  text: string;
-  complete: boolean;
-  action: string;
-  onClick: () => void;
-};
-
 function TopCompactStat({
   label,
   value,
@@ -756,16 +432,6 @@ function TopCompactStat({
       <p className="text-xs font-black uppercase text-stone-500">{label}</p>
       <p className="mt-0.5 truncate text-lg font-black">{value}</p>
       <p className="truncate text-xs font-bold text-stone-600">{note}</p>
-    </div>
-  );
-}
-
-function CompactMetric({ label, value, note }: { label: string; value: string | number; note: string }) {
-  return (
-    <div className="rounded-md border border-stone-200 bg-white px-3 py-2 shadow-sm">
-      <p className="text-xs font-black uppercase text-stone-500">{label}</p>
-      <p className="mt-0.5 text-xl font-black text-stone-950">{value}</p>
-      <p className="text-sm text-stone-600">{note}</p>
     </div>
   );
 }
@@ -841,60 +507,6 @@ function HighRoundGuardrail({
         </div>
       </div>
     </div>
-  );
-}
-
-function OnboardingChecklist({ items }: { items: OnboardingChecklistItem[] }) {
-  const completed = items.filter((item) => item.complete).length;
-  const total = items.length;
-  const remainingItems = items.filter((item) => !item.complete);
-  const allComplete = completed === total;
-  const progress = Math.round((completed / Math.max(1, total)) * 100);
-
-  if (allComplete) {
-    return null;
-  }
-
-  return (
-    <Panel title="Setup checklist" icon={<CheckCircle2 size={18} />}>
-      <div className="mb-3 flex flex-col gap-3 rounded-lg border border-saffron-200 bg-saffron-50 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-        <div>
-          <p className="font-black text-stone-950">{completed}/{total} complete</p>
-          <p className="mt-1 text-sm leading-6 text-stone-700">Only unfinished setup steps are shown here.</p>
-        </div>
-        <div className="min-w-[180px]">
-          <div className="h-3 overflow-hidden rounded-full bg-white">
-            <div className="h-full bg-saffron-500" style={{ width: `${progress}%` }} />
-          </div>
-          <p className="mt-1 text-right text-xs font-black text-saffron-900">{progress}%</p>
-        </div>
-      </div>
-      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-        {remainingItems.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 shadow-sm"
-          >
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-md bg-stone-100 text-stone-500">
-                <Circle size={18} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-black text-stone-950">{item.title}</p>
-                <p className="mt-1 text-sm leading-6 text-stone-600">{item.text}</p>
-                <button
-                  type="button"
-                  className="mt-3 rounded-md bg-stone-900 px-3 py-2 text-sm font-black text-white"
-                  onClick={item.onClick}
-                >
-                  {item.action}
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Panel>
   );
 }
 
