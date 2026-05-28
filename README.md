@@ -1,4 +1,4 @@
-# Hare Krishna Leaderboard
+﻿# Hare Krishna Leaderboard
 
 A chanting rounds tracker with daily, weekly, monthly, group, friends, and global leaderboards.
 
@@ -10,7 +10,7 @@ The frontend is intentionally a single-page app. The sidebar changes the visible
 frontend/
   Next.js single-page app, UI, API routes, frontend environment variables
 
-backend/supabase/
+supabase/
   Supabase schema, migrations, RLS policies, SQL functions
 ```
 
@@ -52,30 +52,30 @@ npm run build
 Run the main schema first:
 
 ```text
-backend/supabase/schema.sql
+supabase/schema.sql
 ```
 
 Then run migrations in order:
 
 ```text
-backend/supabase/migrations/001_username_phone_rules.sql
-backend/supabase/migrations/002_chant_total_edit_window.sql
-backend/supabase/migrations/003_friend_request_delete_policy.sql
-backend/supabase/migrations/004_profile_identity_conflicts.sql
-backend/supabase/migrations/005_group_owner_controls.sql
-backend/supabase/migrations/006_avatar_storage.sql
-backend/supabase/migrations/007_group_images_storage.sql
-backend/supabase/migrations/008_group_member_moderation.sql
-backend/supabase/migrations/009_admin_review.sql
-backend/supabase/migrations/010_group_roles_v2.sql
-backend/supabase/migrations/011_goals_announcements_reminders.sql
-backend/supabase/migrations/012_profile_privacy.sql
-backend/supabase/migrations/013_public_profile_rpc.sql
-backend/supabase/migrations/014_public_group_invite_rpc.sql
-backend/supabase/migrations/015_notifications.sql
-backend/supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
-backend/supabase/migrations/017_featured_milestones.sql
-backend/supabase/migrations/018_security_hardening.sql
+supabase/migrations/001_username_phone_rules.sql
+supabase/migrations/002_chant_total_edit_window.sql
+supabase/migrations/003_friend_request_delete_policy.sql
+supabase/migrations/004_profile_identity_conflicts.sql
+supabase/migrations/005_group_owner_controls.sql
+supabase/migrations/006_avatar_storage.sql
+supabase/migrations/007_group_images_storage.sql
+supabase/migrations/008_group_member_moderation.sql
+supabase/migrations/009_admin_review.sql
+supabase/migrations/010_group_roles_v2.sql
+supabase/migrations/011_goals_announcements_reminders.sql
+supabase/migrations/012_profile_privacy.sql
+supabase/migrations/013_public_profile_rpc.sql
+supabase/migrations/014_public_group_invite_rpc.sql
+supabase/migrations/015_notifications.sql
+supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
+supabase/migrations/017_featured_milestones.sql
+supabase/migrations/018_security_hardening.sql
 ```
 
 Migration `016` removes the temporary admin/reporting tables and changes round edits to allow any date from the user's join date through today.
@@ -129,3 +129,4 @@ The app loads core user and rounds data first. Groups and friends data are loade
 - One user can save 0-250 rounds for one local day.
 - Users can edit dates from their account join date through today.
 - Group, friends, and global leaderboards use self-entered chanting totals.
+

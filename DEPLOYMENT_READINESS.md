@@ -1,4 +1,4 @@
-# Deployment Readiness Checklist
+﻿# Deployment Readiness Checklist
 
 Use this before putting Hare Krishna Leaderboard online for real users.
 
@@ -40,30 +40,30 @@ Runtime behavior:
 Run the base schema first:
 
 ```text
-backend/supabase/schema.sql
+supabase/schema.sql
 ```
 
 Then run every migration in this exact order:
 
 ```text
-backend/supabase/migrations/001_username_phone_rules.sql
-backend/supabase/migrations/002_chant_total_edit_window.sql
-backend/supabase/migrations/003_friend_request_delete_policy.sql
-backend/supabase/migrations/004_profile_identity_conflicts.sql
-backend/supabase/migrations/005_group_owner_controls.sql
-backend/supabase/migrations/006_avatar_storage.sql
-backend/supabase/migrations/007_group_images_storage.sql
-backend/supabase/migrations/008_group_member_moderation.sql
-backend/supabase/migrations/009_admin_review.sql
-backend/supabase/migrations/010_group_roles_v2.sql
-backend/supabase/migrations/011_goals_announcements_reminders.sql
-backend/supabase/migrations/012_profile_privacy.sql
-backend/supabase/migrations/013_public_profile_rpc.sql
-backend/supabase/migrations/014_public_group_invite_rpc.sql
-backend/supabase/migrations/015_notifications.sql
-backend/supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
-backend/supabase/migrations/017_featured_milestones.sql
-backend/supabase/migrations/018_security_hardening.sql
+supabase/migrations/001_username_phone_rules.sql
+supabase/migrations/002_chant_total_edit_window.sql
+supabase/migrations/003_friend_request_delete_policy.sql
+supabase/migrations/004_profile_identity_conflicts.sql
+supabase/migrations/005_group_owner_controls.sql
+supabase/migrations/006_avatar_storage.sql
+supabase/migrations/007_group_images_storage.sql
+supabase/migrations/008_group_member_moderation.sql
+supabase/migrations/009_admin_review.sql
+supabase/migrations/010_group_roles_v2.sql
+supabase/migrations/011_goals_announcements_reminders.sql
+supabase/migrations/012_profile_privacy.sql
+supabase/migrations/013_public_profile_rpc.sql
+supabase/migrations/014_public_group_invite_rpc.sql
+supabase/migrations/015_notifications.sql
+supabase/migrations/016_remove_admin_reports_and_join_date_edits.sql
+supabase/migrations/017_featured_milestones.sql
+supabase/migrations/018_security_hardening.sql
 ```
 
 Quick checks in Supabase after running SQL:
@@ -232,3 +232,4 @@ Decide before launch:
 - About/developer text.
 - Support/contact email.
 - Backup/export plan for Supabase.
+

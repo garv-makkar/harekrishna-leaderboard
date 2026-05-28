@@ -1,6 +1,6 @@
-# Database Notes
+﻿# Database Notes
 
-This app uses Supabase Auth plus public tables/policies in `backend/supabase/migrations`.
+This app uses Supabase Auth plus public tables/policies in `supabase/migrations`.
 
 ## Current Shape
 
@@ -45,3 +45,4 @@ It also allows users to edit chanting totals for any date on or after their acco
 ## Rule Of Thumb
 
 Run all migrations in order for a fresh Supabase project. For an existing project, only run migrations that have not already been applied.
+

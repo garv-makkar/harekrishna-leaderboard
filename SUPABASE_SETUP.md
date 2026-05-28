@@ -1,4 +1,4 @@
-# Supabase Setup
+﻿# Supabase Setup
 
 ## 1. Create Project
 
@@ -8,7 +8,7 @@ Create a new Supabase project. Keep the project password somewhere safe.
 
 Open Supabase Dashboard -> SQL Editor -> New query.
 
-Paste the contents of `backend/supabase/schema.sql`, then run it.
+Paste the contents of `supabase/schema.sql`, then run it.
 
 This creates:
 
@@ -130,8 +130,9 @@ Once Supabase env values are present, the app uses Supabase instead of browser l
 frontend/
   Next.js app, UI, API routes, frontend environment variables
 
-backend/supabase/
+supabase/
   Database schema, migrations, policies, SQL functions
 ```
 
 You can still run common commands from the project root. The root `package.json` delegates them into `frontend/`.
+
